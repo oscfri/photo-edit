@@ -9,6 +9,8 @@ use iced;
 use image;
 use num;
 
+use rayon::prelude::*;
+
 pub fn main() -> iced::Result {
     iced::application("A cool image editor", Main::update, Main::view)
         .theme(|_| iced::Theme::Dark)
@@ -41,8 +43,8 @@ struct Main {
 }
     
 fn update_image(converter: &Converter, mut image: LabImage, parameters: Parameters) -> iced::widget::image::Handle {
-    functions::brightness(&mut image, parameters.brightness);
     functions::contrast(&mut image, parameters.contrast);
+    functions::brightness(&mut image, parameters.brightness);
     functions::tint(&mut image, parameters.tint);
     functions::temperature(&mut image, parameters.temperature);
     let rgb_image: RgbImage = converter.lab_image_to_rgb(&image);
@@ -89,14 +91,22 @@ fn pixel_value_to_u8(value: f32) -> u8 {
 }
 
 fn rgb_image_to_bytes(image: &RgbImage) -> iced::advanced::image::Bytes {
-    let mut buffer: Vec<u8> = vec![0; image.width * image.height * 4];
+    let mut buffer: Vec<u8> = vec![255; image.width * image.height * 4];
 
-    for (index, pixel) in image.pixels.iter().enumerate() {
-        buffer[index * 4 + 0] = pixel_value_to_u8(pixel.red);
-        buffer[index * 4 + 1] = pixel_value_to_u8(pixel.green);
-        buffer[index * 4 + 2] = pixel_value_to_u8(pixel.blue);
-        buffer[index * 4 + 3] = 255; // Alpha
-    }
+    buffer.par_iter_mut()
+        .enumerate()
+        .for_each(|(index, byte)| {
+            let pixel_index: usize = index / 4;
+            let channel_index: usize = index % 4;
+            if channel_index == 0 {
+                *byte = pixel_value_to_u8(image.pixels[pixel_index].red);
+            } else if channel_index == 1 {
+                *byte = pixel_value_to_u8(image.pixels[pixel_index].green);
+            } else if channel_index == 2 {
+                *byte = pixel_value_to_u8(image.pixels[pixel_index].blue);
+            }
+            // Don't bother with alpha, as it's 255 by default
+        });
 
     iced::advanced::image::Bytes::from(buffer)
 }

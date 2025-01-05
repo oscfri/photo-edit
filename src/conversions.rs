@@ -68,7 +68,7 @@ impl Converter {
     pub fn lab_image_to_rgb(&self, lab_image: &LabImage) -> RgbImage {
         let rgb_pixels: Vec<RgbPixel> = lab_image.pixels.par_iter()
             .map(|lab_pixel: &LabPixel| {
-                if lab_pixel.lightness < 1.0 {
+                if lab_pixel.lightness < 0.01 {
                     RgbPixel {
                         red: 0.0,
                         green: 0.0,
