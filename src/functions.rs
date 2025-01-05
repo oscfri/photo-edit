@@ -10,9 +10,10 @@ pub fn brightness(image: &mut LabImage, value: f32) {
 }
 
 pub fn contrast(image: &mut LabImage, value: f32) {
+    let adjusted_value: f32 = (value + 100.0) / 100.0;
     image.pixels.par_iter_mut()
         .for_each(|pixel| {
-            pixel.lightness = (pixel.lightness - 50.0) * value + 50.0;
+            pixel.lightness = (pixel.lightness - 50.0) * adjusted_value + 50.0;
         });
 }
 

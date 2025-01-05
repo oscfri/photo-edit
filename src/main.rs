@@ -1,4 +1,3 @@
-mod application;
 mod conversions;
 mod types;
 mod functions;
@@ -8,18 +7,6 @@ use crate::types::*;
 use iced;
 use image;
 use num;
-
-// fn main() {
-//     let mut image: LabImage = load_image_as_lab();
-
-//     functions::brightness(&mut image, 10.0);
-//     functions::contrast(&mut image, 1.1);
-//     functions::tint(&mut image, -10.0);
-//     functions::temperature(&mut image, 20.0);
-
-//     let output_image: RgbImage = conversions::lab_image_to_rgb(&image);
-//     draw_image(&output_image);
-// }
 
 pub fn main() -> iced::Result {
     iced::application("A cool image editor", update, view)
@@ -32,7 +19,7 @@ fn initialize() -> (State, iced::Task<Message>) {
     let source_image: LabImage = load_image_as_lab();
     let parameters: Parameters = Parameters::default();
 
-    let handle = update_image(&source_image, &parameters);
+    let handle = update_image(source_image.clone(), parameters);
 
     let state: State = State {
         source_image: source_image,
@@ -42,8 +29,11 @@ fn initialize() -> (State, iced::Task<Message>) {
     (state, iced::Task::none())
 }
 
-#[derive(Default)]
+#[derive(Default, Clone, Copy)]
 struct Parameters {
+    brightness: f32,
+    contrast: f32,
+    tint: f32,
     temperature: f32
 }
 
@@ -53,14 +43,32 @@ struct State {
     handle: iced::widget::image::Handle
 }
 
+#[derive(Debug, Clone)]
+enum Message {
+    BrightnessChanged(f32),
+    ContrastChanged(f32),
+    TintChanged(f32),
+    TemperatureChanged(f32),
+    ImageUpdated(iced::widget::image::Handle) // TODO: Maybe don't return a handle?
+}
+
 fn update(state: &mut State, message: Message) -> iced::Task<Message> {
     match message {
+        Message::BrightnessChanged(brightness) => {
+            state.parameters.brightness = brightness;
+            update_image_task(&state)
+        },
+        Message::ContrastChanged(contrast) => {
+            state.parameters.contrast = contrast;
+            update_image_task(&state)
+        },
+        Message::TintChanged(tint) => {
+            state.parameters.tint = tint;
+            update_image_task(&state)
+        },
         Message::TemperatureChanged(temperature) => {
             state.parameters.temperature = temperature;
-            iced::Task::perform(
-                update_image(&state.source_image, &state.parameters),
-                Message::ImageUpdated
-            )
+            update_image_task(&state)
         },
         Message::ImageUpdated(handle) => {
             state.handle = handle;
@@ -69,8 +77,10 @@ fn update(state: &mut State, message: Message) -> iced::Task<Message> {
     }
 }
 
-fn update_image(source_image: &LabImage, parameters: &Parameters) -> iced::widget::image::Handle {
-    let mut image: LabImage = source_image.clone();
+fn update_image(mut image: LabImage, parameters: Parameters) -> iced::widget::image::Handle {
+    functions::brightness(&mut image, parameters.brightness);
+    functions::contrast(&mut image, parameters.contrast);
+    functions::tint(&mut image, parameters.tint);
     functions::temperature(&mut image, parameters.temperature);
     let rgb_image: RgbImage = conversions::lab_image_to_rgb(&image);
     iced::widget::image::Handle::from_rgba(
@@ -79,16 +89,27 @@ fn update_image(source_image: &LabImage, parameters: &Parameters) -> iced::widge
         rgb_image_to_bytes(&rgb_image))
 }
 
-#[derive(Debug, Clone)]
-enum Message {
-    TemperatureChanged(f32),
-    ImageUpdated(iced::widget::image::Handle)
+async fn update_image_async(image: LabImage, parameters: Parameters) -> iced::widget::image::Handle {
+    update_image(image, parameters)
+}
+
+fn update_image_task(state: &State) -> iced::Task<Message> {
+    iced::Task::perform(update_image_async(state.source_image.clone(), state.parameters), Message::ImageUpdated)
 }
 
 fn view(state: &State) -> iced::Element<Message> {
-    // iced::widget::button("Load").on_press(Message::Load).into()
     iced::widget::row![
             iced::widget::image(state.handle.clone()),
+            view_sliders(&state)
+        ]
+        .into()
+}
+
+fn view_sliders(state: &State) -> iced::Element<Message> {
+    iced::widget::column![
+            iced::widget::slider(-100.0..=100.0, state.parameters.brightness, Message::BrightnessChanged),
+            iced::widget::slider(-100.0..=100.0, state.parameters.contrast, Message::ContrastChanged),
+            iced::widget::slider(-100.0..=100.0, state.parameters.tint, Message::TintChanged),
             iced::widget::slider(-100.0..=100.0, state.parameters.temperature, Message::TemperatureChanged)
         ]
         .into()
