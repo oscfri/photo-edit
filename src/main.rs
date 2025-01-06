@@ -4,7 +4,7 @@ mod functions;
 
 use crate::types::*;
 
-use iced;
+use iced::{self, widget::container};
 use image;
 
 use rayon::prelude::*;
@@ -193,12 +193,18 @@ impl Main {
     }
     
     fn view_sliders(&self) -> iced::Element<Message> {
-        iced::widget::column![
+        let column = iced::widget::column![
+                iced::widget::text("Brightness"),
                 iced::widget::slider(-100.0..=100.0, self.parameters.brightness, Message::BrightnessChanged),
+                iced::widget::text("Contrast"),
                 iced::widget::slider(-100.0..=100.0, self.parameters.contrast, Message::ContrastChanged),
+                iced::widget::text("Tint"),
                 iced::widget::slider(-100.0..=100.0, self.parameters.tint, Message::TintChanged),
+                iced::widget::text("Temperature"),
                 iced::widget::slider(-100.0..=100.0, self.parameters.temperature, Message::TemperatureChanged)
-            ]
+            ];
+        container(column)
+            .padding(10)
             .into()
     }
 }
