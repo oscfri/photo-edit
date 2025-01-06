@@ -6,6 +6,12 @@ use rayon::prelude::*;
  * Conversions based on: https://www.easyrgb.com/en/math.php
  */
 
+const REFERENCE_X: f32 = 95.047;
+const REFERENCE_Y: f32 = 100.0;
+const REFERENCE_Z: f32 = 108.883;
+
+const CACHE_PRECISION: i32 = 100;
+
  // TODO: Figure out how we can do this without cloning
  // TODO: Verify if this actually makes things faster or not...
  #[derive(Clone)]
@@ -17,6 +23,8 @@ pub struct Converter {
 }
 
 pub fn create_converter() -> Converter {
+    // TODO: There might be some inaccuracies with the inverse pow formulas.
+    // rgb -> xyz -> rgb probably doesn't yield same result
     Converter {
         pow_rgb_to_xyz: precompute_powf(2.4),
         pow_xyz_to_lab: precompute_powf(1.0 / 3.0),
@@ -26,14 +34,15 @@ pub fn create_converter() -> Converter {
 }
 
 fn precompute_powf(exponent: f32) -> Vec<f32> {
-    (0..10000)
-        .map(|x: i32| (x as f32) * 0.01)
+    let scaling = 1.0 / (CACHE_PRECISION as f32);
+    (0..100 * CACHE_PRECISION)
+        .map(|x: i32| (x as f32) * scaling)
         .map(|x: f32| x.powf(exponent))
         .collect()
 }
 
 fn cached_powf(value: f32, pow: &Vec<f32>) -> f32 {
-    let scaled_value: f32 = value * 100.0;
+    let scaled_value: f32 = value * (CACHE_PRECISION as f32);
     let index = scaled_value as usize;
     let alpha: f32 = scaled_value - (index as f32);
     if index < pow.len() - 1 {
@@ -44,18 +53,10 @@ fn cached_powf(value: f32, pow: &Vec<f32>) -> f32 {
     }
 }
 
-const REFERENCE_X: f32 = 95.047;
-const REFERENCE_Y: f32 = 100.0;
-const REFERENCE_Z: f32 = 108.883;
-
 impl Converter {
     pub fn rgb_image_to_lab(&self, rgb_image: &RgbImage) -> LabImage {
         let lab_pixels: Vec<LabPixel> = rgb_image.pixels.par_iter()
-            .map(|rgb_pixel: &RgbPixel| {
-                let xyz_pixel: XyzPixel = self.rgb_pixel_to_xyz(&rgb_pixel);
-                let lab_pixel: LabPixel = self.xyz_pixel_to_lab(&xyz_pixel);
-                lab_pixel
-            })
+            .map(|rgb_pixel: &RgbPixel| self.rgb_pixel_to_lab(rgb_pixel))
             .collect();
 
         LabImage {
@@ -67,19 +68,7 @@ impl Converter {
 
     pub fn lab_image_to_rgb(&self, lab_image: &LabImage) -> RgbImage {
         let rgb_pixels: Vec<RgbPixel> = lab_image.pixels.par_iter()
-            .map(|lab_pixel: &LabPixel| {
-                if lab_pixel.lightness < 0.01 {
-                    RgbPixel {
-                        red: 0.0,
-                        green: 0.0,
-                        blue: 0.0
-                    }
-                } else {
-                    let xyz_pixel: XyzPixel = self.lab_pixel_to_xyz(&lab_pixel);
-                    let rgb_pixel: RgbPixel = self.xyz_pixel_to_rgb(&xyz_pixel);
-                    rgb_pixel
-                }
-            })
+            .map(|lab_pixel: &LabPixel| self.lab_pixel_to_rgb(lab_pixel))
             .collect();
 
         RgbImage {
@@ -89,6 +78,25 @@ impl Converter {
         }
     }
 
+    fn rgb_pixel_to_lab(&self, rgb_pixel: &RgbPixel) -> LabPixel {
+        let xyz_pixel: XyzPixel = self.rgb_pixel_to_xyz(&rgb_pixel);
+        let lab_pixel: LabPixel = self.xyz_pixel_to_lab(&xyz_pixel);
+        lab_pixel
+    }
+
+    fn lab_pixel_to_rgb(&self, lab_pixel: &LabPixel) -> RgbPixel {
+        if lab_pixel.lightness < 0.01 {
+            RgbPixel {
+                red: 0.0,
+                green: 0.0,
+                blue: 0.0
+            }
+        } else {
+            let xyz_pixel: XyzPixel = self.lab_pixel_to_xyz(&lab_pixel);
+            let rgb_pixel: RgbPixel = self.xyz_pixel_to_rgb(&xyz_pixel);
+            rgb_pixel
+        }
+    }
 
     fn scale_rgb_to_xyz(&self, value: f32) -> f32 {
         if value > 0.04045 {

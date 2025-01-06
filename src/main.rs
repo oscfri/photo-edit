@@ -34,20 +34,27 @@ enum Message {
     TemperatureChanged(f32),
     ImageUpdated(iced::widget::image::Handle) // TODO: Maybe don't return a handle?
 }
-
-struct Main {
-    converter: Converter,
-    source_image: LabImage,
-    parameters: Parameters,
-    handle: iced::widget::image::Handle
-}
     
 fn update_image(converter: &Converter, mut image: LabImage, parameters: Parameters) -> iced::widget::image::Handle {
+    // NOTE: This takes ~160ms
+    let now = std::time::SystemTime::now();
     functions::contrast(&mut image, parameters.contrast);
     functions::brightness(&mut image, parameters.brightness);
     functions::tint(&mut image, parameters.tint);
     functions::temperature(&mut image, parameters.temperature);
     let rgb_image: RgbImage = converter.lab_image_to_rgb(&image);
+    match now.elapsed() {
+        Ok(elapsed) => {
+            // it prints '2'
+            println!("{}", elapsed.as_millis());
+        }
+        Err(e) => {
+            // an error occurred!
+            println!("Error: {e:?}");
+        }
+    }
+
+    // NOTE: This takes ~80ms
     iced::widget::image::Handle::from_rgba(
         rgb_image.width as u32,
         rgb_image.height as u32,
@@ -111,12 +118,25 @@ fn rgb_image_to_bytes(image: &RgbImage) -> iced::advanced::image::Bytes {
     iced::advanced::image::Bytes::from(buffer)
 }
 
+struct Main {
+    converter: Converter,
+    source_image: LabImage,
+    parameters: Parameters,
+    handle: iced::widget::image::Handle,
+
+    // For synchronization
+    updating_image: bool,
+    needs_update: bool
+}
+
 impl Main {
 
     fn new() -> Self {
         let converter: Converter = create_converter();
         let source_image: LabImage = load_image_as_lab(&converter);
         let parameters: Parameters = Parameters::default();
+        let updating_image: bool = false;
+        let needs_update: bool = false;
     
         let handle = update_image(&converter, source_image.clone(), parameters);
 
@@ -124,7 +144,9 @@ impl Main {
             converter,
             source_image,
             parameters,
-            handle
+            handle,
+            updating_image,
+            needs_update
         }
     }
     
@@ -148,13 +170,26 @@ impl Main {
             },
             Message::ImageUpdated(handle) => {
                 self.handle = handle;
-                iced::Task::none()
+                self.updating_image = false;
+                if self.needs_update {
+                    self.update_image_task()
+                } else {
+                    iced::Task::none()
+                }
             }
         }
     }
     
-    fn update_image_task(&self) -> iced::Task<Message> {
-        iced::Task::perform(update_image_async(self.converter.clone(), self.source_image.clone(), self.parameters), Message::ImageUpdated)
+    fn update_image_task(&mut self) -> iced::Task<Message> {
+        if !self.updating_image {
+            self.updating_image = true;
+            self.needs_update = false;
+            let future = update_image_async(self.converter.clone(), self.source_image.clone(), self.parameters);
+            iced::Task::perform(future, Message::ImageUpdated)
+        } else {
+            self.needs_update = true;
+            iced::Task::none()
+        }
     }
     
     fn view(&self) -> iced::Element<Message> {
