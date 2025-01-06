@@ -41,7 +41,9 @@ fn rgb_pixel_to_lab(rgb_pixel: &RgbPixel) -> LabPixel {
 }
 
 fn lab_pixel_to_rgb(lab_pixel: &LabPixel) -> RgbPixel {
-    if lab_pixel.lightness < 0.01 {
+    if lab_pixel.lightness < 0.0001 {
+        // TODO: This if statement is here to reduce artifacts that happen with dark pixels
+        // Is there a better way to handle this?
         RgbPixel {
             red: 0.0,
             green: 0.0,

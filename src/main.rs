@@ -6,7 +6,6 @@ use crate::types::*;
 
 use iced;
 use image;
-use num;
 
 use rayon::prelude::*;
 
@@ -31,36 +30,23 @@ enum Message {
     ContrastChanged(f32),
     TintChanged(f32),
     TemperatureChanged(f32),
-    ImageUpdated(iced::widget::image::Handle) // TODO: Maybe don't return a handle?
+    ImageUpdated(Vec<u8>)
 }
     
-fn update_image(mut image: LabImage, parameters: Parameters) -> iced::widget::image::Handle {
-    // NOTE: This takes ~160ms
-    let now = std::time::SystemTime::now();
+fn update_image(mut image: LabImage, parameters: Parameters) -> Vec<u8> {
+    // NOTE: This takes ~30ms
     functions::contrast(&mut image, parameters.contrast);
     functions::brightness(&mut image, parameters.brightness);
     functions::tint(&mut image, parameters.tint);
     functions::temperature(&mut image, parameters.temperature);
+    // NOTE: This takes ~70ms
     let rgb_image: RgbImage = conversions::lab_image_to_rgb(&image);
-    match now.elapsed() {
-        Ok(elapsed) => {
-            // it prints '2'
-            println!("{}", elapsed.as_millis());
-        }
-        Err(e) => {
-            // an error occurred!
-            println!("Error: {e:?}");
-        }
-    }
 
     // NOTE: This takes ~80ms
-    iced::widget::image::Handle::from_rgba(
-        rgb_image.width as u32,
-        rgb_image.height as u32,
-        rgb_image_to_bytes(&rgb_image))
+    rgb_image_to_bytes(&rgb_image)
 }
 
-async fn update_image_async(image: LabImage, parameters: Parameters) -> iced::widget::image::Handle {
+async fn update_image_async(image: LabImage, parameters: Parameters) -> Vec<u8> {
     update_image(image, parameters)
 }
     
@@ -93,10 +79,16 @@ fn load_image_as_lab() -> LabImage {
 }
 
 fn pixel_value_to_u8(value: f32) -> u8 {
-    (num::clamp(value, 0.0, 1.0) * 255.0) as u8
+    if value <= 0.0 {
+        0
+    } else if value >= 1.0 {
+        255
+    } else {
+        (value * 255.0) as u8
+    }
 }
 
-fn rgb_image_to_bytes(image: &RgbImage) -> iced::advanced::image::Bytes {
+fn rgb_image_to_bytes(image: &RgbImage) -> Vec<u8> {
     let mut buffer: Vec<u8> = vec![255; image.width * image.height * 4];
 
     buffer.par_iter_mut()
@@ -114,13 +106,13 @@ fn rgb_image_to_bytes(image: &RgbImage) -> iced::advanced::image::Bytes {
             // Don't bother with alpha, as it's 255 by default
         });
 
-    iced::advanced::image::Bytes::from(buffer)
+    buffer
 }
 
 struct Main {
     source_image: LabImage,
     parameters: Parameters,
-    handle: iced::widget::image::Handle,
+    handle: Vec<u8>,
 
     // For synchronization
     updating_image: bool,
@@ -189,8 +181,12 @@ impl Main {
     }
     
     fn view(&self) -> iced::Element<Message> {
+        let handle = iced::widget::image::Handle::from_rgba(
+            self.source_image.width as u32,
+            self.source_image.height as u32,
+            self.handle.clone());
         iced::widget::row![
-                iced::widget::image(self.handle.clone()),
+                iced::widget::image(handle),
                 self.view_sliders()
             ]
             .into()
