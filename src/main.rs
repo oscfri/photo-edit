@@ -4,7 +4,6 @@ mod functions;
 
 use crate::types::*;
 
-use conversions::{Converter, create_converter};
 use iced;
 use image;
 use num;
@@ -35,14 +34,14 @@ enum Message {
     ImageUpdated(iced::widget::image::Handle) // TODO: Maybe don't return a handle?
 }
     
-fn update_image(converter: &Converter, mut image: LabImage, parameters: Parameters) -> iced::widget::image::Handle {
+fn update_image(mut image: LabImage, parameters: Parameters) -> iced::widget::image::Handle {
     // NOTE: This takes ~160ms
     let now = std::time::SystemTime::now();
     functions::contrast(&mut image, parameters.contrast);
     functions::brightness(&mut image, parameters.brightness);
     functions::tint(&mut image, parameters.tint);
     functions::temperature(&mut image, parameters.temperature);
-    let rgb_image: RgbImage = converter.lab_image_to_rgb(&image);
+    let rgb_image: RgbImage = conversions::lab_image_to_rgb(&image);
     match now.elapsed() {
         Ok(elapsed) => {
             // it prints '2'
@@ -61,8 +60,8 @@ fn update_image(converter: &Converter, mut image: LabImage, parameters: Paramete
         rgb_image_to_bytes(&rgb_image))
 }
 
-async fn update_image_async(converter: Converter, image: LabImage, parameters: Parameters) -> iced::widget::image::Handle {
-    update_image(&converter, image, parameters)
+async fn update_image_async(image: LabImage, parameters: Parameters) -> iced::widget::image::Handle {
+    update_image(image, parameters)
 }
     
 fn load_image() -> RgbImage {
@@ -88,9 +87,9 @@ fn load_image() -> RgbImage {
     }
 }
 
-fn load_image_as_lab(converter: &Converter) -> LabImage {
+fn load_image_as_lab() -> LabImage {
     let image: RgbImage = load_image();
-    converter.rgb_image_to_lab(&image)
+    conversions::rgb_image_to_lab(&image)
 }
 
 fn pixel_value_to_u8(value: f32) -> u8 {
@@ -119,7 +118,6 @@ fn rgb_image_to_bytes(image: &RgbImage) -> iced::advanced::image::Bytes {
 }
 
 struct Main {
-    converter: Converter,
     source_image: LabImage,
     parameters: Parameters,
     handle: iced::widget::image::Handle,
@@ -132,16 +130,14 @@ struct Main {
 impl Main {
 
     fn new() -> Self {
-        let converter: Converter = create_converter();
-        let source_image: LabImage = load_image_as_lab(&converter);
+        let source_image: LabImage = load_image_as_lab();
         let parameters: Parameters = Parameters::default();
         let updating_image: bool = false;
         let needs_update: bool = false;
     
-        let handle = update_image(&converter, source_image.clone(), parameters);
+        let handle = update_image(source_image.clone(), parameters);
 
         Self {
-            converter,
             source_image,
             parameters,
             handle,
@@ -184,7 +180,7 @@ impl Main {
         if !self.updating_image {
             self.updating_image = true;
             self.needs_update = false;
-            let future = update_image_async(self.converter.clone(), self.source_image.clone(), self.parameters);
+            let future = update_image_async(self.source_image.clone(), self.parameters);
             iced::Task::perform(future, Message::ImageUpdated)
         } else {
             self.needs_update = true;
