@@ -6,6 +6,7 @@ mod types;
 use album::{load_album, Album, WorkImage};
 use iced::{self, widget::container};
 use native_dialog;
+use types::RawImage;
 use std::path::PathBuf;
 
 
@@ -25,21 +26,21 @@ enum Message {
     TintChanged(f32),
     TemperatureChanged(f32),
     SaturationChanged(f32),
-    ImageUpdated(Vec<u8>)
+    ImageUpdated(RawImage)
 }
 
 struct Main {
     album: album::Album,
     image_index: usize,
 
-    display_image: Vec<u8>,
+    display_image: RawImage,
 
     // For synchronization
     updating_image: bool,
     needs_update: bool
 }
 
-async fn update_image_async(work_image: WorkImage) -> Vec<u8> {
+async fn update_image_async(work_image: WorkImage) -> RawImage {
     work_image.apply_parameters()
 }
 
@@ -54,7 +55,7 @@ impl Main {
         let updating_image: bool = false;
         let needs_update: bool = false;
     
-        let display_image: Vec<u8> = album.images[image_index].clone().apply_parameters();
+        let display_image: RawImage = album.images[image_index].clone().apply_parameters();
 
         Self {
             album,
@@ -109,8 +110,8 @@ impl Main {
                 self.current_image_mut().parameters.saturation = saturation;
                 self.update_image_task()
             },
-            Message::ImageUpdated(handle) => {
-                self.display_image = handle;
+            Message::ImageUpdated(raw_image) => {
+                self.display_image = raw_image;
                 self.updating_image = false;
                 if self.needs_update {
                     self.update_image_task()
@@ -136,9 +137,9 @@ impl Main {
     
     fn view(&self) -> iced::Element<Message> {
         let handle = iced::widget::image::Handle::from_rgba(
-            self.current_image().source_image.width as u32,
-            self.current_image().source_image.height as u32,
-            self.display_image.clone());
+            self.display_image.width as u32,
+            self.display_image.height as u32,
+            self.display_image.pixels.clone());
         iced::widget::row![
                 iced::widget::image::viewer(handle).width(800),
                 self.view_sliders()

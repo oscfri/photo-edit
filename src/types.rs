@@ -32,3 +32,10 @@ pub struct LabImage {
     pub height: usize,
     pub pixels: Vec<LabPixel>
 }
+
+#[derive(Clone, Debug)]
+pub struct RawImage {
+    pub width: usize,
+    pub height: usize,
+    pub pixels: Vec<u8>
+}

@@ -34,7 +34,7 @@ pub fn load_album(file_paths: &Vec<PathBuf>) -> Album {
 }
 
 impl WorkImage {
-    pub fn apply_parameters(self) -> Vec<u8> {
+    pub fn apply_parameters(self) -> RawImage {
         let mut image: LabImage = self.source_image;
     
         // NOTE: This takes ~30ms
@@ -47,7 +47,12 @@ impl WorkImage {
         let rgb_image: RgbImage = conversions::lab_image_to_rgb(&image);
     
         // NOTE: This takes ~80ms
-        rgb_image_to_bytes(&rgb_image)
+        let raw_pixels: Vec<u8> = rgb_image_to_bytes(&rgb_image);
+        RawImage {
+            width: image.width,
+            height: image.height,
+            pixels: raw_pixels
+        }
     }
 }
 
