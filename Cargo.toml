@@ -13,3 +13,4 @@ image = "0.25"
 num = "0.4"
 iced = { version = "0.13", features = ["image", "advanced"] }
 rayon = "1.10"
+native-dialog = "0.7"

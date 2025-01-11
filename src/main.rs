@@ -6,6 +6,8 @@ use crate::types::*;
 
 use iced::{self, widget::container};
 use image;
+use native_dialog;
+use std::path::PathBuf;
 
 use rayon::prelude::*;
 
@@ -15,7 +17,7 @@ pub fn main() -> iced::Result {
         .resizable(true)
         .run()
 }
-    
+
 #[derive(Default, Clone, Copy)]
 struct Parameters {
     brightness: f32,
@@ -27,6 +29,7 @@ struct Parameters {
 
 #[derive(Debug, Clone)]
 enum Message {
+    LoadImage,
     BrightnessChanged(f32),
     ContrastChanged(f32),
     TintChanged(f32),
@@ -53,8 +56,8 @@ async fn update_image_async(image: LabImage, parameters: Parameters) -> Vec<u8> 
     update_image(image, parameters)
 }
     
-fn load_image() -> RgbImage {
-    let source_image = image::open("example.png").unwrap().into_rgb32f();
+fn load_image(path: &PathBuf) -> RgbImage {
+    let source_image = image::open(path).unwrap().into_rgb32f();
     let width: u32 = source_image.width();
     let height: u32 = source_image.height();
     let size = width * height;
@@ -76,8 +79,8 @@ fn load_image() -> RgbImage {
     }
 }
 
-fn load_image_as_lab() -> LabImage {
-    let image: RgbImage = load_image();
+fn load_image_as_lab(path: &PathBuf) -> LabImage {
+    let image: RgbImage = load_image(path);
     conversions::rgb_image_to_lab(&image)
 }
 
@@ -125,7 +128,7 @@ struct Main {
 impl Main {
 
     fn new() -> Self {
-        let source_image: LabImage = load_image_as_lab();
+        let source_image: LabImage = load_image_as_lab(&PathBuf::from("example.png"));
         let parameters: Parameters = Parameters::default();
         let updating_image: bool = false;
         let needs_update: bool = false;
@@ -143,6 +146,24 @@ impl Main {
     
     fn update(&mut self, message: Message) -> iced::Task<Message> {
         match message {
+            Message::LoadImage => {
+                let path: PathBuf = std::env::current_dir().unwrap();
+
+                let result = native_dialog::FileDialog::new()
+                    .set_location(&path)
+                    .add_filter("image", &["png", "jpg"])
+                    .show_open_single_file();
+
+                match result {
+                    Ok(Some(file_path)) => {
+                        self.source_image = load_image_as_lab(&file_path);
+                        self.update_image_task()
+                    },
+                    _ => {
+                        iced::Task::none()
+                    }
+                }
+            },
             Message::BrightnessChanged(brightness) => {
                 self.parameters.brightness = brightness;
                 self.update_image_task()
@@ -193,7 +214,7 @@ impl Main {
             self.source_image.height as u32,
             self.handle.clone());
         iced::widget::row![
-                iced::widget::image(handle),
+                iced::widget::image::viewer(handle).width(800),
                 self.view_sliders()
             ]
             .into()
@@ -201,6 +222,7 @@ impl Main {
     
     fn view_sliders(&self) -> iced::Element<Message> {
         let column = iced::widget::column![
+                iced::widget::button("Load").on_press(Message::LoadImage),
                 iced::widget::text("Brightness"),
                 iced::widget::slider(-100.0..=100.0, self.parameters.brightness, Message::BrightnessChanged),
                 iced::widget::text("Contrast"),
