@@ -1,6 +1,6 @@
 mod conversions;
 mod types;
-mod functions;
+mod pixelwise;
 
 use crate::types::*;
 
@@ -21,7 +21,8 @@ struct Parameters {
     brightness: f32,
     contrast: f32,
     tint: f32,
-    temperature: f32
+    temperature: f32,
+    saturation: f32
 }
 
 #[derive(Debug, Clone)]
@@ -30,15 +31,17 @@ enum Message {
     ContrastChanged(f32),
     TintChanged(f32),
     TemperatureChanged(f32),
+    SaturationChanged(f32),
     ImageUpdated(Vec<u8>)
 }
     
 fn update_image(mut image: LabImage, parameters: Parameters) -> Vec<u8> {
     // NOTE: This takes ~30ms
-    functions::contrast(&mut image, parameters.contrast);
-    functions::brightness(&mut image, parameters.brightness);
-    functions::tint(&mut image, parameters.tint);
-    functions::temperature(&mut image, parameters.temperature);
+    pixelwise::contrast(&mut image, parameters.contrast);
+    pixelwise::brightness(&mut image, parameters.brightness);
+    pixelwise::saturation(&mut image, parameters.saturation);
+    pixelwise::tint(&mut image, parameters.tint);
+    pixelwise::temperature(&mut image, parameters.temperature);
     // NOTE: This takes ~70ms
     let rgb_image: RgbImage = conversions::lab_image_to_rgb(&image);
 
@@ -156,6 +159,10 @@ impl Main {
                 self.parameters.temperature = temperature;
                 self.update_image_task()
             },
+            Message::SaturationChanged(saturation) => {
+                self.parameters.saturation = saturation;
+                self.update_image_task()
+            },
             Message::ImageUpdated(handle) => {
                 self.handle = handle;
                 self.updating_image = false;
@@ -201,7 +208,9 @@ impl Main {
                 iced::widget::text("Tint"),
                 iced::widget::slider(-100.0..=100.0, self.parameters.tint, Message::TintChanged),
                 iced::widget::text("Temperature"),
-                iced::widget::slider(-100.0..=100.0, self.parameters.temperature, Message::TemperatureChanged)
+                iced::widget::slider(-100.0..=100.0, self.parameters.temperature, Message::TemperatureChanged),
+                iced::widget::text("Saturation"),
+                iced::widget::slider(-100.0..=100.0, self.parameters.saturation, Message::SaturationChanged),
             ];
         container(column)
             .padding(10)

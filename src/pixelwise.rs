@@ -30,3 +30,12 @@ pub fn temperature(image: &mut LabImage, value: f32) {
             pixel.temperature += value;
         });
 }
+
+pub fn saturation(image: &mut LabImage, value: f32) {
+    let adjusted_value: f32 = (value + 100.0) / 100.0;
+    image.pixels.par_iter_mut()
+        .for_each(|pixel| {
+            pixel.tint = pixel.tint * adjusted_value;
+            pixel.temperature = pixel.temperature * adjusted_value;
+        });
+}
