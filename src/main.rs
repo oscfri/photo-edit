@@ -70,7 +70,7 @@ impl Main {
     }
     
     fn update(&mut self, message: Message) -> iced::Task<Message> {
-        match message {
+        let should_update_image: bool = match message {
             Message::LoadAlbum => {
                 let path: PathBuf = std::env::current_dir().unwrap();
 
@@ -82,54 +82,56 @@ impl Main {
                 match result {
                     Ok(file_paths) => {
                         self.album = load_album(&file_paths);
-                        self.update_image_task()
+                        true
                     },
                     _ => {
-                        iced::Task::none()
+                        false
                     }
                 }
             },
             Message::NextImage => {
                 self.image_index = (self.image_index + 1) % self.album.images.len();
-                self.update_image_task()
+                true
             },
             Message::SetImage(index) => {
                 if index < self.album.images.len() {
                     self.image_index = index;
-                    self.update_image_task()
+                    true
                 } else {
-                    iced::Task::none()
+                    false
                 }
             },
             Message::BrightnessChanged(brightness) => {
                 self.current_image_mut().parameters.brightness = brightness;
-                self.update_image_task()
+                true
             },
             Message::ContrastChanged(contrast) => {
                 self.current_image_mut().parameters.contrast = contrast;
-                self.update_image_task()
+                true
             },
             Message::TintChanged(tint) => {
                 self.current_image_mut().parameters.tint = tint;
-                self.update_image_task()
+                true
             },
             Message::TemperatureChanged(temperature) => {
                 self.current_image_mut().parameters.temperature = temperature;
-                self.update_image_task()
+                true
             },
             Message::SaturationChanged(saturation) => {
                 self.current_image_mut().parameters.saturation = saturation;
-                self.update_image_task()
+                true
             },
             Message::ImageUpdated(raw_image) => {
                 self.display_image = raw_image;
                 self.updating_image = false;
-                if self.needs_update {
-                    self.update_image_task()
-                } else {
-                    iced::Task::none()
-                }
+                self.needs_update
             }
+        };
+
+        if should_update_image {
+            self.update_image_task()
+        } else {
+            iced::Task::none()
         }
     }
     
