@@ -21,6 +21,7 @@ pub fn main() -> iced::Result {
 enum Message {
     LoadAlbum,
     NextImage,
+    SetImage(usize),
     BrightnessChanged(f32),
     ContrastChanged(f32),
     TintChanged(f32),
@@ -92,6 +93,14 @@ impl Main {
                 self.image_index = (self.image_index + 1) % self.album.images.len();
                 self.update_image_task()
             },
+            Message::SetImage(index) => {
+                if index < self.album.images.len() {
+                    self.image_index = index;
+                    self.update_image_task()
+                } else {
+                    iced::Task::none()
+                }
+            },
             Message::BrightnessChanged(brightness) => {
                 self.current_image_mut().parameters.brightness = brightness;
                 self.update_image_task()
@@ -142,6 +151,8 @@ impl Main {
                 self.view_image(),
                 self.view_sliders()
             ]
+            .width(iced::Fill)
+            .height(iced::Fill)
             .into()
     }
 
@@ -151,30 +162,36 @@ impl Main {
             self.display_image.height as u32,
             self.display_image.pixels.clone());
         iced::widget::column![
-                iced::widget::image::viewer(image_handle).width(800),
+                iced::widget::image::viewer(image_handle)
+                    .width(iced::Fill)
+                    .height(iced::Fill),
                 self.view_thumbnails()
             ]
             .into()
     }
 
     fn view_thumbnails(&self) -> iced::Element<Message> {
-        let thumbnails = self.album.images.iter()
-            .map(|album_image| self.view_thumbnail_image(&album_image))
+        let thumbnails = self.album.images.iter().enumerate()
+            .map(|(index, album_image)| self.view_thumbnail_image(index, &album_image))
             .collect();
 
-        let row = iced::widget::Row::from_vec(thumbnails);
+        let row = iced::widget::Row::from_vec(thumbnails)
+            .spacing(10);
 
         iced::widget::container(row)
             .padding(10)
+            .height(120)
             .into()
     }
 
-    fn view_thumbnail_image(&self, album_image: &AlbumImage) -> iced::Element<Message> {
+    fn view_thumbnail_image(&self, index: usize, album_image: &AlbumImage) -> iced::Element<Message> {
         let image_handle = iced::widget::image::Handle::from_rgba(
             album_image.thumbnail.width as u32,
             album_image.thumbnail.height as u32,
             album_image.thumbnail.pixels.clone());
-        iced::widget::image(image_handle).into()
+        iced::widget::mouse_area(iced::widget::image(image_handle))
+            .on_press(Message::SetImage(index))
+            .into()
     }
     
     fn view_sliders(&self) -> iced::Element<Message> {
@@ -195,6 +212,7 @@ impl Main {
             ];
         container(column)
             .padding(10)
+            .width(300)
             .into()
     }
 
