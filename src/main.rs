@@ -2,6 +2,7 @@ mod album;
 mod conversions;
 mod pixelwise;
 mod types;
+mod viewport;
 
 use album::{load_album, Album, AlbumImage, WorkImage};
 use iced::{self, widget::container};
@@ -41,7 +42,9 @@ struct Main {
 
     // For synchronization
     updating_image: bool,
-    needs_update: bool
+    needs_update: bool,
+
+    viewport: viewport::Viewport
 }
 
 async fn update_image_async(work_image: WorkImage) -> RawImage {
@@ -66,6 +69,7 @@ impl Main {
 
         let updating_image: bool = false;
         let needs_update: bool = false;
+        let viewport = viewport::Viewport{};
 
         Self {
             album,
@@ -73,7 +77,8 @@ impl Main {
             display_image,
             mouse_position,
             updating_image,
-            needs_update
+            needs_update,
+            viewport
         }
     }
     
@@ -257,7 +262,8 @@ impl Main {
                 iced::widget::slider(-100.0..=100.0, parameters.temperature, Message::TemperatureChanged),
                 iced::widget::text("Saturation"),
                 iced::widget::slider(-100.0..=100.0, parameters.saturation, Message::SaturationChanged),
-                iced::widget::button("Next").on_press(Message::NextImage)
+                iced::widget::button("Next").on_press(Message::NextImage),
+                iced::widget::shader(&self.viewport).width(iced::Fill).height(300)
             ];
         container(column)
             .padding(10)
