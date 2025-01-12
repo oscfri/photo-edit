@@ -7,7 +7,22 @@ use crate::pixelwise;
 use rayon::prelude::*;
 
 pub struct Album {
-    pub images: Vec<WorkImage>
+    pub images: Vec<AlbumImage>
+}
+
+pub struct AlbumImage {
+    pub source_image: LabImage,
+    pub parameters: Parameters,
+    pub thumbnail: RawImage
+}
+
+impl AlbumImage {
+    pub fn into_work_image(&self) -> WorkImage {
+        WorkImage {
+            source_image: self.source_image.clone(),
+            parameters: self.parameters.clone()
+        }
+    }
 }
 
 // TODO: Might not be a good idea to store all full images as is. Should probably only refer to a path
@@ -17,7 +32,7 @@ pub struct WorkImage {
     pub parameters: Parameters
 }
 
-#[derive(Default, Clone, Copy)]
+#[derive(Default, Clone)]
 pub struct Parameters {
     pub brightness: f32,
     pub contrast: f32,
@@ -27,7 +42,7 @@ pub struct Parameters {
 }
 
 pub fn load_album(file_paths: &Vec<PathBuf>) -> Album {
-    let images: Vec<WorkImage> = file_paths.iter().map(load_work_image).collect();
+    let images: Vec<AlbumImage> = file_paths.iter().map(load_album_image).collect();
     Album {
         images: images
     }
@@ -47,12 +62,7 @@ impl WorkImage {
         let rgb_image: RgbImage = conversions::lab_image_to_rgb(&image);
     
         // NOTE: This takes ~80ms
-        let raw_pixels: Vec<u8> = rgb_image_to_bytes(&rgb_image);
-        RawImage {
-            width: image.width,
-            height: image.height,
-            pixels: raw_pixels
-        }
+        convert_to_raw_image(&rgb_image)
     }
 }
 
@@ -66,7 +76,7 @@ fn pixel_value_to_u8(value: f32) -> u8 {
     }
 }
 
-fn rgb_image_to_bytes(image: &RgbImage) -> Vec<u8> {
+fn convert_to_raw_image(image: &RgbImage) -> RawImage {
     let mut buffer: Vec<u8> = vec![255; image.width * image.height * 4];
 
     buffer.par_iter_mut()
@@ -84,16 +94,27 @@ fn rgb_image_to_bytes(image: &RgbImage) -> Vec<u8> {
             // Don't bother with alpha, as it's 255 by default
         });
 
-    buffer
+    RawImage {
+        width: image.width,
+        height: image.height,
+        pixels: buffer
+    }
 }
 
-fn load_work_image(path: &PathBuf) -> WorkImage {
+fn load_album_image(path: &PathBuf) -> AlbumImage {
     let image: LabImage = load_image_as_lab(&path);
     let parameters: Parameters = Parameters::default();
-    WorkImage {
+    let thumbnail: RawImage = convert_to_thumbnail(&image);
+    AlbumImage {
         source_image: image,
-        parameters: parameters
+        parameters: parameters,
+        thumbnail
     }
+}
+
+fn load_image_as_lab(path: &PathBuf) -> LabImage {
+    let image: RgbImage = load_image(path);
+    conversions::rgb_image_to_lab(&image)
 }
     
 fn load_image(path: &PathBuf) -> RgbImage {
@@ -119,7 +140,30 @@ fn load_image(path: &PathBuf) -> RgbImage {
     }
 }
 
-fn load_image_as_lab(path: &PathBuf) -> LabImage {
-    let image: RgbImage = load_image(path);
-    conversions::rgb_image_to_lab(&image)
+fn convert_to_thumbnail(image: &LabImage) -> RawImage {
+    let resized_image: LabImage = resize_to_thumbnail_size(&image);
+    let rgb_image: RgbImage = conversions::lab_image_to_rgb(&resized_image);
+    convert_to_raw_image(&rgb_image)
+}
+
+fn resize_to_thumbnail_size(image: &LabImage) -> LabImage {
+    let target_size: usize = 100;
+    let width_skip: usize = std::cmp::max(1, image.width / target_size);
+    let height_skip: usize = std::cmp::max(1, image.height / target_size);
+
+    let target_width: usize = image.width / width_skip;
+    let target_height: usize = image.height / height_skip;
+    let mut pixels: Vec<LabPixel> = Vec::new();
+
+    for h in 0..target_height {
+        for w in 0..target_width {
+            pixels.push(image.pixels[(h * height_skip) * image.width + w * width_skip].clone());
+        }
+    }
+
+    LabImage {
+        width: target_width,
+        height: target_height,
+        pixels: pixels
+    }
 }

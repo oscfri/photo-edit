@@ -3,7 +3,7 @@ mod conversions;
 mod pixelwise;
 mod types;
 
-use album::{load_album, Album, WorkImage};
+use album::{load_album, Album, AlbumImage, WorkImage};
 use iced::{self, widget::container};
 use native_dialog;
 use types::RawImage;
@@ -55,7 +55,9 @@ impl Main {
         let updating_image: bool = false;
         let needs_update: bool = false;
     
-        let display_image: RawImage = album.images[image_index].clone().apply_parameters();
+        let display_image: RawImage = album.images[image_index]
+            .into_work_image()
+            .apply_parameters();
 
         Self {
             album,
@@ -126,7 +128,7 @@ impl Main {
         if !self.updating_image {
             self.updating_image = true;
             self.needs_update = false;
-            let work_image: album::WorkImage = self.current_image().clone();
+            let work_image: album::WorkImage = self.current_image().into_work_image();
             let future = update_image_async(work_image);
             iced::Task::perform(future, Message::ImageUpdated)
         } else {
@@ -136,19 +138,47 @@ impl Main {
     }
     
     fn view(&self) -> iced::Element<Message> {
-        let handle = iced::widget::image::Handle::from_rgba(
-            self.display_image.width as u32,
-            self.display_image.height as u32,
-            self.display_image.pixels.clone());
         iced::widget::row![
-                iced::widget::image::viewer(handle).width(800),
+                self.view_image(),
                 self.view_sliders()
             ]
             .into()
     }
+
+    fn view_image(&self) -> iced::Element<Message> {
+        let image_handle = iced::widget::image::Handle::from_rgba(
+            self.display_image.width as u32,
+            self.display_image.height as u32,
+            self.display_image.pixels.clone());
+        iced::widget::column![
+                iced::widget::image::viewer(image_handle).width(800),
+                self.view_thumbnails()
+            ]
+            .into()
+    }
+
+    fn view_thumbnails(&self) -> iced::Element<Message> {
+        let thumbnails = self.album.images.iter()
+            .map(|album_image| self.view_thumbnail_image(&album_image))
+            .collect();
+
+        let row = iced::widget::Row::from_vec(thumbnails);
+
+        iced::widget::container(row)
+            .padding(10)
+            .into()
+    }
+
+    fn view_thumbnail_image(&self, album_image: &AlbumImage) -> iced::Element<Message> {
+        let image_handle = iced::widget::image::Handle::from_rgba(
+            album_image.thumbnail.width as u32,
+            album_image.thumbnail.height as u32,
+            album_image.thumbnail.pixels.clone());
+        iced::widget::image(image_handle).into()
+    }
     
     fn view_sliders(&self) -> iced::Element<Message> {
-        let parameters: album::Parameters = self.current_image().parameters;
+        let parameters: &album::Parameters = &self.current_image().parameters;
         let column = iced::widget::column![
                 iced::widget::button("Load").on_press(Message::LoadAlbum),
                 iced::widget::text("Brightness"),
@@ -168,11 +198,11 @@ impl Main {
             .into()
     }
 
-    fn current_image(&self) -> &album::WorkImage {
+    fn current_image(&self) -> &album::AlbumImage {
         &self.album.images[self.image_index]
     }
 
-    fn current_image_mut(&mut self) -> &mut album::WorkImage {
+    fn current_image_mut(&mut self) -> &mut album::AlbumImage {
         &mut self.album.images[self.image_index]
     }
 }
