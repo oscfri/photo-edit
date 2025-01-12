@@ -23,6 +23,14 @@ impl AlbumImage {
             parameters: self.parameters.clone()
         }
     }
+
+    pub fn pixel_at(&self, x: usize, y: usize) -> Option<LabPixel> {
+        if x < self.source_image.width && y < self.source_image.height {
+            Some(self.source_image.pixels[y * self.source_image.width + x].clone())
+        } else {
+            None
+        }
+    }
 }
 
 // TODO: Might not be a good idea to store all full images as is. Should probably only refer to a path

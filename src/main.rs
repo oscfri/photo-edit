@@ -12,7 +12,7 @@ use std::path::PathBuf;
 
 pub fn main() -> iced::Result {
     iced::application("A cool image editor", Main::update, Main::view)
-        .theme(|_| iced::Theme::Dark)
+        .theme(|_| iced::Theme::Nord)
         .resizable(true)
         .run()
 }
@@ -27,7 +27,9 @@ enum Message {
     TintChanged(f32),
     TemperatureChanged(f32),
     SaturationChanged(f32),
-    ImageUpdated(RawImage)
+    ImageUpdated(RawImage),
+    ImageMouseOver(iced::Point<f32>),
+    ImageMousePress
 }
 
 struct Main {
@@ -35,6 +37,7 @@ struct Main {
     image_index: usize,
 
     display_image: RawImage,
+    mouse_position: iced::Point<f32>,
 
     // For synchronization
     updating_image: bool,
@@ -53,17 +56,22 @@ impl Main {
             PathBuf::from("example2.jpg")
         ]);
         let image_index: usize = 0;
-        let updating_image: bool = false;
-        let needs_update: bool = false;
-    
         let display_image: RawImage = album.images[image_index]
             .into_work_image()
             .apply_parameters();
+        let mouse_position: iced::Point<f32> = iced::Point {
+            x: 0.0,
+            y: 0.0
+        };
+
+        let updating_image: bool = false;
+        let needs_update: bool = false;
 
         Self {
             album,
             image_index,
             display_image,
+            mouse_position,
             updating_image,
             needs_update
         }
@@ -125,6 +133,27 @@ impl Main {
                 self.display_image = raw_image;
                 self.updating_image = false;
                 self.needs_update
+            },
+            Message::ImageMouseOver(point) => {
+                self.mouse_position = point;
+                false
+            },
+            Message::ImageMousePress => {
+                // TODO: This doesn't really work. Mouse position doesn't necessarily need to correspond to the
+                // pixel value. Will fix this when a custom image renderer is implemented.
+                let x: usize = self.mouse_position.x as usize;
+                let y: usize = self.mouse_position.y as usize;
+                let current_image = self.current_image_mut();
+                match current_image.pixel_at(x, y) {
+                    Some(pixel) => {
+                        current_image.parameters.tint = -pixel.tint;
+                        current_image.parameters.temperature = -pixel.temperature;
+                        true
+                    },
+                    None => {
+                        false
+                    }
+                }
             }
         };
 
@@ -159,16 +188,34 @@ impl Main {
     }
 
     fn view_image(&self) -> iced::Element<Message> {
+        iced::widget::column![
+                self.view_image_area(),
+                self.view_debugger(),
+                self.view_thumbnails()
+            ]
+            .into()
+    }
+
+    fn view_image_area(&self) -> iced::Element<Message> {
         let image_handle = iced::widget::image::Handle::from_rgba(
             self.display_image.width as u32,
             self.display_image.height as u32,
             self.display_image.pixels.clone());
-        iced::widget::column![
-                iced::widget::image::viewer(image_handle)
-                    .width(iced::Fill)
-                    .height(iced::Fill),
-                self.view_thumbnails()
-            ]
+        let image_area = iced::widget::image::viewer(image_handle);
+        let image_mouse_area = iced::widget::mouse_area(image_area)
+            .on_move(Message::ImageMouseOver)
+            .on_right_press(Message::ImageMousePress);
+        iced::widget::container(image_mouse_area)
+            .width(iced::Fill)
+            .height(iced::Fill)
+            .center(iced::Fill)
+            .into()
+    }
+
+    fn view_debugger(&self) -> iced::Element<Message> {
+        iced::widget::container(iced::widget::text(format!("{}", self.mouse_position)))
+            .style(iced::widget::container::dark)
+            .width(iced::Fill)
             .into()
     }
 
@@ -210,11 +257,13 @@ impl Main {
                 iced::widget::slider(-100.0..=100.0, parameters.temperature, Message::TemperatureChanged),
                 iced::widget::text("Saturation"),
                 iced::widget::slider(-100.0..=100.0, parameters.saturation, Message::SaturationChanged),
-                iced::widget::button("Next").on_press(Message::NextImage),
+                iced::widget::button("Next").on_press(Message::NextImage)
             ];
         container(column)
             .padding(10)
             .width(300)
+            .height(iced::Fill)
+            .style(iced::widget::container::bordered_box)
             .into()
     }
 
