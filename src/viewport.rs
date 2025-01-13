@@ -3,9 +3,12 @@ use iced;
 use iced::mouse;
 use iced::widget::shader;
 use iced::widget::shader::wgpu;
-use iced::widget::shader::wgpu::util::DeviceExt;
 
 pub struct Viewport {
+    // TODO: Probably should put nice things here
+    // - Window size
+    // - Parameters
+    // - Image
 }
 
 impl<Message> shader::Program<Message> for Viewport {
@@ -13,12 +16,17 @@ impl<Message> shader::Program<Message> for Viewport {
     type Primitive = Primitive;
 
     fn draw(&self, _state: &Self::State, _cursor: mouse::Cursor, bounds: iced::Rectangle) -> Self::Primitive {
-        Primitive{}
+        let uniforms = Uniforms::new(bounds);
+        Primitive {
+            uniforms: uniforms
+        }
     }
 }
 
 #[derive(Debug)]
-pub struct Primitive {}
+pub struct Primitive {
+    uniforms: Uniforms
+}
 
 impl shader::Primitive for Primitive {
     fn prepare(
@@ -28,10 +36,14 @@ impl shader::Primitive for Primitive {
             format: wgpu::TextureFormat,
             storage: &mut shader::Storage,
             _bounds: &iced::Rectangle,
-            viewport: &shader::Viewport) {
+            _viewport: &shader::Viewport) {
         if !storage.has::<Pipeline>() {
             storage.store(Pipeline::new(&device, format))
         }
+
+        let pipeline = storage.get_mut::<Pipeline>().unwrap();
+
+        pipeline.update(queue, &self.uniforms);
     }
 
     fn render(
@@ -50,50 +62,63 @@ impl shader::Primitive for Primitive {
 
 pub struct Pipeline {
     pipeline: wgpu::RenderPipeline,
-    vertices: wgpu::Buffer,
+    uniforms: wgpu::Buffer,
+    uniform_bind_group: wgpu::BindGroup,
 }
 
 impl Pipeline {
     fn new(
             device: &wgpu::Device,
             format: wgpu::TextureFormat) -> Pipeline {
-        let vertices = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-            label: Some("Vertex buffer"),
-            contents: bytemuck::cast_slice(&[
-                Vertex {
-                    pos: glam::vec3(-0.5, -0.5, -1.0),
-                    uv: glam::vec2(0.0, 0.0)
-                },
-                Vertex {
-                    pos: glam::vec3(0.5, -0.5, -1.0),
-                    uv: glam::vec2(1.0, 0.0)
-                },
-                Vertex {
-                    pos: glam::vec3(0.5, 0.5, -1.0),
-                    uv: glam::vec2(1.0, 1.0)
-                },
-                Vertex {
-                    pos: glam::vec3(-0.5, 0.5, -1.0),
-                    uv: glam::vec2(0.0, 1.0)
-                },
-            ]),
-            usage: wgpu::BufferUsages::VERTEX,
+        let uniforms = device.create_buffer(&wgpu::BufferDescriptor {
+            label: Some("The uniform buffer"),
+            size: std::mem::size_of::<Uniforms>() as u64,
+            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+            mapped_at_creation: false,
         });
 
-        let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
-            label: Some("The shader"),
-            source: wgpu::ShaderSource::Wgsl(std::borrow::Cow::Borrowed(
-                include_str!("shaders/image.wgsl"),
-            )),
+        let uniform_bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+            label: Some("The uniform bind group layout"),
+            entries: &[
+                wgpu::BindGroupLayoutEntry {
+                    binding: 0,
+                    visibility: wgpu::ShaderStages::VERTEX_FRAGMENT,
+                    ty: wgpu::BindingType::Buffer {
+                        ty: wgpu::BufferBindingType::Uniform,
+                        has_dynamic_offset: false,
+                        min_binding_size: None,
+                    },
+                    count: None,
+                }
+            ],
+        });
+
+        let uniform_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
+            label: Some("The uniform bind group"),
+            layout: &uniform_bind_group_layout,
+            entries: &[
+                wgpu::BindGroupEntry {
+                    binding: 0,
+                    resource: uniforms.as_entire_binding(),
+                },
+            ],
+        });
+
+        let shader = device.create_shader_module(wgpu::include_wgsl!("shaders/image.wgsl"));
+
+        let render_pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+            label: Some("Render Pipeline Layout"),
+            bind_group_layouts: &[&uniform_bind_group_layout],
+            push_constant_ranges: &[],
         });
 
         let pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
             label: Some("The pipeline"),
-            layout: None,
+            layout: Some(&render_pipeline_layout),
             vertex: wgpu::VertexState {
                 module: &shader,
                 entry_point: "vs_main",
-                buffers: &[Vertex::desc()]
+                buffers: &[],
             },
             primitive: wgpu::PrimitiveState::default(),
             depth_stencil: None,
@@ -107,18 +132,7 @@ impl Pipeline {
                 entry_point: "fs_main",
                 targets: &[Some(wgpu::ColorTargetState {
                     format,
-                    blend: Some(wgpu::BlendState {
-                        color: wgpu::BlendComponent {
-                            src_factor: wgpu::BlendFactor::SrcAlpha,
-                            dst_factor: wgpu::BlendFactor::OneMinusSrcAlpha,
-                            operation: wgpu::BlendOperation::Add,
-                        },
-                        alpha: wgpu::BlendComponent {
-                            src_factor: wgpu::BlendFactor::One,
-                            dst_factor: wgpu::BlendFactor::One,
-                            operation: wgpu::BlendOperation::Max,
-                        },
-                    }),
+                    blend: Some(wgpu::BlendState::REPLACE),
                     write_mask: wgpu::ColorWrites::ALL,
                 })],
             }),
@@ -127,8 +141,17 @@ impl Pipeline {
         
         Self {
             pipeline,
-            vertices
+            uniforms,
+            uniform_bind_group
         }
+    }
+
+    fn update(
+            &self,
+            queue: &wgpu::Queue,
+            uniforms: &Uniforms) {
+
+        queue.write_buffer(&self.uniforms, 0, bytemuck::bytes_of(uniforms));
     }
 
     fn render(
@@ -159,31 +182,22 @@ impl Pipeline {
             viewport.height,
         );
         pass.set_pipeline(&self.pipeline);
-        pass.set_vertex_buffer(0, self.vertices.slice(..));
-        pass.draw(0..4, 0..1);
+        pass.set_bind_group(0, &self.uniform_bind_group, &[]);
+        // pass.set_vertex_buffer(0, self.vertices.slice(..));
+        pass.draw(0..3, 0..1);
     }
 }
 
-#[derive(Debug, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
+#[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
 #[repr(C)]
-pub struct Vertex {
-    pub pos: glam::Vec3,
-    pub uv: glam::Vec2
+pub struct Uniforms {
+    camera_pos: glam::Vec4,
 }
 
-impl Vertex {
-    const ATTRIBS: [wgpu::VertexAttribute; 2] = wgpu::vertex_attr_array![
-        //position
-        0 => Float32x3,
-        //uv
-        1 => Float32x2,
-    ];
-
-    pub fn desc<'a>() -> wgpu::VertexBufferLayout<'a> {
-        wgpu::VertexBufferLayout {
-            array_stride: std::mem::size_of::<Self>() as wgpu::BufferAddress,
-            step_mode: wgpu::VertexStepMode::Vertex,
-            attributes: &Self::ATTRIBS,
+impl Uniforms {
+    pub fn new(bounds: iced::Rectangle) -> Self {
+        Self {
+            camera_pos: glam::vec4(bounds.x, bounds.y, bounds.width, bounds.height),
         }
     }
 }
