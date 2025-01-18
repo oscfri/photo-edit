@@ -4,6 +4,8 @@ use iced::mouse;
 use iced::widget::shader;
 use iced::widget::shader::wgpu;
 
+use wgpu::util::DeviceExt;
+
 pub struct Viewport {
     // TODO: Probably should put nice things here
     // - Window size
@@ -62,6 +64,7 @@ impl shader::Primitive for Primitive {
 
 pub struct Pipeline {
     pipeline: wgpu::RenderPipeline,
+    vertices: wgpu::Buffer,
     uniforms: wgpu::Buffer,
     uniform_bind_group: wgpu::BindGroup,
 }
@@ -69,7 +72,13 @@ pub struct Pipeline {
 impl Pipeline {
     fn new(
             device: &wgpu::Device,
-            format: wgpu::TextureFormat) -> Pipeline {
+            format: wgpu::TextureFormat) -> Self {
+        let vertices = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                label: Some("Vertex buffer"),
+                contents: bytemuck::cast_slice(&vertices()),
+                usage: wgpu::BufferUsages::VERTEX,
+            });
+
         let uniforms = device.create_buffer(&wgpu::BufferDescriptor {
             label: Some("The uniform buffer"),
             size: std::mem::size_of::<Uniforms>() as u64,
@@ -118,7 +127,7 @@ impl Pipeline {
             vertex: wgpu::VertexState {
                 module: &shader,
                 entry_point: "vs_main",
-                buffers: &[],
+                buffers: &[Vertex::desc()],
             },
             primitive: wgpu::PrimitiveState::default(),
             depth_stencil: None,
@@ -141,6 +150,7 @@ impl Pipeline {
         
         Self {
             pipeline,
+            vertices,
             uniforms,
             uniform_bind_group
         }
@@ -183,8 +193,8 @@ impl Pipeline {
         );
         pass.set_pipeline(&self.pipeline);
         pass.set_bind_group(0, &self.uniform_bind_group, &[]);
-        // pass.set_vertex_buffer(0, self.vertices.slice(..));
-        pass.draw(0..3, 0..1);
+        pass.set_vertex_buffer(0, self.vertices.slice(..));
+        pass.draw(0..6, 0..1);
     }
 }
 
@@ -198,6 +208,59 @@ impl Uniforms {
     pub fn new(bounds: iced::Rectangle) -> Self {
         Self {
             camera_pos: glam::vec4(bounds.x, bounds.y, bounds.width, bounds.height),
+        }
+    }
+}
+
+fn vertices() -> [Vertex; 6] {
+    [
+        Vertex {
+            position: glam::vec2(-0.5, -0.5),
+            uv: glam::vec2(0.0, 0.0)
+        },
+        Vertex {
+            position: glam::vec2(0.5, -0.5),
+            uv: glam::vec2(1.0, 0.0)
+        },
+        Vertex {
+            position: glam::vec2(0.5, 0.5),
+            uv: glam::vec2(1.0, 1.0)
+        },
+        Vertex {
+            position: glam::vec2(0.5, 0.5),
+            uv: glam::vec2(1.0, 1.0)
+        },
+        Vertex {
+            position: glam::vec2(-0.5, 0.5),
+            uv: glam::vec2(0.0, 1.0)
+        },
+        Vertex {
+            position: glam::vec2(-0.5, -0.5),
+            uv: glam::vec2(0.0, 0.0)
+        },
+    ]
+}
+
+#[derive(Debug, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
+#[repr(C)]
+struct Vertex {
+    position: glam::Vec2,
+    uv: glam::Vec2
+}
+
+impl Vertex {
+    const ATTRIBS: [wgpu::VertexAttribute; 2] = wgpu::vertex_attr_array![
+        //position
+        0 => Float32x3,
+        //uv
+        1 => Float32x2,
+    ];
+
+    pub fn desc<'a>() -> wgpu::VertexBufferLayout<'a> {
+        wgpu::VertexBufferLayout {
+            array_stride: std::mem::size_of::<Self>() as wgpu::BufferAddress,
+            step_mode: wgpu::VertexStepMode::Vertex,
+            attributes: &Self::ATTRIBS,
         }
     }
 }
