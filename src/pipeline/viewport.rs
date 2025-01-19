@@ -7,7 +7,9 @@ use iced::widget::shader;
 pub struct Viewport {
     // TODO: Probably should put nice things here
     // - Parameters
-    pub image: RawImage
+    // TODO: These shouldn't be pub
+    pub image: RawImage,
+    pub image_index: usize,
 }
 
 impl<Message> shader::Program<Message> for Viewport {
@@ -15,6 +17,6 @@ impl<Message> shader::Program<Message> for Viewport {
     type Primitive = primitive::Primitive;
 
     fn draw(&self, _state: &Self::State, _cursor: mouse::Cursor, _bounds: iced::Rectangle) -> Self::Primitive {
-        primitive::Primitive::new(self.image.clone())
+        primitive::Primitive::new(self.image.clone(), self.image_index)
     }
 }

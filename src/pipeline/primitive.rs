@@ -9,13 +9,28 @@ use wgpu::util::DeviceExt;
 
 #[derive(Debug)]
 pub struct Primitive {
-    image: RawImage
+    image: RawImage,
+    image_index: usize,
+}
+
+struct ImageIndex {
+    index: usize
 }
 
 impl Primitive {
-    pub fn new(image: RawImage) -> Self {
+    pub fn new(image: RawImage, image_index: usize) -> Self {
         Self {
-            image: image
+            image: image,
+            image_index: image_index,
+        }
+    }
+
+    fn needs_update(&self, storage: &shader::Storage) -> bool {
+        if storage.has::<ImageIndex>() {
+            let image_index: &ImageIndex = storage.get::<ImageIndex>().unwrap();
+            image_index.index != self.image_index
+        } else {
+            !storage.has::<pipeline::Pipeline>()
         }
     }
 }
@@ -29,8 +44,9 @@ impl shader::Primitive for Primitive {
             storage: &mut shader::Storage,
             bounds: &iced::Rectangle,
             viewport: &shader::Viewport) {
-        if !storage.has::<pipeline::Pipeline>() {
-            storage.store(self.create_pipeline(device, format))
+        if self.needs_update(&storage) {
+            storage.store(self.create_pipeline(device, format));
+            storage.store(ImageIndex { index: self.image_index });
         }
 
         let pipeline = storage.get_mut::<pipeline::Pipeline>().unwrap();

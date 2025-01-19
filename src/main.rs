@@ -70,7 +70,8 @@ impl Main {
         let updating_image: bool = false;
         let needs_update: bool = false;
         let viewport = pipeline::viewport::Viewport {
-            image: display_image.clone()
+            image: display_image.clone(),
+            image_index: image_index
         };
 
         Self {
@@ -138,6 +139,7 @@ impl Main {
             },
             Message::ImageUpdated(raw_image) => {
                 self.viewport.image = raw_image.clone();
+                self.viewport.image_index = self.image_index;
                 self.display_image = raw_image;
                 self.updating_image = false;
                 self.needs_update
@@ -205,19 +207,14 @@ impl Main {
     }
 
     fn view_image_area(&self) -> iced::Element<Message> {
-        let image_handle = iced::widget::image::Handle::from_rgba(
-            self.display_image.width as u32,
-            self.display_image.height as u32,
-            self.display_image.pixels.clone());
-        let image_area = iced::widget::image::viewer(image_handle);
+        let image_area = iced::widget::shader(&self.viewport)
+            .width(iced::Fill)
+            .height(iced::Fill);
         let image_mouse_area = iced::widget::mouse_area(image_area)
             .on_move(Message::ImageMouseOver)
             .on_right_press(Message::ImageMousePress);
-        iced::widget::container(image_mouse_area)
-            .width(iced::Fill)
-            .height(iced::Fill)
-            .center(iced::Fill)
-            .into()
+        image_mouse_area.into()
+        // iced::widget::container(image_mouse_area).into()
     }
 
     fn view_debugger(&self) -> iced::Element<Message> {
@@ -266,7 +263,6 @@ impl Main {
                 iced::widget::text("Saturation"),
                 iced::widget::slider(-100.0..=100.0, parameters.saturation, Message::SaturationChanged),
                 iced::widget::button("Next").on_press(Message::NextImage),
-                iced::widget::shader(&self.viewport).width(iced::Fill).height(500)
             ];
         container(column)
             .padding(10)
