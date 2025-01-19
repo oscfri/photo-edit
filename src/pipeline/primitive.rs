@@ -1,35 +1,23 @@
-use glam;
-use iced;
-use iced::advanced::layout;
-use iced::mouse;
+use crate::types::RawImage;
+use crate::pipeline::pipeline;
+use crate::pipeline::vertex;
+use crate::pipeline::uniform;
+
 use iced::widget::shader;
 use iced::widget::shader::wgpu;
-
 use wgpu::util::DeviceExt;
-
-use crate::types::RawImage;
-
-pub struct Viewport {
-    // TODO: Probably should put nice things here
-    // - Parameters
-    // - Image
-    pub image: RawImage
-}
-
-impl<Message> shader::Program<Message> for Viewport {
-    type State = ();
-    type Primitive = Primitive;
-
-    fn draw(&self, _state: &Self::State, _cursor: mouse::Cursor, _bounds: iced::Rectangle) -> Self::Primitive {
-        Primitive {
-            image: self.image.clone()
-        }
-    }
-}
 
 #[derive(Debug)]
 pub struct Primitive {
     image: RawImage
+}
+
+impl Primitive {
+    pub fn new(image: RawImage) -> Self {
+        Self {
+            image: image
+        }
+    }
 }
 
 impl shader::Primitive for Primitive {
@@ -41,13 +29,13 @@ impl shader::Primitive for Primitive {
             storage: &mut shader::Storage,
             bounds: &iced::Rectangle,
             viewport: &shader::Viewport) {
-        if !storage.has::<Pipeline>() {
-            storage.store(Pipeline::new(&self, &device, format))
+        if !storage.has::<pipeline::Pipeline>() {
+            storage.store(self.create_pipeline(device, format))
         }
 
-        let pipeline = storage.get_mut::<Pipeline>().unwrap();
+        let pipeline = storage.get_mut::<pipeline::Pipeline>().unwrap();
 
-        pipeline.update(&self, queue, &bounds, &viewport);
+        pipeline.update(queue, &self.image, &uniform::Uniform::new(&bounds, &viewport));
     }
 
     fn render(
@@ -56,7 +44,7 @@ impl shader::Primitive for Primitive {
             storage: &shader::Storage,
             target: &wgpu::TextureView,
             clip_bounds: &iced::Rectangle<u32>) {
-        let pipeline = storage.get::<Pipeline>().unwrap();
+        let pipeline = storage.get::<pipeline::Pipeline>().unwrap();
         pipeline.render(
             encoder,
             target,
@@ -64,30 +52,17 @@ impl shader::Primitive for Primitive {
     }
 }
 
-pub struct Pipeline {
-    pipeline: wgpu::RenderPipeline,
-    vertices: wgpu::Buffer,
-    uniforms: wgpu::Buffer,
-    uniform_bind_group: wgpu::BindGroup,
-    texture_size: wgpu::Extent3d,
-    diffuse_texture: wgpu::Texture,
-    diffuse_bind_group: wgpu::BindGroup
-}
-
-impl Pipeline {
-    fn new(
-            primitive: &Primitive,
-            device: &wgpu::Device,
-            format: wgpu::TextureFormat) -> Self {
+impl Primitive {
+    fn create_pipeline(&self, device: &wgpu::Device, format: wgpu::TextureFormat) -> pipeline::Pipeline {
         let vertices = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
                 label: Some("Vertex buffer"),
-                contents: bytemuck::cast_slice(&vertices()),
+                contents: bytemuck::cast_slice(&vertex::vertices_square()),
                 usage: wgpu::BufferUsages::VERTEX,
             });
         
         let texture_size = wgpu::Extent3d {
-            width: primitive.image.width as u32,
-            height: primitive.image.height as u32,
+            width: self.image.width as u32,
+            height: self.image.height as u32,
             depth_or_array_layers: 1
         };
         let diffuse_texture = device.create_texture(
@@ -116,7 +91,7 @@ impl Pipeline {
 
         let uniforms = device.create_buffer(&wgpu::BufferDescriptor {
             label: Some("The uniform buffer"),
-            size: std::mem::size_of::<Uniforms>() as u64,
+            size: std::mem::size_of::<uniform::Uniform>() as u64,
             usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
             mapped_at_creation: false,
         });
@@ -202,7 +177,7 @@ impl Pipeline {
             vertex: wgpu::VertexState {
                 module: &shader,
                 entry_point: "vs_main",
-                buffers: &[Vertex::desc()],
+                buffers: &[vertex::Vertex::desc()],
             },
             primitive: wgpu::PrimitiveState::default(),
             depth_stencil: None,
@@ -223,143 +198,13 @@ impl Pipeline {
             multiview: None,
         });
         
-        Self {
+        pipeline::Pipeline::new(
             pipeline,
             vertices,
             uniforms,
             uniform_bind_group,
-            texture_size,
             diffuse_texture,
             diffuse_bind_group
-        }
-    }
-
-    fn update(
-            &self,
-            primitive: &Primitive,
-            queue: &wgpu::Queue,
-            bounds: &iced::Rectangle,
-            viewport: &shader::Viewport) {
-        queue.write_buffer(&self.uniforms, 0, bytemuck::bytes_of(&Uniforms::new(bounds, viewport)));
-        queue.write_texture(
-            wgpu::ImageCopyTexture {
-                texture: &self.diffuse_texture,
-                mip_level: 0,
-                origin: wgpu::Origin3d::ZERO,
-                aspect: wgpu::TextureAspect::All,
-            },
-            &primitive.image.pixels,
-            wgpu::ImageDataLayout {
-                offset: 0,
-                bytes_per_row: Some(4 * primitive.image.width as u32),
-                rows_per_image: Some(primitive.image.height as u32)
-            },
-            self.texture_size
-        );
-    }
-
-    fn render(
-            &self,
-            encoder: &mut wgpu::CommandEncoder,
-            target: &wgpu::TextureView,
-            viewport: iced::Rectangle<u32>) {
-        let mut pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-            label: Some("viewport"),
-            color_attachments: &[Some(
-                wgpu::RenderPassColorAttachment {
-                    view: target,
-                    resolve_target: None,
-                    ops: wgpu::Operations {
-                        load: wgpu::LoadOp::Load,
-                        store: wgpu::StoreOp::Store,
-                    }
-                }
-            )],
-            depth_stencil_attachment: None,
-            timestamp_writes: None,
-            occlusion_query_set: None
-        });
-        pass.set_scissor_rect(viewport.x, viewport.y, viewport.width, viewport.height);
-        pass.set_pipeline(&self.pipeline);
-        pass.set_bind_group(0, &self.uniform_bind_group, &[]);
-        pass.set_bind_group(1, &self.diffuse_bind_group, &[]);
-        pass.set_vertex_buffer(0, self.vertices.slice(..));
-        pass.draw(0..6, 0..1);
-    }
-}
-
-#[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
-#[repr(C)]
-pub struct Uniforms {
-    camera_position: glam::Vec2,
-    camera_size: glam::Vec2,
-}
-
-impl Uniforms {
-    pub fn new(bounds: &iced::Rectangle, viewport: &shader::Viewport) -> Self {
-        let bottom_y = bounds.y * 2.0 + bounds.height;
-        Self {
-            camera_position: glam::vec2(
-                bounds.x / (viewport.physical_width() as f32),
-                1.0 - bottom_y / (viewport.physical_height() as f32)
-            ),
-            camera_size: glam::vec2(        
-                bounds.width / (viewport.physical_width() as f32),
-                bounds.height / (viewport.physical_height() as f32)
-            )
-        }
-    }
-}
-
-fn vertices() -> [Vertex; 6] {
-    [
-        Vertex {
-            position: glam::vec2(-1.0, -1.0),
-            uv: glam::vec2(0.0, 1.0)
-        },
-        Vertex {
-            position: glam::vec2(1.0, -1.0),
-            uv: glam::vec2(1.0, 1.0)
-        },
-        Vertex {
-            position: glam::vec2(1.0, 1.0),
-            uv: glam::vec2(1.0, 0.0)
-        },
-        Vertex {
-            position: glam::vec2(1.0, 1.0),
-            uv: glam::vec2(1.0, 0.0)
-        },
-        Vertex {
-            position: glam::vec2(-1.0, 1.0),
-            uv: glam::vec2(0.0, 0.0)
-        },
-        Vertex {
-            position: glam::vec2(-1.0, -1.0),
-            uv: glam::vec2(0.0, 1.0)
-        },
-    ]
-}
-
-#[derive(Debug, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
-#[repr(C)]
-struct Vertex {
-    position: glam::Vec2,
-    uv: glam::Vec2
-}
-
-impl Vertex {
-    const ATTRIBS: [wgpu::VertexAttribute; 2] = wgpu::vertex_attr_array![
-        //position
-        0 => Float32x2,
-        //uv
-        1 => Float32x2,
-    ];
-
-    pub fn desc<'a>() -> wgpu::VertexBufferLayout<'a> {
-        wgpu::VertexBufferLayout {
-            array_stride: std::mem::size_of::<Self>() as wgpu::BufferAddress,
-            step_mode: wgpu::VertexStepMode::Vertex,
-            attributes: &Self::ATTRIBS,
-        }
+        )
     }
 }

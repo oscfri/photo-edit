@@ -2,7 +2,7 @@ mod album;
 mod conversions;
 mod pixelwise;
 mod types;
-mod viewport;
+mod pipeline;
 
 use album::{load_album, Album, AlbumImage, WorkImage};
 use iced::{self, widget::container};
@@ -44,7 +44,7 @@ struct Main {
     updating_image: bool,
     needs_update: bool,
 
-    viewport: viewport::Viewport
+    viewport: pipeline::viewport::Viewport
 }
 
 async fn update_image_async(work_image: WorkImage) -> RawImage {
@@ -69,7 +69,7 @@ impl Main {
 
         let updating_image: bool = false;
         let needs_update: bool = false;
-        let viewport = viewport::Viewport {
+        let viewport = pipeline::viewport::Viewport {
             image: display_image.clone()
         };
 
@@ -137,6 +137,7 @@ impl Main {
                 true
             },
             Message::ImageUpdated(raw_image) => {
+                self.viewport.image = raw_image.clone();
                 self.display_image = raw_image;
                 self.updating_image = false;
                 self.needs_update
