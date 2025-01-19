@@ -69,7 +69,7 @@ impl Main {
 
         let updating_image: bool = false;
         let needs_update: bool = false;
-        let viewport = viewport::Viewport{};
+        let viewport = viewport::Viewport {};
 
         Self {
             album,
@@ -263,7 +263,7 @@ impl Main {
                 iced::widget::text("Saturation"),
                 iced::widget::slider(-100.0..=100.0, parameters.saturation, Message::SaturationChanged),
                 iced::widget::button("Next").on_press(Message::NextImage),
-                iced::widget::shader(&self.viewport).width(iced::Fill).height(300)
+                iced::widget::shader(&self.viewport).width(iced::Fill).height(500)
             ];
         container(column)
             .padding(10)

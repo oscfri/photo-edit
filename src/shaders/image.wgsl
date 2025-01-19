@@ -1,5 +1,6 @@
 struct CameraUniform {
-    pos: vec4<f32>
+    position: vec2<f32>,
+    size: vec2<f32>
 };
 @group(0) @binding(0)
 var<uniform> camera: CameraUniform;
@@ -18,12 +19,9 @@ struct VertexOutput {
 };
 
 @vertex
-fn vs_main(
-    @builtin(vertex_index) in_vertex_index: u32,
-    vertex: Vertex
-) -> VertexOutput {
+fn vs_main(vertex: Vertex) -> VertexOutput {
     var out: VertexOutput;
-    out.clip_position = vec4<f32>(vertex.position, 0.0, 1.0);
+    out.clip_position = vec4<f32>(vertex.position * camera.size + camera.position, 0.0, 1.0);
     return out;
 }
 

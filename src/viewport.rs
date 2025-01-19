@@ -8,7 +8,6 @@ use wgpu::util::DeviceExt;
 
 pub struct Viewport {
     // TODO: Probably should put nice things here
-    // - Window size
     // - Parameters
     // - Image
 }
@@ -17,17 +16,14 @@ impl<Message> shader::Program<Message> for Viewport {
     type State = ();
     type Primitive = Primitive;
 
-    fn draw(&self, _state: &Self::State, _cursor: mouse::Cursor, bounds: iced::Rectangle) -> Self::Primitive {
-        let uniforms = Uniforms::new(bounds);
+    fn draw(&self, _state: &Self::State, _cursor: mouse::Cursor, _bounds: iced::Rectangle) -> Self::Primitive {
         Primitive {
-            uniforms: uniforms
         }
     }
 }
 
 #[derive(Debug)]
 pub struct Primitive {
-    uniforms: Uniforms
 }
 
 impl shader::Primitive for Primitive {
@@ -37,15 +33,15 @@ impl shader::Primitive for Primitive {
             queue: &wgpu::Queue,
             format: wgpu::TextureFormat,
             storage: &mut shader::Storage,
-            _bounds: &iced::Rectangle,
-            _viewport: &shader::Viewport) {
+            bounds: &iced::Rectangle,
+            viewport: &shader::Viewport) {
         if !storage.has::<Pipeline>() {
             storage.store(Pipeline::new(&device, format))
         }
 
         let pipeline = storage.get_mut::<Pipeline>().unwrap();
 
-        pipeline.update(queue, &self.uniforms);
+        pipeline.update(queue, &bounds, &viewport);
     }
 
     fn render(
@@ -159,9 +155,9 @@ impl Pipeline {
     fn update(
             &self,
             queue: &wgpu::Queue,
-            uniforms: &Uniforms) {
-
-        queue.write_buffer(&self.uniforms, 0, bytemuck::bytes_of(uniforms));
+            bounds: &iced::Rectangle,
+            viewport: &shader::Viewport) {
+        queue.write_buffer(&self.uniforms, 0, bytemuck::bytes_of(&Uniforms::new(bounds, viewport)));
     }
 
     fn render(
@@ -185,12 +181,7 @@ impl Pipeline {
             timestamp_writes: None,
             occlusion_query_set: None
         });
-        pass.set_scissor_rect(
-            viewport.x,
-            viewport.y,
-            viewport.width,
-            viewport.height,
-        );
+        pass.set_scissor_rect(viewport.x, viewport.y, viewport.width, viewport.height);
         pass.set_pipeline(&self.pipeline);
         pass.set_bind_group(0, &self.uniform_bind_group, &[]);
         pass.set_vertex_buffer(0, self.vertices.slice(..));
@@ -201,13 +192,22 @@ impl Pipeline {
 #[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
 #[repr(C)]
 pub struct Uniforms {
-    camera_pos: glam::Vec4,
+    camera_position: glam::Vec2,
+    camera_size: glam::Vec2,
 }
 
 impl Uniforms {
-    pub fn new(bounds: iced::Rectangle) -> Self {
+    pub fn new(bounds: &iced::Rectangle, viewport: &shader::Viewport) -> Self {
+        let bottom_y = bounds.y * 2.0 + bounds.height;
         Self {
-            camera_pos: glam::vec4(bounds.x, bounds.y, bounds.width, bounds.height),
+            camera_position: glam::vec2(
+                bounds.x / (viewport.physical_width() as f32),
+                1.0 - bottom_y / (viewport.physical_height() as f32)
+            ),
+            camera_size: glam::vec2(        
+                bounds.width / (viewport.physical_width() as f32),
+                bounds.height / (viewport.physical_height() as f32)
+            )
         }
     }
 }
@@ -215,27 +215,27 @@ impl Uniforms {
 fn vertices() -> [Vertex; 6] {
     [
         Vertex {
-            position: glam::vec2(-0.5, -0.5),
+            position: glam::vec2(-1.0, -1.0),
             uv: glam::vec2(0.0, 0.0)
         },
         Vertex {
-            position: glam::vec2(0.5, -0.5),
+            position: glam::vec2(1.0, -1.0),
             uv: glam::vec2(1.0, 0.0)
         },
         Vertex {
-            position: glam::vec2(0.5, 0.5),
+            position: glam::vec2(1.0, 1.0),
             uv: glam::vec2(1.0, 1.0)
         },
         Vertex {
-            position: glam::vec2(0.5, 0.5),
+            position: glam::vec2(1.0, 1.0),
             uv: glam::vec2(1.0, 1.0)
         },
         Vertex {
-            position: glam::vec2(-0.5, 0.5),
+            position: glam::vec2(-1.0, 1.0),
             uv: glam::vec2(0.0, 1.0)
         },
         Vertex {
-            position: glam::vec2(-0.5, -0.5),
+            position: glam::vec2(-1.0, -1.0),
             uv: glam::vec2(0.0, 0.0)
         },
     ]
@@ -251,7 +251,7 @@ struct Vertex {
 impl Vertex {
     const ATTRIBS: [wgpu::VertexAttribute; 2] = wgpu::vertex_attr_array![
         //position
-        0 => Float32x3,
+        0 => Float32x2,
         //uv
         1 => Float32x2,
     ];
