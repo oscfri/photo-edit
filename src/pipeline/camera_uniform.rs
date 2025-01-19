@@ -3,12 +3,12 @@ use iced::widget::shader;
 
 #[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
 #[repr(C)]
-pub struct Uniform {
+pub struct CameraUniform {
     camera_position: glam::Vec2,
-    camera_size: glam::Vec2,
+    camera_size: glam::Vec2
 }
 
-impl Uniform {
+impl CameraUniform {
     pub fn new(bounds: &iced::Rectangle, viewport: &shader::Viewport) -> Self {
         let bottom_y = bounds.y * 2.0 + bounds.height;
         // Don't know why this "Mystery" offset is needed.

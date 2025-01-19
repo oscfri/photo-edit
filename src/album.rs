@@ -40,7 +40,7 @@ pub struct WorkImage {
     pub parameters: Parameters
 }
 
-#[derive(Default, Clone)]
+#[derive(Debug, Default, Clone)]
 pub struct Parameters {
     pub brightness: f32,
     pub contrast: f32,

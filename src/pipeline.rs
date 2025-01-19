@@ -1,5 +1,5 @@
-mod primitive;
 mod pipeline;
 mod vertex;
-mod uniform;
+mod camera_uniform;
+mod parameter_uniform;
 pub mod viewport;

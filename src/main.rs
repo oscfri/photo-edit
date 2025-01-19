@@ -71,7 +71,8 @@ impl Main {
         let needs_update: bool = false;
         let viewport = pipeline::viewport::Viewport {
             image: display_image.clone(),
-            image_index: image_index
+            image_index: image_index,
+            parameters: album.images[image_index].parameters.clone()
         };
 
         Self {
@@ -140,6 +141,7 @@ impl Main {
             Message::ImageUpdated(raw_image) => {
                 self.viewport.image = raw_image.clone();
                 self.viewport.image_index = self.image_index;
+                self.viewport.parameters = self.current_image().parameters.clone();
                 self.display_image = raw_image;
                 self.updating_image = false;
                 self.needs_update
