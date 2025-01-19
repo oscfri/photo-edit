@@ -1,8 +1,6 @@
 use std::path::PathBuf;
 
 use crate::types::*;
-use crate::conversions;
-use crate::pixelwise;
 
 use rayon::prelude::*;
 
@@ -11,33 +9,21 @@ pub struct Album {
 }
 
 pub struct AlbumImage {
-    pub source_image: LabImage,
+    pub source_image: RawImage,
     pub parameters: Parameters,
     pub thumbnail: RawImage
 }
 
 impl AlbumImage {
-    pub fn into_work_image(&self) -> WorkImage {
-        WorkImage {
-            source_image: self.source_image.clone(),
-            parameters: self.parameters.clone()
-        }
-    }
 
-    pub fn pixel_at(&self, x: usize, y: usize) -> Option<LabPixel> {
-        if x < self.source_image.width && y < self.source_image.height {
-            Some(self.source_image.pixels[y * self.source_image.width + x].clone())
-        } else {
-            None
-        }
-    }
-}
-
-// TODO: Might not be a good idea to store all full images as is. Should probably only refer to a path
-#[derive(Clone)]
-pub struct WorkImage {
-    pub source_image: LabImage,
-    pub parameters: Parameters
+    // TODO: Reimplement this
+    // pub fn pixel_at(&self, x: usize, y: usize) -> Option<LabPixel> {
+    //     if x < self.source_image.width && y < self.source_image.height {
+    //         Some(self.source_image.pixels[y * self.source_image.width + x].clone())
+    //     } else {
+    //         None
+    //     }
+    // }
 }
 
 #[derive(Debug, Default, Clone)]
@@ -53,24 +39,6 @@ pub fn load_album(file_paths: &Vec<PathBuf>) -> Album {
     let images: Vec<AlbumImage> = file_paths.iter().map(load_album_image).collect();
     Album {
         images: images
-    }
-}
-
-impl WorkImage {
-    pub fn apply_parameters(self) -> RawImage {
-        let mut image: LabImage = self.source_image;
-    
-        // NOTE: This takes ~30ms
-        pixelwise::contrast(&mut image, self.parameters.contrast);
-        pixelwise::brightness(&mut image, self.parameters.brightness);
-        pixelwise::saturation(&mut image, self.parameters.saturation);
-        pixelwise::tint(&mut image, self.parameters.tint);
-        pixelwise::temperature(&mut image, self.parameters.temperature);
-        // NOTE: This takes ~70ms
-        let rgb_image: RgbImage = conversions::lab_image_to_rgb(&image);
-    
-        // NOTE: This takes ~80ms
-        convert_to_raw_image(&rgb_image)
     }
 }
 
@@ -110,19 +78,15 @@ fn convert_to_raw_image(image: &RgbImage) -> RawImage {
 }
 
 fn load_album_image(path: &PathBuf) -> AlbumImage {
-    let image: LabImage = load_image_as_lab(&path);
+    let rgb_image: RgbImage = load_image(&path);
+    let source_image: RawImage = convert_to_raw_image(&rgb_image);
     let parameters: Parameters = Parameters::default();
-    let thumbnail: RawImage = convert_to_thumbnail(&image);
+    let thumbnail: RawImage = convert_to_thumbnail(&rgb_image);
     AlbumImage {
-        source_image: image,
-        parameters: parameters,
+        source_image,
+        parameters,
         thumbnail
     }
-}
-
-fn load_image_as_lab(path: &PathBuf) -> LabImage {
-    let image: RgbImage = load_image(path);
-    conversions::rgb_image_to_lab(&image)
 }
     
 fn load_image(path: &PathBuf) -> RgbImage {
@@ -148,20 +112,19 @@ fn load_image(path: &PathBuf) -> RgbImage {
     }
 }
 
-fn convert_to_thumbnail(image: &LabImage) -> RawImage {
-    let resized_image: LabImage = resize_to_thumbnail_size(&image);
-    let rgb_image: RgbImage = conversions::lab_image_to_rgb(&resized_image);
-    convert_to_raw_image(&rgb_image)
+fn convert_to_thumbnail(image: &RgbImage) -> RawImage {
+    let resized_image: RgbImage = resize_to_thumbnail_size(&image);
+    convert_to_raw_image(&resized_image)
 }
 
-fn resize_to_thumbnail_size(image: &LabImage) -> LabImage {
+fn resize_to_thumbnail_size(image: &RgbImage) -> RgbImage {
     let target_size: usize = 100;
     let width_skip: usize = std::cmp::max(1, image.width / target_size);
     let height_skip: usize = std::cmp::max(1, image.height / target_size);
 
     let target_width: usize = image.width / width_skip;
     let target_height: usize = image.height / height_skip;
-    let mut pixels: Vec<LabPixel> = Vec::new();
+    let mut pixels: Vec<RgbPixel> = Vec::new();
 
     for h in 0..target_height {
         for w in 0..target_width {
@@ -169,7 +132,7 @@ fn resize_to_thumbnail_size(image: &LabImage) -> LabImage {
         }
     }
 
-    LabImage {
+    RgbImage {
         width: target_width,
         height: target_height,
         pixels: pixels

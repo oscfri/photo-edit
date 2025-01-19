@@ -4,7 +4,7 @@ mod pixelwise;
 mod types;
 mod pipeline;
 
-use album::{load_album, Album, AlbumImage, WorkImage};
+use album::{load_album, Album, AlbumImage};
 use iced::{self, widget::container};
 use native_dialog;
 use types::RawImage;
@@ -28,7 +28,6 @@ enum Message {
     TintChanged(f32),
     TemperatureChanged(f32),
     SaturationChanged(f32),
-    ImageUpdated(RawImage),
     ImageMouseOver(iced::Point<f32>),
     ImageMousePress
 }
@@ -37,18 +36,9 @@ struct Main {
     album: album::Album,
     image_index: usize,
 
-    display_image: RawImage,
     mouse_position: iced::Point<f32>,
 
-    // For synchronization
-    updating_image: bool,
-    needs_update: bool,
-
     viewport: pipeline::viewport::Viewport
-}
-
-async fn update_image_async(work_image: WorkImage) -> RawImage {
-    work_image.apply_parameters()
 }
 
 impl Main {
@@ -59,16 +49,12 @@ impl Main {
             PathBuf::from("example2.jpg")
         ]);
         let image_index: usize = 0;
-        let display_image: RawImage = album.images[image_index]
-            .into_work_image()
-            .apply_parameters();
+        let display_image: &RawImage = &album.images[image_index].source_image;
         let mouse_position: iced::Point<f32> = iced::Point {
             x: 0.0,
             y: 0.0
         };
 
-        let updating_image: bool = false;
-        let needs_update: bool = false;
         let viewport = pipeline::viewport::Viewport {
             image: display_image.clone(),
             image_index: image_index,
@@ -78,10 +64,7 @@ impl Main {
         Self {
             album,
             image_index,
-            display_image,
             mouse_position,
-            updating_image,
-            needs_update,
             viewport
         }
     }
@@ -138,14 +121,6 @@ impl Main {
                 self.current_image_mut().parameters.saturation = saturation;
                 true
             },
-            Message::ImageUpdated(raw_image) => {
-                self.viewport.image = raw_image.clone();
-                self.viewport.image_index = self.image_index;
-                self.viewport.parameters = self.current_image().parameters.clone();
-                self.display_image = raw_image;
-                self.updating_image = false;
-                self.needs_update
-            },
             Message::ImageMouseOver(point) => {
                 self.mouse_position = point;
                 false
@@ -153,19 +128,21 @@ impl Main {
             Message::ImageMousePress => {
                 // TODO: This doesn't really work. Mouse position doesn't necessarily need to correspond to the
                 // pixel value. Will fix this when a custom image renderer is implemented.
-                let x: usize = self.mouse_position.x as usize;
-                let y: usize = self.mouse_position.y as usize;
-                let current_image = self.current_image_mut();
-                match current_image.pixel_at(x, y) {
-                    Some(pixel) => {
-                        current_image.parameters.tint = -pixel.tint;
-                        current_image.parameters.temperature = -pixel.temperature;
-                        true
-                    },
-                    None => {
-                        false
-                    }
-                }
+                false
+                // TODO: Reimplemt this
+                // let x: usize = self.mouse_position.x as usize;
+                // let y: usize = self.mouse_position.y as usize;
+                // let current_image = self.current_image_mut();
+                // match current_image.pixel_at(x, y) {
+                //     Some(pixel) => {
+                //         current_image.parameters.tint = -pixel.tint;
+                //         current_image.parameters.temperature = -pixel.temperature;
+                //         true
+                //     },
+                //     None => {
+                //         false
+                //     }
+                // }
             }
         };
 
@@ -177,16 +154,10 @@ impl Main {
     }
     
     fn update_image_task(&mut self) -> iced::Task<Message> {
-        if !self.updating_image {
-            self.updating_image = true;
-            self.needs_update = false;
-            let work_image: album::WorkImage = self.current_image().into_work_image();
-            let future = update_image_async(work_image);
-            iced::Task::perform(future, Message::ImageUpdated)
-        } else {
-            self.needs_update = true;
-            iced::Task::none()
-        }
+        self.viewport.image = self.current_image().source_image.clone();
+        self.viewport.image_index = self.image_index;
+        self.viewport.parameters = self.current_image().parameters.clone();
+        iced::Task::none()
     }
     
     fn view(&self) -> iced::Element<Message> {

@@ -51,7 +51,7 @@ impl shader::Primitive for Viewport {
         let pipeline = storage.get_mut::<pipeline::Pipeline>().unwrap();
 
         let camera_uniform = camera_uniform::CameraUniform::new(&bounds, &viewport);
-        let parameter_uniform = parameter_uniform::ParameterUniform::new();
+        let parameter_uniform = parameter_uniform::ParameterUniform::new(&self.parameters);
 
         pipeline.update(queue, &self.image, &camera_uniform, &parameter_uniform);
     }

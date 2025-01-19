@@ -1,3 +1,5 @@
+use crate::album::Parameters;
+
 #[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
 #[repr(C)]
 pub struct ParameterUniform {
@@ -5,9 +7,9 @@ pub struct ParameterUniform {
 }
 
 impl ParameterUniform {
-    pub fn new() -> Self {
+    pub fn new(parameters: &Parameters) -> Self {
         Self {
-            brightness: 0.1
+            brightness: parameters.brightness * 0.01
         }
     }
 }
