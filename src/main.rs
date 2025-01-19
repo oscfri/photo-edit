@@ -69,7 +69,9 @@ impl Main {
 
         let updating_image: bool = false;
         let needs_update: bool = false;
-        let viewport = viewport::Viewport {};
+        let viewport = viewport::Viewport {
+            image: display_image.clone()
+        };
 
         Self {
             album,
