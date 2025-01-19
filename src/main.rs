@@ -1,6 +1,4 @@
 mod album;
-mod conversions;
-mod pixelwise;
 mod types;
 mod pipeline;
 
