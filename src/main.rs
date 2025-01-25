@@ -16,10 +16,17 @@ pub fn main() -> iced::Result {
         .run()
 }
 
+enum ImageMouseMessage {
+    Over(iced::Point<f32>),
+    Press,
+    Release
+}
+
 #[derive(Debug, Clone)]
 enum Message {
     LoadAlbum,
     NextImage,
+    EnterCropMode,
     SetImage(usize),
     BrightnessChanged(f32),
     ContrastChanged(f32),
@@ -30,11 +37,17 @@ enum Message {
     ImageMousePress
 }
 
+enum Mode {
+    Normal,
+    Crop
+}
+
 struct Main {
     album: album::Album,
     image_index: usize,
 
     mouse_position: iced::Point<f32>,
+    mode: Mode,
 
     viewport: pipeline::viewport::Viewport
 }
@@ -53,16 +66,22 @@ impl Main {
             y: 0.0
         };
 
+        let current_image: &AlbumImage = &album.images[image_index];
+
         let viewport = pipeline::viewport::Viewport {
             image: display_image.clone(),
             image_index: image_index,
-            parameters: album.images[image_index].parameters.clone()
+            parameters: current_image.parameters.clone(),
+            crop: current_image.crop.clone()
         };
+
+        let mode: Mode = Mode::Normal;
 
         Self {
             album,
             image_index,
             mouse_position,
+            mode,
             viewport
         }
     }
@@ -99,6 +118,10 @@ impl Main {
                     false
                 }
             },
+            Message::EnterCropMode => {
+                self.mode = Mode::Crop;
+                false
+            }
             Message::BrightnessChanged(brightness) => {
                 self.current_image_mut().parameters.brightness = brightness;
                 true
@@ -127,7 +150,7 @@ impl Main {
                 // TODO: This doesn't really work. Mouse position doesn't necessarily need to correspond to the
                 // pixel value. Will fix this when a custom image renderer is implemented.
                 false
-                // TODO: Reimplemt this
+                // TODO: Reimplement this
                 // let x: usize = self.mouse_position.x as usize;
                 // let y: usize = self.mouse_position.y as usize;
                 // let current_image = self.current_image_mut();
@@ -234,6 +257,7 @@ impl Main {
                 iced::widget::text("Saturation"),
                 iced::widget::slider(-100.0..=100.0, parameters.saturation, Message::SaturationChanged),
                 iced::widget::button("Next").on_press(Message::NextImage),
+                iced::widget::button("Crop").on_press(Message::EnterCropMode),
             ];
         container(column)
             .padding(10)

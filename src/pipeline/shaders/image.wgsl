@@ -1,6 +1,6 @@
 struct CameraUniform {
     position: vec2<f32>,
-    size: vec2<f32>
+    size: vec2<f32>,
 };
 @group(0) @binding(0)
 var<uniform> camera: CameraUniform;
@@ -33,6 +33,13 @@ struct ParameterUniform {
 @group(0) @binding(1)
 var<uniform> parameters: ParameterUniform;
 
+struct CropUniform {
+    top_left: vec2<f32>,
+    bottom_right: vec2<f32>,
+};
+@group(0) @binding(2)
+var<uniform> crop: CropUniform;
+
 @group(1) @binding(0)
 var t_diffuse: texture_2d<f32>;
 @group(1) @binding(1)
@@ -45,7 +52,9 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
     let lab: vec3<f32> = rgb_to_lab(rgb);
     let lab_applied: vec3<f32> = apply_parameters(lab);
     let rgb_applied: vec3<f32> = lab_to_rgb(lab_applied);
-    return vec4<f32>(rgb_applied, 1.0);
+    let rgb_final: vec3<f32> = draw_crop_area(in, rgb_applied);
+
+    return vec4<f32>(rgb_final, 1.0);
 }
 
 fn apply_parameters(lab: vec3<f32>) -> vec3<f32> {
@@ -60,6 +69,44 @@ fn apply_parameters(lab: vec3<f32>) -> vec3<f32> {
     adjusted += vec3<f32>(50.0, 0.0, 0.0); // Revert brightness value
 
     return adjusted;
+}
+
+fn draw_crop_area(vertex: VertexOutput, rgb: vec3<f32>) -> vec3<f32> {
+    if (in_crop_area(vertex)) {
+        return rgb;
+    } else if (in_crop_border(vertex)) {
+        return vec3<f32>(1.0, 1.0, 1.0);
+    } else {
+        return rgb * 0.25;
+    }
+}
+
+fn in_crop_area(vertex: VertexOutput) -> bool {
+    let position: vec4<f32> = vertex.clip_position;
+    let crop_left: f32 = crop.top_left.x;
+    let crop_right: f32 = crop.bottom_right.x;
+    let crop_top: f32 = crop.top_left.y;
+    let crop_bottom: f32 = crop.bottom_right.y;
+    if (position.x < crop_left || position.x > crop_right ||
+            position.y < crop_top || position.y > crop_bottom) {
+        return false;
+    } else {
+        return true;
+    }
+}
+
+fn in_crop_border(vertex: VertexOutput) -> bool {
+    let position: vec4<f32> = vertex.clip_position;
+    let crop_left: f32 = crop.top_left.x - 1.0;
+    let crop_right: f32 = crop.bottom_right.x + 1.0;
+    let crop_top: f32 = crop.top_left.y - 1.0;
+    let crop_bottom: f32 = crop.bottom_right.y + 1.0;
+    if (position.x < crop_left || position.x > crop_right ||
+            position.y < crop_top || position.y > crop_bottom) {
+        return false;
+    } else {
+        return true;
+    }
 }
 
 /**

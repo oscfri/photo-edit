@@ -4,13 +4,14 @@ use iced::widget::shader::wgpu;
 
 use crate::types::RawImage;
 
-use super::parameter_uniform;
+use super::{crop_uniform, parameter_uniform};
 
 pub struct Pipeline {
     pipeline: wgpu::RenderPipeline,
     vertices: wgpu::Buffer,
     camera_uniform: wgpu::Buffer,
     parameter_uniform: wgpu::Buffer,
+    crop_uniform: wgpu::Buffer,
     uniform_bind_group: wgpu::BindGroup,
     diffuse_texture: wgpu::Texture,
     diffuse_bind_group: wgpu::BindGroup
@@ -22,6 +23,7 @@ impl Pipeline {
             vertices: wgpu::Buffer,
             camera_uniform: wgpu::Buffer,
             parameter_uniform: wgpu::Buffer,
+            crop_uniform: wgpu::Buffer,
             uniform_bind_group: wgpu::BindGroup,
             diffuse_texture: wgpu::Texture,
             diffuse_bind_group: wgpu::BindGroup) -> Self {
@@ -30,6 +32,7 @@ impl Pipeline {
             vertices,
             camera_uniform,
             parameter_uniform,
+            crop_uniform,
             uniform_bind_group,
             diffuse_texture,
             diffuse_bind_group
@@ -41,7 +44,8 @@ impl Pipeline {
             queue: &wgpu::Queue,
             image: &RawImage,
             camera_uniform: &camera_uniform::CameraUniform,
-            parameter_uniform: &parameter_uniform::ParameterUniform) {
+            parameter_uniform: &parameter_uniform::ParameterUniform,
+            crop_uniform: &crop_uniform::CropUniform) {
         let texture_size = wgpu::Extent3d {
             width: image.width as u32,
             height: image.height as u32,
@@ -49,6 +53,7 @@ impl Pipeline {
         };
         queue.write_buffer(&self.camera_uniform, 0, bytemuck::bytes_of(camera_uniform));
         queue.write_buffer(&self.parameter_uniform, 0, bytemuck::bytes_of(parameter_uniform));
+        queue.write_buffer(&self.crop_uniform, 0, bytemuck::bytes_of(crop_uniform));
         queue.write_texture(
             wgpu::ImageCopyTexture {
                 texture: &self.diffuse_texture,

@@ -11,6 +11,7 @@ pub struct Album {
 pub struct AlbumImage {
     pub source_image: RawImage,
     pub parameters: Parameters,
+    pub crop: Crop,
     pub thumbnail: RawImage
 }
 
@@ -33,6 +34,14 @@ pub struct Parameters {
     pub tint: f32,
     pub temperature: f32,
     pub saturation: f32
+}
+
+#[derive(Debug, Default, Clone)]
+pub struct Crop {
+    pub x1: i32,
+    pub y1: i32,
+    pub x2: i32,
+    pub y2: i32
 }
 
 pub fn load_album(file_paths: &Vec<PathBuf>) -> Album {
@@ -81,11 +90,18 @@ fn load_album_image(path: &PathBuf) -> AlbumImage {
     let rgb_image: RgbImage = load_image(&path);
     let source_image: RawImage = convert_to_raw_image(&rgb_image);
     let parameters: Parameters = Parameters::default();
+    let crop: Crop = Crop {
+        x1: 100,
+        x2: 500,
+        y1: 100,
+        y2: 300
+    };
     let thumbnail: RawImage = convert_to_thumbnail(&rgb_image);
     AlbumImage {
         source_image,
         parameters,
-        thumbnail
+        crop,
+        thumbnail,
     }
 }
     

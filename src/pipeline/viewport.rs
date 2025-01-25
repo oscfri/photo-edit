@@ -1,3 +1,4 @@
+use crate::album::Crop;
 use crate::album::Parameters;
 use crate::types::RawImage;
 use crate::pipeline::pipeline;
@@ -9,16 +10,16 @@ use iced::widget::shader;
 use iced::widget::shader::wgpu;
 use wgpu::util::DeviceExt;
 
+use super::crop_uniform;
 use super::parameter_uniform;
 
 #[derive(Debug, Clone)]
 pub struct Viewport {
-    // TODO: Probably should put nice things here
-    // - Parameters
     // TODO: These probably shouldn't be pub
     pub image: RawImage,
     pub image_index: usize,
-    pub parameters: Parameters
+    pub parameters: Parameters,
+    pub crop: Crop
 }
 
 struct ImageIndex {
@@ -52,8 +53,9 @@ impl shader::Primitive for Viewport {
 
         let camera_uniform = camera_uniform::CameraUniform::new(&bounds, &viewport);
         let parameter_uniform = parameter_uniform::ParameterUniform::new(&self.parameters);
+        let crop_uniform = crop_uniform::CropUniform::new(&self.crop);
 
-        pipeline.update(queue, &self.image, &camera_uniform, &parameter_uniform);
+        pipeline.update(queue, &self.image, &camera_uniform, &parameter_uniform, &crop_uniform);
     }
 
     fn render(
@@ -130,6 +132,13 @@ impl Viewport {
             mapped_at_creation: false,
         });
 
+        let crop_uniform_buffer = device.create_buffer(&wgpu::BufferDescriptor {
+            label: Some("Crop Uniform Buffer"),
+            size: std::mem::size_of::<crop_uniform::CropUniform>() as u64,
+            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+            mapped_at_creation: false,
+        });
+
         let uniform_bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
             label: Some("The uniform bind group layout"),
             entries: &[
@@ -152,6 +161,16 @@ impl Viewport {
                         min_binding_size: None,
                     },
                     count: None,
+                },
+                wgpu::BindGroupLayoutEntry {
+                    binding: 2,
+                    visibility: wgpu::ShaderStages::FRAGMENT,
+                    ty: wgpu::BindingType::Buffer {
+                        ty: wgpu::BufferBindingType::Uniform,
+                        has_dynamic_offset: false,
+                        min_binding_size: None,
+                    },
+                    count: None,
                 }
             ],
         });
@@ -167,6 +186,10 @@ impl Viewport {
                 wgpu::BindGroupEntry {
                     binding: 1,
                     resource: parameter_uniform_buffer.as_entire_binding(),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 2,
+                    resource: crop_uniform_buffer.as_entire_binding(),
                 },
             ],
         });
@@ -251,6 +274,7 @@ impl Viewport {
             vertices,
             camera_uniform_buffer,
             parameter_uniform_buffer,
+            crop_uniform_buffer,
             uniform_bind_group,
             diffuse_texture,
             diffuse_bind_group
