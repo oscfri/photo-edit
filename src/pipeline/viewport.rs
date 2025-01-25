@@ -14,6 +14,31 @@ use wgpu::util::DeviceExt;
 use super::crop_uniform;
 use super::parameter_uniform;
 
+// Hack to access viewport size. It doesn't seem like we can access the viewport size directly (at least not according
+// to any documentation I've found). We need to know the viewport size so we can convert mouse coordinates from "window"
+// space to "image" space.
+static mut VIEWPORT_WIDTH: f32 = 0.0;
+static mut VIEWPORT_HEIGHT: f32 = 0.0;
+
+pub fn get_viewport_width() -> f32 {
+    unsafe {
+        VIEWPORT_WIDTH
+    }
+}
+
+pub fn get_viewport_height() -> f32 {
+    unsafe {
+        VIEWPORT_HEIGHT
+    }
+}
+
+fn update_viewport(bounds: &iced::Rectangle) {
+    unsafe {
+        VIEWPORT_WIDTH = bounds.width;
+        VIEWPORT_HEIGHT = bounds.height;
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct ViewportWorkspace {
     image: RawImage,
@@ -71,11 +96,17 @@ impl shader::Primitive for Viewport {
             storage.store(ImageIndex { index: self.workspace.image_index });
         }
 
+        update_viewport(&*bounds);
+
         let pipeline = storage.get_mut::<pipeline::Pipeline>().unwrap();
 
         let camera_uniform = camera_uniform::CameraUniform::new(&bounds, &viewport);
         let parameter_uniform = parameter_uniform::ParameterUniform::new(&self.workspace.parameters);
-        let crop_uniform = crop_uniform::CropUniform::new(&self.workspace.crop, &self.view_mode);
+        let crop_uniform = crop_uniform::CropUniform::new(
+                &self.workspace.crop,
+                &self.view_mode,
+                self.workspace.image.width,
+                self.workspace.image.height);
 
         pipeline.update(queue, &self.workspace.image, &camera_uniform, &parameter_uniform, &crop_uniform);
     }
@@ -156,7 +187,7 @@ impl Viewport {
 
         let crop_uniform_buffer = device.create_buffer(&wgpu::BufferDescriptor {
             label: Some("Crop Uniform Buffer"),
-            size: 24, // Not sure why below is not working
+            size: 32, // Not sure why below is not working
             // size: std::mem::size_of::<crop_uniform::CropUniform>() as u64,
             usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
             mapped_at_creation: false,
@@ -165,9 +196,10 @@ impl Viewport {
         let uniform_bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
             label: Some("The uniform bind group layout"),
             entries: &[
+                // Camera
                 wgpu::BindGroupLayoutEntry {
                     binding: 0,
-                    visibility: wgpu::ShaderStages::VERTEX,
+                    visibility: wgpu::ShaderStages::VERTEX_FRAGMENT,
                     ty: wgpu::BindingType::Buffer {
                         ty: wgpu::BufferBindingType::Uniform,
                         has_dynamic_offset: false,
@@ -175,6 +207,7 @@ impl Viewport {
                     },
                     count: None,
                 },
+                // Parameters
                 wgpu::BindGroupLayoutEntry {
                     binding: 1,
                     visibility: wgpu::ShaderStages::FRAGMENT,
@@ -185,9 +218,10 @@ impl Viewport {
                     },
                     count: None,
                 },
+                // Crop
                 wgpu::BindGroupLayoutEntry {
                     binding: 2,
-                    visibility: wgpu::ShaderStages::FRAGMENT,
+                    visibility: wgpu::ShaderStages::VERTEX_FRAGMENT,
                     ty: wgpu::BindingType::Buffer {
                         ty: wgpu::BufferBindingType::Uniform,
                         has_dynamic_offset: false,

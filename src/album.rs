@@ -91,10 +91,10 @@ fn load_album_image(path: &PathBuf) -> AlbumImage {
     let source_image: RawImage = convert_to_raw_image(&rgb_image);
     let parameters: Parameters = Parameters::default();
     let crop: Crop = Crop {
-        x1: 100,
-        x2: 500,
-        y1: 100,
-        y2: 300
+        x1: 0,
+        y1: 0,
+        x2: source_image.width as i32,
+        y2: source_image.height as i32
     };
     let thumbnail: RawImage = convert_to_thumbnail(&rgb_image);
     AlbumImage {

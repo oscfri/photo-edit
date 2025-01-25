@@ -8,6 +8,7 @@ use album::{AlbumImage, Crop};
 use iced::{self, widget::container};
 use native_dialog;
 use pipeline::viewport;
+use types::RawImage;
 use view_mode::ViewMode;
 use workspace::WorkSpace;
 use std::path::PathBuf;
@@ -19,6 +20,12 @@ pub fn main() -> iced::Result {
         .run()
 }
 
+#[derive(Debug, Clone, Copy)]
+struct Point {
+    x: i32,
+    y: i32
+}
+
 #[derive(Debug, Clone)]
 enum MouseState {
     Up,
@@ -27,7 +34,7 @@ enum MouseState {
 
 #[derive(Debug, Clone)]
 enum MouseMessage {
-    Over(iced::Point<f32>),
+    Over(Point),
     Press,
     Release
 }
@@ -49,7 +56,7 @@ enum Message {
 struct Main {
     workspace: WorkSpace,
 
-    mouse_position: iced::Point<f32>,
+    mouse_position: Point,
     view_mode: ViewMode,
     mouse_state: MouseState,
 
@@ -68,9 +75,9 @@ impl Main {
             PathBuf::from("example2.jpg")
         ]);
 
-        let mouse_position: iced::Point<f32> = iced::Point {
-            x: 0.0,
-            y: 0.0
+        let mouse_position: Point = Point {
+            x: 0,
+            y: 0
         };
         let mode: view_mode::ViewMode = view_mode::ViewMode::Normal;
         let viewport = make_viewport(&workspace, &mode);
@@ -180,29 +187,49 @@ impl Main {
         match image_mouse_message {
             MouseMessage::Over(point) => {
                 self.mouse_position = point;
+            },
+            MouseMessage::Press => {
+                self.mouse_state = MouseState::Down;
+            },
+            MouseMessage::Release => {
+                self.mouse_state = MouseState::Up;
+            }
+        }
+        
+        match self.view_mode {
+            ViewMode::Normal => {
+                false
+            },
+            ViewMode::Crop => {
+                self.update_mouse_crop_mode(image_mouse_message)
+            }
+        }
+    }
+
+    fn update_mouse_crop_mode(&mut self, image_mouse_message: MouseMessage) -> bool {
+        match image_mouse_message {
+            MouseMessage::Over(point) => {
                 match self.mouse_state {
                     MouseState::Up => {
                         false
                     },
                     MouseState::Down => {
                         let crop: &mut Crop = self.workspace.current_crop_mut();
-                        crop.x2 = self.mouse_position.x as i32;
-                        crop.y2 = self.mouse_position.y as i32;
+                        crop.x2 = point.x;
+                        crop.y2 = point.y;
                         true
                     }
                 }
             },
             MouseMessage::Press => {
                 let crop: &mut Crop = self.workspace.current_crop_mut();
-                crop.x1 = self.mouse_position.x as i32;
-                crop.y1 = self.mouse_position.y as i32;
-                crop.x2 = self.mouse_position.x as i32;
-                crop.y2 = self.mouse_position.y as i32;
-                self.mouse_state = MouseState::Down;
+                crop.x1 = self.mouse_position.x;
+                crop.y1 = self.mouse_position.y;
+                crop.x2 = self.mouse_position.x;
+                crop.y2 = self.mouse_position.y;
                 true
             },
             MouseMessage::Release => {
-                self.mouse_state = MouseState::Up;
                 false
             }
         }
@@ -210,6 +237,14 @@ impl Main {
     
     fn update_image_task(&mut self) {
         self.viewport = make_viewport(&self.workspace, &self.view_mode);
+    }
+
+    fn window_space_to_image_space(&self, point: iced::Point<f32>) -> Point {
+        let current_image: &RawImage = self.workspace.current_image();
+        Point {
+            x: (point.x / viewport::get_viewport_width() * (current_image.width as f32)) as i32,
+            y: (point.y / viewport::get_viewport_height() * (current_image.height as f32)) as i32,
+        }
     }
     
     fn view(&self) -> iced::Element<Message> {
@@ -236,14 +271,17 @@ impl Main {
             .width(iced::Fill)
             .height(iced::Fill);
         let image_mouse_area = iced::widget::mouse_area(image_area)
-            .on_move(|point| Message::ImageMouseMessage(MouseMessage::Over(point)))
+            .on_move(|window_point| {
+                let image_point: Point = self.window_space_to_image_space(window_point);
+                Message::ImageMouseMessage(MouseMessage::Over(image_point))
+            })
             .on_press(Message::ImageMouseMessage(MouseMessage::Press))
             .on_release(Message::ImageMouseMessage(MouseMessage::Release));
         image_mouse_area.into()
     }
 
     fn view_debugger(&self) -> iced::Element<Message> {
-        let debug_str: String = format!("{}, {:?}, {:?}", self.mouse_position, self.mouse_state, self.view_mode);
+        let debug_str: String = format!("{:?}, {:?}, {:?}, {:?}", self.mouse_position, self.mouse_state, self.view_mode, self.workspace.current_crop());
         iced::widget::container(iced::widget::text(debug_str))
             .style(iced::widget::container::dark)
             .width(iced::Fill)
