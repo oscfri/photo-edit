@@ -3,7 +3,7 @@ mod types;
 mod pipeline;
 mod workspace;
 
-use album::{Album, AlbumImage};
+use album::AlbumImage;
 use iced::{self, widget::container};
 use native_dialog;
 use workspace::WorkSpace;
@@ -52,16 +52,10 @@ struct Main {
     viewport: pipeline::viewport::Viewport
 }
 
-fn load_workspace(file_paths: &Vec<PathBuf>) -> WorkSpace {
-    let album: Album = album::load_album(file_paths);
-    let image_index: usize = 0;
-    WorkSpace::new(album, image_index)
-}
-
 impl Main {
 
     fn new() -> Self {
-        let workspace: WorkSpace = load_workspace(&vec![
+        let workspace: WorkSpace = workspace::load_workspace(&vec![
             PathBuf::from("example.png"),
             PathBuf::from("example2.jpg")
         ]);
@@ -94,7 +88,7 @@ impl Main {
 
                 match result {
                     Ok(file_paths) => {
-                        self.workspace = load_workspace(&file_paths);
+                        self.workspace = workspace::load_workspace(&file_paths);
                         true
                     },
                     _ => {
