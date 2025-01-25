@@ -43,6 +43,10 @@ impl WorkSpace {
         &self.album.images[self.image_index].crop
     }
 
+    pub fn current_crop_mut(&mut self) -> &mut album::Crop {
+        &mut self.album.images[self.image_index].crop
+    }
+
     pub fn make_viewport(&self) -> viewport::Viewport {
         viewport::Viewport {
             image: self.current_image().clone(),

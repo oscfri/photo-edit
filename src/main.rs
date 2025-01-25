@@ -3,12 +3,11 @@ mod types;
 mod pipeline;
 mod workspace;
 
-use album::AlbumImage;
+use album::{AlbumImage, Crop};
 use iced::{self, widget::container};
 use native_dialog;
 use workspace::WorkSpace;
 use std::path::PathBuf;
-
 
 pub fn main() -> iced::Result {
     iced::application("A cool image editor", Main::update, Main::view)
@@ -17,7 +16,14 @@ pub fn main() -> iced::Result {
         .run()
 }
 
-enum ImageMouseMessage {
+#[derive(Debug, Clone)]
+enum MouseState {
+    Up,
+    Down
+}
+
+#[derive(Debug, Clone)]
+enum MouseMessage {
     Over(iced::Point<f32>),
     Press,
     Release
@@ -34,8 +40,7 @@ enum Message {
     TintChanged(f32),
     TemperatureChanged(f32),
     SaturationChanged(f32),
-    ImageMouseOver(iced::Point<f32>),
-    ImageMousePress
+    ImageMouseMessage(MouseMessage),
 }
 
 enum Mode {
@@ -48,6 +53,7 @@ struct Main {
 
     mouse_position: iced::Point<f32>,
     mode: Mode,
+    mouse_state: MouseState,
 
     viewport: pipeline::viewport::Viewport
 }
@@ -65,13 +71,14 @@ impl Main {
             y: 0.0
         };
         let viewport = workspace.make_viewport();
-
         let mode: Mode = Mode::Normal;
+        let mouse_state: MouseState = MouseState::Up;
 
         Self {
             workspace,
             mouse_position,
             mode,
+            mouse_state,
             viewport
         }
     }
@@ -128,14 +135,13 @@ impl Main {
                 self.workspace.current_parameters_mut().saturation = saturation;
                 true
             },
-            Message::ImageMouseOver(point) => {
-                self.mouse_position = point;
-                false
+            Message::ImageMouseMessage(image_mouse_message) => {
+                self.update_mouse_on_image(image_mouse_message)
             },
-            Message::ImageMousePress => {
+            // Message::ImageMousePress => {
                 // TODO: This doesn't really work. Mouse position doesn't necessarily need to correspond to the
                 // pixel value. Will fix this when a custom image renderer is implemented.
-                false
+                // false
                 // TODO: Reimplement this
                 // let x: usize = self.mouse_position.x as usize;
                 // let y: usize = self.mouse_position.y as usize;
@@ -150,19 +156,50 @@ impl Main {
                 //         false
                 //     }
                 // }
-            }
+            // }
         };
 
         if should_update_image {
-            self.update_image_task()
-        } else {
-            iced::Task::none()
+            self.update_image_task();
+        }
+
+        iced::Task::none()
+    }
+
+    fn update_mouse_on_image(&mut self, image_mouse_message: MouseMessage) -> bool {
+        match image_mouse_message {
+            MouseMessage::Over(point) => {
+                self.mouse_position = point;
+                match self.mouse_state {
+                    MouseState::Up => {
+                        false
+                    },
+                    MouseState::Down => {
+                        let crop: &mut Crop = self.workspace.current_crop_mut();
+                        crop.x2 = self.mouse_position.x as i32;
+                        crop.y2 = self.mouse_position.y as i32;
+                        true
+                    }
+                }
+            },
+            MouseMessage::Press => {
+                let crop: &mut Crop = self.workspace.current_crop_mut();
+                crop.x1 = self.mouse_position.x as i32;
+                crop.y1 = self.mouse_position.y as i32;
+                crop.x2 = self.mouse_position.x as i32;
+                crop.y2 = self.mouse_position.y as i32;
+                self.mouse_state = MouseState::Down;
+                true
+            },
+            MouseMessage::Release => {
+                self.mouse_state = MouseState::Up;
+                false
+            }
         }
     }
     
-    fn update_image_task(&mut self) -> iced::Task<Message> {
+    fn update_image_task(&mut self) {
         self.viewport = self.workspace.make_viewport();
-        iced::Task::none()
     }
     
     fn view(&self) -> iced::Element<Message> {
@@ -189,14 +226,15 @@ impl Main {
             .width(iced::Fill)
             .height(iced::Fill);
         let image_mouse_area = iced::widget::mouse_area(image_area)
-            .on_move(Message::ImageMouseOver)
-            .on_right_press(Message::ImageMousePress);
+            .on_move(|point| Message::ImageMouseMessage(MouseMessage::Over(point)))
+            .on_press(Message::ImageMouseMessage(MouseMessage::Press))
+            .on_release(Message::ImageMouseMessage(MouseMessage::Release));
         image_mouse_area.into()
-        // iced::widget::container(image_mouse_area).into()
     }
 
     fn view_debugger(&self) -> iced::Element<Message> {
-        iced::widget::container(iced::widget::text(format!("{}", self.mouse_position)))
+        let debug_str: String = format!("{}, {:?}", self.mouse_position, self.mouse_state);
+        iced::widget::container(iced::widget::text(debug_str))
             .style(iced::widget::container::dark)
             .width(iced::Fill)
             .into()
