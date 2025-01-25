@@ -1,11 +1,12 @@
 mod album;
 mod types;
 mod pipeline;
+mod workspace;
 
-use album::{load_album, Album, AlbumImage};
+use album::{Album, AlbumImage};
 use iced::{self, widget::container};
 use native_dialog;
-use types::RawImage;
+use workspace::WorkSpace;
 use std::path::PathBuf;
 
 
@@ -43,8 +44,7 @@ enum Mode {
 }
 
 struct Main {
-    album: album::Album,
-    image_index: usize,
+    workspace: WorkSpace,
 
     mouse_position: iced::Point<f32>,
     mode: Mode,
@@ -52,34 +52,30 @@ struct Main {
     viewport: pipeline::viewport::Viewport
 }
 
+fn load_workspace(file_paths: &Vec<PathBuf>) -> WorkSpace {
+    let album: Album = album::load_album(file_paths);
+    let image_index: usize = 0;
+    WorkSpace::new(album, image_index)
+}
+
 impl Main {
 
     fn new() -> Self {
-        let album: Album = album::load_album(&vec![
+        let workspace: WorkSpace = load_workspace(&vec![
             PathBuf::from("example.png"),
             PathBuf::from("example2.jpg")
         ]);
-        let image_index: usize = 0;
-        let display_image: &RawImage = &album.images[image_index].source_image;
+
         let mouse_position: iced::Point<f32> = iced::Point {
             x: 0.0,
             y: 0.0
         };
-
-        let current_image: &AlbumImage = &album.images[image_index];
-
-        let viewport = pipeline::viewport::Viewport {
-            image: display_image.clone(),
-            image_index: image_index,
-            parameters: current_image.parameters.clone(),
-            crop: current_image.crop.clone()
-        };
+        let viewport = workspace.make_viewport();
 
         let mode: Mode = Mode::Normal;
 
         Self {
-            album,
-            image_index,
+            workspace,
             mouse_position,
             mode,
             viewport
@@ -98,7 +94,7 @@ impl Main {
 
                 match result {
                     Ok(file_paths) => {
-                        self.album = load_album(&file_paths);
+                        self.workspace = load_workspace(&file_paths);
                         true
                     },
                     _ => {
@@ -107,39 +103,35 @@ impl Main {
                 }
             },
             Message::NextImage => {
-                self.image_index = (self.image_index + 1) % self.album.images.len();
+                self.workspace.next_image_index();
                 true
             },
             Message::SetImage(index) => {
-                if index < self.album.images.len() {
-                    self.image_index = index;
-                    true
-                } else {
-                    false
-                }
+                self.workspace.set_image_index(index);
+                true
             },
             Message::EnterCropMode => {
                 self.mode = Mode::Crop;
                 false
             }
             Message::BrightnessChanged(brightness) => {
-                self.current_image_mut().parameters.brightness = brightness;
+                self.workspace.current_parameters_mut().brightness = brightness;
                 true
             },
             Message::ContrastChanged(contrast) => {
-                self.current_image_mut().parameters.contrast = contrast;
+                self.workspace.current_parameters_mut().contrast = contrast;
                 true
             },
             Message::TintChanged(tint) => {
-                self.current_image_mut().parameters.tint = tint;
+                self.workspace.current_parameters_mut().tint = tint;
                 true
             },
             Message::TemperatureChanged(temperature) => {
-                self.current_image_mut().parameters.temperature = temperature;
+                self.workspace.current_parameters_mut().temperature = temperature;
                 true
             },
             Message::SaturationChanged(saturation) => {
-                self.current_image_mut().parameters.saturation = saturation;
+                self.workspace.current_parameters_mut().saturation = saturation;
                 true
             },
             Message::ImageMouseOver(point) => {
@@ -175,9 +167,7 @@ impl Main {
     }
     
     fn update_image_task(&mut self) -> iced::Task<Message> {
-        self.viewport.image = self.current_image().source_image.clone();
-        self.viewport.image_index = self.image_index;
-        self.viewport.parameters = self.current_image().parameters.clone();
+        self.viewport = self.workspace.make_viewport();
         iced::Task::none()
     }
     
@@ -219,7 +209,7 @@ impl Main {
     }
 
     fn view_thumbnails(&self) -> iced::Element<Message> {
-        let thumbnails = self.album.images.iter().enumerate()
+        let thumbnails = self.workspace.album_images().iter().enumerate()
             .map(|(index, album_image)| self.view_thumbnail_image(index, &album_image))
             .collect();
 
@@ -243,7 +233,7 @@ impl Main {
     }
     
     fn view_sliders(&self) -> iced::Element<Message> {
-        let parameters: &album::Parameters = &self.current_image().parameters;
+        let parameters: &album::Parameters = self.workspace.current_parameters();
         let column = iced::widget::column![
                 iced::widget::button("Load").on_press(Message::LoadAlbum),
                 iced::widget::text("Brightness"),
@@ -265,14 +255,6 @@ impl Main {
             .height(iced::Fill)
             .style(iced::widget::container::bordered_box)
             .into()
-    }
-
-    fn current_image(&self) -> &album::AlbumImage {
-        &self.album.images[self.image_index]
-    }
-
-    fn current_image_mut(&mut self) -> &mut album::AlbumImage {
-        &mut self.album.images[self.image_index]
     }
 }
 
