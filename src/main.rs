@@ -2,10 +2,13 @@ mod album;
 mod types;
 mod pipeline;
 mod workspace;
+mod view_mode;
 
 use album::{AlbumImage, Crop};
 use iced::{self, widget::container};
 use native_dialog;
+use pipeline::viewport;
+use view_mode::ViewMode;
 use workspace::WorkSpace;
 use std::path::PathBuf;
 
@@ -33,7 +36,7 @@ enum MouseMessage {
 enum Message {
     LoadAlbum,
     NextImage,
-    EnterCropMode,
+    ToggleCropMode,
     SetImage(usize),
     BrightnessChanged(f32),
     ContrastChanged(f32),
@@ -43,19 +46,18 @@ enum Message {
     ImageMouseMessage(MouseMessage),
 }
 
-enum Mode {
-    Normal,
-    Crop
-}
-
 struct Main {
     workspace: WorkSpace,
 
     mouse_position: iced::Point<f32>,
-    mode: Mode,
+    view_mode: ViewMode,
     mouse_state: MouseState,
 
-    viewport: pipeline::viewport::Viewport
+    viewport: viewport::Viewport
+}
+
+fn make_viewport(workspace: &WorkSpace, view_mode: &view_mode::ViewMode) -> viewport::Viewport {
+    viewport::Viewport::new(workspace.make_viewport(), view_mode.clone())
 }
 
 impl Main {
@@ -70,14 +72,14 @@ impl Main {
             x: 0.0,
             y: 0.0
         };
-        let viewport = workspace.make_viewport();
-        let mode: Mode = Mode::Normal;
+        let mode: view_mode::ViewMode = view_mode::ViewMode::Normal;
+        let viewport = make_viewport(&workspace, &mode);
         let mouse_state: MouseState = MouseState::Up;
 
         Self {
             workspace,
             mouse_position,
-            mode,
+            view_mode: mode,
             mouse_state,
             viewport
         }
@@ -86,22 +88,7 @@ impl Main {
     fn update(&mut self, message: Message) -> iced::Task<Message> {
         let should_update_image: bool = match message {
             Message::LoadAlbum => {
-                let path: PathBuf = std::env::current_dir().unwrap();
-
-                let result = native_dialog::FileDialog::new()
-                    .set_location(&path)
-                    .add_filter("image", &["png", "jpg"])
-                    .show_open_multiple_file();
-
-                match result {
-                    Ok(file_paths) => {
-                        self.workspace = workspace::load_workspace(&file_paths);
-                        true
-                    },
-                    _ => {
-                        false
-                    }
-                }
+                self.open_file_dialog()
             },
             Message::NextImage => {
                 self.workspace.next_image_index();
@@ -111,9 +98,13 @@ impl Main {
                 self.workspace.set_image_index(index);
                 true
             },
-            Message::EnterCropMode => {
-                self.mode = Mode::Crop;
-                false
+            Message::ToggleCropMode => {
+                if !matches!(self.view_mode, ViewMode::Crop) {
+                    self.view_mode = ViewMode::Crop;
+                } else {
+                    self.view_mode = ViewMode::Normal;
+                }
+                true
             }
             Message::BrightnessChanged(brightness) => {
                 self.workspace.current_parameters_mut().brightness = brightness;
@@ -166,6 +157,25 @@ impl Main {
         iced::Task::none()
     }
 
+    fn open_file_dialog(&mut self) -> bool {
+        let path: PathBuf = std::env::current_dir().unwrap();
+
+        let result = native_dialog::FileDialog::new()
+            .set_location(&path)
+            .add_filter("image", &["png", "jpg"])
+            .show_open_multiple_file();
+
+        match result {
+            Ok(file_paths) => {
+                self.workspace = workspace::load_workspace(&file_paths);
+                true
+            },
+            _ => {
+                false
+            }
+        }
+    }
+
     fn update_mouse_on_image(&mut self, image_mouse_message: MouseMessage) -> bool {
         match image_mouse_message {
             MouseMessage::Over(point) => {
@@ -199,7 +209,7 @@ impl Main {
     }
     
     fn update_image_task(&mut self) {
-        self.viewport = self.workspace.make_viewport();
+        self.viewport = make_viewport(&self.workspace, &self.view_mode);
     }
     
     fn view(&self) -> iced::Element<Message> {
@@ -233,7 +243,7 @@ impl Main {
     }
 
     fn view_debugger(&self) -> iced::Element<Message> {
-        let debug_str: String = format!("{}, {:?}", self.mouse_position, self.mouse_state);
+        let debug_str: String = format!("{}, {:?}, {:?}", self.mouse_position, self.mouse_state, self.view_mode);
         iced::widget::container(iced::widget::text(debug_str))
             .style(iced::widget::container::dark)
             .width(iced::Fill)
@@ -279,7 +289,7 @@ impl Main {
                 iced::widget::text("Saturation"),
                 iced::widget::slider(-100.0..=100.0, parameters.saturation, Message::SaturationChanged),
                 iced::widget::button("Next").on_press(Message::NextImage),
-                iced::widget::button("Crop").on_press(Message::EnterCropMode),
+                iced::widget::button("Crop").on_press(Message::ToggleCropMode),
             ];
         container(column)
             .padding(10)

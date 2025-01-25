@@ -47,13 +47,12 @@ impl WorkSpace {
         &mut self.album.images[self.image_index].crop
     }
 
-    pub fn make_viewport(&self) -> viewport::Viewport {
-        viewport::Viewport {
-            image: self.current_image().clone(),
-            image_index: self.image_index,
-            parameters: self.current_parameters().clone(),
-            crop: self.current_crop().clone()
-        }
+    pub fn make_viewport(&self) -> viewport::ViewportWorkspace {
+        viewport::ViewportWorkspace::new(
+            self.current_image().clone(),
+            self.image_index,
+            self.current_parameters().clone(),
+            self.current_crop().clone())
     }
 
     pub fn next_image_index(&mut self) {

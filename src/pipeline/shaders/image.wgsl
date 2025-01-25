@@ -36,6 +36,7 @@ var<uniform> parameters: ParameterUniform;
 struct CropUniform {
     top_left: vec2<f32>,
     bottom_right: vec2<f32>,
+    visible: i32
 };
 @group(0) @binding(2)
 var<uniform> crop: CropUniform;
@@ -72,7 +73,9 @@ fn apply_parameters(lab: vec3<f32>) -> vec3<f32> {
 }
 
 fn draw_crop_area(vertex: VertexOutput, rgb: vec3<f32>) -> vec3<f32> {
-    if (in_crop_area(vertex)) {
+    if (crop.visible == 0) {
+        return rgb;
+    } else if (in_crop_area(vertex)) {
         return rgb;
     } else if (in_crop_border(vertex)) {
         return vec3<f32>(1.0, 1.0, 1.0);

@@ -1,6 +1,7 @@
 use crate::album::Crop;
 use crate::album::Parameters;
 use crate::types::RawImage;
+use crate::view_mode::ViewMode;
 use crate::pipeline::pipeline;
 use crate::pipeline::vertex;
 use crate::pipeline::camera_uniform;
@@ -14,12 +15,33 @@ use super::crop_uniform;
 use super::parameter_uniform;
 
 #[derive(Debug, Clone)]
+pub struct ViewportWorkspace {
+    image: RawImage,
+    image_index: usize,
+    parameters: Parameters,
+    crop: Crop
+}
+
+impl ViewportWorkspace {
+    pub fn new(
+            image: RawImage,
+            image_index: usize,
+            parameters: Parameters,
+            crop: Crop) -> Self {
+        Self { image, image_index, parameters, crop }
+    }
+}
+
+#[derive(Debug, Clone)]
 pub struct Viewport {
-    // TODO: These probably shouldn't be pub
-    pub image: RawImage,
-    pub image_index: usize,
-    pub parameters: Parameters,
-    pub crop: Crop
+    workspace: ViewportWorkspace,
+    view_mode: ViewMode,
+}
+
+impl Viewport {
+    pub fn new(workspace: ViewportWorkspace, view_mode: ViewMode) -> Self {
+        Self { workspace, view_mode }
+    }
 }
 
 struct ImageIndex {
@@ -46,16 +68,16 @@ impl shader::Primitive for Viewport {
             viewport: &shader::Viewport) {
         if self.needs_update(&storage) {
             storage.store(self.create_pipeline(device, format));
-            storage.store(ImageIndex { index: self.image_index });
+            storage.store(ImageIndex { index: self.workspace.image_index });
         }
 
         let pipeline = storage.get_mut::<pipeline::Pipeline>().unwrap();
 
         let camera_uniform = camera_uniform::CameraUniform::new(&bounds, &viewport);
-        let parameter_uniform = parameter_uniform::ParameterUniform::new(&self.parameters);
-        let crop_uniform = crop_uniform::CropUniform::new(&self.crop);
+        let parameter_uniform = parameter_uniform::ParameterUniform::new(&self.workspace.parameters);
+        let crop_uniform = crop_uniform::CropUniform::new(&self.workspace.crop, &self.view_mode);
 
-        pipeline.update(queue, &self.image, &camera_uniform, &parameter_uniform, &crop_uniform);
+        pipeline.update(queue, &self.workspace.image, &camera_uniform, &parameter_uniform, &crop_uniform);
     }
 
     fn render(
@@ -76,7 +98,7 @@ impl Viewport {
     fn needs_update(&self, storage: &shader::Storage) -> bool {
         if storage.has::<ImageIndex>() {
             let image_index: &ImageIndex = storage.get::<ImageIndex>().unwrap();
-            image_index.index != self.image_index
+            image_index.index != self.workspace.image_index
         } else {
             !storage.has::<pipeline::Pipeline>()
         }
@@ -90,8 +112,8 @@ impl Viewport {
             });
         
         let texture_size = wgpu::Extent3d {
-            width: self.image.width as u32,
-            height: self.image.height as u32,
+            width: self.workspace.image.width as u32,
+            height: self.workspace.image.height as u32,
             depth_or_array_layers: 1
         };
         let diffuse_texture = device.create_texture(
@@ -134,7 +156,8 @@ impl Viewport {
 
         let crop_uniform_buffer = device.create_buffer(&wgpu::BufferDescriptor {
             label: Some("Crop Uniform Buffer"),
-            size: std::mem::size_of::<crop_uniform::CropUniform>() as u64,
+            size: 24, // Not sure why below is not working
+            // size: std::mem::size_of::<crop_uniform::CropUniform>() as u64,
             usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
             mapped_at_creation: false,
         });
