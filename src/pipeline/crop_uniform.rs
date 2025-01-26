@@ -14,7 +14,7 @@ impl CropUniform {
         let min_x: i32 = std::cmp::min(crop.x1, crop.x2);
         let max_x: i32 = std::cmp::max(crop.x1, crop.x2);
         let min_y: i32 = std::cmp::min(crop.y1, crop.y2);
-        let max_y: i32 = std::cmp::max(crop.y1, crop.y2) ;
+        let max_y: i32 = std::cmp::max(crop.y1, crop.y2);
         Self {
             top_left: glam::ivec2(min_x, min_y),
             bottom_right: glam::ivec2(max_x, max_y),

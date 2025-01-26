@@ -1,6 +1,6 @@
-use crate::album;
+use crate::album::{self, AlbumImage};
 use crate::pipeline::viewport;
-use crate::types;
+use crate::{types, view_mode};
 
 use std::path::PathBuf;
 
@@ -27,32 +27,54 @@ impl WorkSpace {
         &self.album.images
     }
 
-    pub fn current_image(&self) -> &types::RawImage {
-        &self.album.images[self.image_index].source_image
+    pub fn current_image(&self) -> &AlbumImage {
+        &self.album.images[self.image_index]
+    }
+
+    fn current_image_mut(&mut self) -> &mut AlbumImage {
+        &mut self.album.images[self.image_index]
+    }
+
+    pub fn current_source_image(&self) -> &types::RawImage {
+        &self.current_image().source_image
     }
 
     pub fn current_parameters(&self) -> &album::Parameters {
-        &self.album.images[self.image_index].parameters
+        &self.current_image().parameters
     }
 
     pub fn current_parameters_mut(&mut self) -> &mut album::Parameters {
-        &mut self.album.images[self.image_index].parameters
+        &mut self.current_image_mut().parameters
     }
 
     pub fn current_crop(&self) -> &album::Crop {
-        &self.album.images[self.image_index].crop
+        &self.current_image().crop
     }
 
     pub fn current_crop_mut(&mut self) -> &mut album::Crop {
-        &mut self.album.images[self.image_index].crop
+        &mut self.current_image_mut().crop
     }
 
-    pub fn make_viewport(&self) -> viewport::ViewportWorkspace {
+    pub fn make_viewport(&self, view_mode: &view_mode::ViewMode) -> viewport::ViewportWorkspace {
+        let view: album::Crop = self.current_view(view_mode);
         viewport::ViewportWorkspace::new(
-            self.current_image().clone(),
+            self.current_source_image().clone(),
             self.image_index,
             self.current_parameters().clone(),
-            self.current_crop().clone())
+            self.current_crop().clone(),
+            view)
+    }
+
+    pub fn current_view(&self, view_mode: &view_mode::ViewMode) -> album::Crop {
+        match view_mode {
+            view_mode::ViewMode::Crop => album::Crop {
+                x1: 0,
+                x2: self.current_source_image().width as i32,
+                y1: 0,
+                y2: self.current_source_image().height as i32
+            },
+            view_mode::ViewMode::Normal => self.current_crop().clone()
+        }
     }
 
     pub fn next_image_index(&mut self) {

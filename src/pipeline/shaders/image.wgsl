@@ -1,6 +1,8 @@
 struct CameraUniform {
     position: vec2<f32>,
     size: vec2<f32>,
+    view_position: vec2<f32>,
+    view_size: vec2<f32>,
 };
 @group(0) @binding(0)
 var<uniform> camera: CameraUniform;
@@ -29,14 +31,7 @@ struct VertexOutput {
 fn vs_main(vertex: Vertex) -> VertexOutput {
     var out: VertexOutput;
     out.clip_position = vec4<f32>(vertex.position * camera.size + camera.position, 0.0, 1.0);
-
-    if (crop.visible == 0) {
-        let crop_position: vec2<f32> = vec2<f32>(crop.top_left);
-        let crop_size: vec2<f32> = vec2<f32>(crop.bottom_right - crop.top_left);
-        out.tex_coords = (vertex.uv * crop_size + crop_position) / crop.image_size;
-    } else {
-        out.tex_coords = vertex.uv;
-    }
+    out.tex_coords = (vertex.uv * camera.view_size + camera.view_position) / crop.image_size;
 
     out.relative_position = vertex.uv;
 

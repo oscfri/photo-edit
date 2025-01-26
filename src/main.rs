@@ -8,7 +8,6 @@ use album::{AlbumImage, Crop};
 use iced::{self, widget::container};
 use native_dialog;
 use pipeline::viewport;
-use types::RawImage;
 use view_mode::ViewMode;
 use workspace::WorkSpace;
 use std::path::PathBuf;
@@ -64,7 +63,9 @@ struct Main {
 }
 
 fn make_viewport(workspace: &WorkSpace, view_mode: &view_mode::ViewMode) -> viewport::Viewport {
-    viewport::Viewport::new(workspace.make_viewport(), view_mode.clone())
+    viewport::Viewport::new(
+            workspace.make_viewport(&view_mode),
+            view_mode.clone())
 }
 
 impl Main {
@@ -239,11 +240,13 @@ impl Main {
         self.viewport = make_viewport(&self.workspace, &self.view_mode);
     }
 
-    fn window_space_to_image_space(&self, point: iced::Point<f32>) -> Point {
-        let current_image: &RawImage = self.workspace.current_image();
+    fn window_space_to_view_space(&self, point: iced::Point<f32>) -> Point {
+        let crop: Crop = self.workspace.current_view(&self.view_mode);
+        let crop_width: f32 = (crop.x2 - crop.x1).abs() as f32;
+        let crop_height: f32 = (crop.y2 - crop.y1).abs() as f32;
         Point {
-            x: (point.x / viewport::get_viewport_width() * (current_image.width as f32)) as i32,
-            y: (point.y / viewport::get_viewport_height() * (current_image.height as f32)) as i32,
+            x: (point.x / viewport::get_viewport_width() * crop_width) as i32,
+            y: (point.y / viewport::get_viewport_height() * crop_height) as i32,
         }
     }
     
@@ -272,7 +275,7 @@ impl Main {
             .height(iced::Fill);
         let image_mouse_area = iced::widget::mouse_area(image_area)
             .on_move(|window_point| {
-                let image_point: Point = self.window_space_to_image_space(window_point);
+                let image_point: Point = self.window_space_to_view_space(window_point);
                 Message::ImageMouseMessage(MouseMessage::Over(image_point))
             })
             .on_press(Message::ImageMouseMessage(MouseMessage::Press))

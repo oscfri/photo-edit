@@ -44,7 +44,8 @@ pub struct ViewportWorkspace {
     image: RawImage,
     image_index: usize,
     parameters: Parameters,
-    crop: Crop
+    crop: Crop,
+    view: Crop
 }
 
 impl ViewportWorkspace {
@@ -52,8 +53,9 @@ impl ViewportWorkspace {
             image: RawImage,
             image_index: usize,
             parameters: Parameters,
-            crop: Crop) -> Self {
-        Self { image, image_index, parameters, crop }
+            crop: Crop,
+            view: Crop) -> Self {
+        Self { image, image_index, parameters, crop, view }
     }
 }
 
@@ -100,7 +102,10 @@ impl shader::Primitive for Viewport {
 
         let pipeline = storage.get_mut::<pipeline::Pipeline>().unwrap();
 
-        let camera_uniform = camera_uniform::CameraUniform::new(&bounds, &viewport);
+        let camera_uniform = camera_uniform::CameraUniform::new(
+                &bounds,
+                &viewport,
+                &self.workspace.view);
         let parameter_uniform = parameter_uniform::ParameterUniform::new(&self.workspace.parameters);
         let crop_uniform = crop_uniform::CropUniform::new(
                 &self.workspace.crop,
