@@ -7,9 +7,10 @@ use crate::album::Crop;
 #[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
 #[repr(C)]
 pub struct CameraUniform {
-    window_transform: [[f32; 4]; 4], // Transform from window pixels to render coordinates
-    viewport_transform: [[f32; 4]; 4], // Determines where in the window the image should be displayed
-    image_transform: [[f32; 4]; 4]
+    render_transform: [[f32; 4]; 4], // window coordinates -> render coordinates
+    window_transform: [[f32; 4]; 4], // crop coordinates -> window coordinates
+    crop_transform: [[f32; 4]; 4], // uv coordinates -> crop coordinates
+    image_transform: [[f32; 4]; 4], // uv coordinates -> image coordinates
 }
 
 #[derive(Debug)]
@@ -41,7 +42,7 @@ fn transform(from: &Rectangle, to: &Rectangle) -> cgmath::Matrix4<f32> {
 
 pub fn apply_image_transform(point: &iced::Point, bounds: &iced::Rectangle, crop: &Crop) -> iced::Point {
     let from: Rectangle = create_viewport_area(bounds, crop);
-    let to: Rectangle = create_image_area(crop);
+    let to: Rectangle = create_crop_area(crop);
     let transform = transform(&from, &to).transpose();
     let transformed_point = transform * cgmath::vec4(point.x, point.y, 0.0, 1.0);
     iced::Point {
@@ -85,7 +86,7 @@ fn create_viewport_area(bounds: &iced::Rectangle, crop: &Crop) -> Rectangle {
     }
 }
 
-fn create_image_area(crop: &Crop) -> Rectangle {
+fn create_crop_area(crop: &Crop) -> Rectangle {
     let crop_width: f32 = (crop.x2 - crop.x1).abs() as f32;
     let crop_height: f32 = (crop.y2 - crop.y1).abs() as f32;
     Rectangle {
@@ -96,16 +97,32 @@ fn create_image_area(crop: &Crop) -> Rectangle {
     }
 }
 
+fn create_image_area(image_width: usize, image_height: usize) -> Rectangle {
+    Rectangle {
+        x: 0.0,
+        y: 0.0,
+        width: image_width as f32,
+        height: image_height as f32
+    }
+}
+
 impl CameraUniform {
-    pub fn new(bounds: &iced::Rectangle, viewport: &shader::Viewport, view: &Crop) -> Self {
+    pub fn new(
+            bounds: &iced::Rectangle,
+            viewport: &shader::Viewport,
+            view: &Crop,
+            image_width: usize,
+            image_height: usize) -> Self {
         let render_area: Rectangle = create_render_area();
         let window_area: Rectangle = create_window_area(viewport);
         let viewport_area: Rectangle = create_viewport_area(bounds, view);
-        let image_area: Rectangle = create_image_area(view);
+        let crop_area: Rectangle = create_crop_area(view);
+        let image_area: Rectangle = create_image_area(image_width, image_height);
         Self {
-            window_transform: transform(&window_area, &render_area).into(),
-            viewport_transform: transform(&image_area, &viewport_area).into(),
-            image_transform: transform( &Rectangle::default(), &image_area).into()
+            render_transform: transform(&window_area, &render_area).into(),
+            window_transform: transform(&crop_area, &viewport_area).into(),
+            crop_transform: transform(&Rectangle::default(), &crop_area).into(),
+            image_transform: transform( &Rectangle::default(), &image_area).into(),
         }
     }
 }

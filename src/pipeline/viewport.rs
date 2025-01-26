@@ -119,13 +119,11 @@ impl shader::Primitive for Viewport {
         let camera_uniform = camera_uniform::CameraUniform::new(
                 &bounds,
                 &viewport,
-                &self.workspace.view);
-        let parameter_uniform = parameter_uniform::ParameterUniform::new(&self.workspace.parameters);
-        let crop_uniform = crop_uniform::CropUniform::new(
-                &self.workspace.crop,
-                &self.view_mode,
+                &self.workspace.view,
                 self.workspace.image.width,
                 self.workspace.image.height);
+        let parameter_uniform = parameter_uniform::ParameterUniform::new(&self.workspace.parameters);
+        let crop_uniform = crop_uniform::CropUniform::new(&self.workspace.crop, &self.view_mode);
 
         pipeline.update(queue, &self.workspace.image, &camera_uniform, &parameter_uniform, &crop_uniform);
     }
@@ -206,7 +204,7 @@ impl Viewport {
 
         let crop_uniform_buffer = device.create_buffer(&wgpu::BufferDescriptor {
             label: Some("Crop Uniform Buffer"),
-            size: 32, // Not sure why below is not working (likely alignment issue)
+            size: 24, // Not sure why below is not working (likely alignment issue)
             // size: std::mem::size_of::<crop_uniform::CropUniform>() as u64,
             usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
             mapped_at_creation: false,

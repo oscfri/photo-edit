@@ -1,15 +1,15 @@
 struct CameraUniform {
+    render_transform: mat4x4<f32>,
     window_transform: mat4x4<f32>,
-    viewport_transform: mat4x4<f32>,
+    crop_transform: mat4x4<f32>,
     image_transform: mat4x4<f32>,
 };
 @group(0) @binding(0)
 var<uniform> camera: CameraUniform;
 
 struct CropUniform {
-    top_left: vec2<i32>,
-    bottom_right: vec2<i32>,
-    image_size: vec2<f32>,
+    top_left: vec2<f32>,
+    bottom_right: vec2<f32>,
     visible: i32
 };
 @group(0) @binding(2)
@@ -21,23 +21,29 @@ struct Vertex {
 }
 
 struct VertexOutput {
-    @builtin(position) clip_position: vec4<f32>,
+    @builtin(position) render_position: vec4<f32>,
     @location(0) tex_coords: vec2<f32>,
-    @location(1) relative_position: vec2<f32>,
+    @location(1) image_position: vec2<f32>,
+    @location(2) window_position: vec2<f32>,
 };
 
 @vertex
 fn vs_main(vertex: Vertex) -> VertexOutput {
     var out: VertexOutput;
-    let transformed_position: vec4<f32> = vec4<f32>(vertex.uv, 0.0, 1.0) *
-            camera.image_transform *
-            camera.viewport_transform *
-            camera.window_transform;
-    out.clip_position = transformed_position;
-    // out.tex_coords = (vertex.uv * camera.view_size + camera.view_position) / crop.image_size;
-    out.tex_coords = vertex.uv;
+    let image_size = (vec4<f32>(1.0, 1.0, 0.0, 1.0) * camera.image_transform).xy;
+    let image_position = vec4<f32>(vertex.uv, 0.0, 1.0) * camera.crop_transform;
+    let window_position = image_position * camera.window_transform;
+    out.render_position = window_position * camera.render_transform;
 
-    out.relative_position = vertex.uv;
+    let crop_size = crop.bottom_right - crop.top_left;
+    if (crop.visible == 0) {
+        out.tex_coords = (crop.top_left + vertex.uv * crop_size) / image_size;
+    } else {
+        out.tex_coords = vertex.uv;
+    }
+
+    out.image_position = image_position.xy;
+    out.window_position = window_position.xy;
 
     return out;
 }
@@ -96,9 +102,9 @@ fn draw_crop_area(vertex: VertexOutput, rgb: vec3<f32>) -> vec3<f32> {
 }
 
 fn in_crop_area(vertex: VertexOutput) -> bool {
-    let position: vec2<i32> = vec2<i32>(vertex.relative_position * crop.image_size);
-    let top_left: vec2<i32> = crop.top_left;
-    let bottom_right: vec2<i32> = crop.bottom_right;
+    let position = to_window(vertex.image_position);
+    let top_left = to_window(crop.top_left);
+    let bottom_right = to_window(crop.bottom_right);
     if (position.x < top_left.x || position.x > bottom_right.x ||
             position.y < top_left.y || position.y > bottom_right.y) {
         return false;
@@ -108,15 +114,19 @@ fn in_crop_area(vertex: VertexOutput) -> bool {
 }
 
 fn in_crop_border(vertex: VertexOutput) -> bool {
-    let position: vec2<i32> = vec2<i32>(vertex.relative_position * crop.image_size);
-    let top_left: vec2<i32> = (crop.top_left - vec2<i32>(1, 1));
-    let bottom_right: vec2<i32> = (crop.bottom_right + vec2<i32>(1, 1));
+    let position = to_window(vertex.image_position);
+    let top_left = to_window(crop.top_left) - vec2<f32>(1.0, 1.0);
+    let bottom_right = to_window(crop.bottom_right) + vec2<f32>(1.0, 1.0);
     if (position.x < top_left.x || position.x > bottom_right.x ||
             position.y < top_left.y || position.y > bottom_right.y) {
         return false;
     } else {
         return true;
     }
+}
+
+fn to_window(position: vec2<f32>) -> vec2<f32> {
+    return (vec4<f32>(position, 0.0, 1.0) * camera.window_transform).xy;
 }
 
 /**
