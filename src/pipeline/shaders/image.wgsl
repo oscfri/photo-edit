@@ -1,8 +1,7 @@
 struct CameraUniform {
-    position: vec2<f32>,
-    size: vec2<f32>,
-    view_position: vec2<f32>,
-    view_size: vec2<f32>,
+    window_transform: mat4x4<f32>,
+    viewport_transform: mat4x4<f32>,
+    image_transform: mat4x4<f32>,
 };
 @group(0) @binding(0)
 var<uniform> camera: CameraUniform;
@@ -30,8 +29,13 @@ struct VertexOutput {
 @vertex
 fn vs_main(vertex: Vertex) -> VertexOutput {
     var out: VertexOutput;
-    out.clip_position = vec4<f32>(vertex.position * camera.size + camera.position, 0.0, 1.0);
-    out.tex_coords = (vertex.uv * camera.view_size + camera.view_position) / crop.image_size;
+    let transformed_position: vec4<f32> = vec4<f32>(vertex.uv, 0.0, 1.0) *
+            camera.image_transform *
+            camera.viewport_transform *
+            camera.window_transform;
+    out.clip_position = transformed_position;
+    // out.tex_coords = (vertex.uv * camera.view_size + camera.view_position) / crop.image_size;
+    out.tex_coords = vertex.uv;
 
     out.relative_position = vertex.uv;
 

@@ -16,3 +16,4 @@ rayon = "1.10"
 native-dialog = "0.7"
 bytemuck = { version = "1.0", features = ["derive"] }
 glam = { version = "0.25", features = ["bytemuck"] }
+cgmath = "0.18.0"

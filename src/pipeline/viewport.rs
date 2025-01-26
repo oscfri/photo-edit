@@ -17,25 +17,25 @@ use super::parameter_uniform;
 // Hack to access viewport size. It doesn't seem like we can access the viewport size directly (at least not according
 // to any documentation I've found). We need to know the viewport size so we can convert mouse coordinates from "window"
 // space to "image" space.
-static mut VIEWPORT_WIDTH: f32 = 0.0;
-static mut VIEWPORT_HEIGHT: f32 = 0.0;
+static mut IMAGE_MOUSE_X: i32 = 0;
+static mut IMAGE_MOUSE_Y: i32 = 0;
 
-pub fn get_viewport_width() -> f32 {
+pub fn get_image_mouse_x() -> i32 {
     unsafe {
-        VIEWPORT_WIDTH
+        IMAGE_MOUSE_X
     }
 }
 
-pub fn get_viewport_height() -> f32 {
+pub fn get_image_mouse_y() -> i32 {
     unsafe {
-        VIEWPORT_HEIGHT
+        IMAGE_MOUSE_Y
     }
 }
 
-fn update_viewport(bounds: &iced::Rectangle) {
+fn update_image_mouse(mouse_x: i32, mouse_y: i32) {
     unsafe {
-        VIEWPORT_WIDTH = bounds.width;
-        VIEWPORT_HEIGHT = bounds.height;
+        IMAGE_MOUSE_X = mouse_x;
+        IMAGE_MOUSE_Y = mouse_y;
     }
 }
 
@@ -63,11 +63,23 @@ impl ViewportWorkspace {
 pub struct Viewport {
     workspace: ViewportWorkspace,
     view_mode: ViewMode,
+    cursor: mouse::Cursor
 }
 
 impl Viewport {
     pub fn new(workspace: ViewportWorkspace, view_mode: ViewMode) -> Self {
-        Self { workspace, view_mode }
+        let cursor: mouse::Cursor = mouse::Cursor::Unavailable;
+        Self { workspace, view_mode, cursor }
+    }
+
+    fn update_mouse(&self, bounds: &iced::Rectangle) {
+        match self.cursor {
+            mouse::Cursor::Available(point) => {
+                let image_point: iced::Point = camera_uniform::apply_image_transform(&point, bounds, &self.workspace.view);
+                update_image_mouse(image_point.x as i32, image_point.y as i32);
+            },
+            mouse::Cursor::Unavailable => {} // Do nothing
+        }
     }
 }
 
@@ -79,8 +91,10 @@ impl<Message> shader::Program<Message> for Viewport {
     type State = ();
     type Primitive = Self;
 
-    fn draw(&self, _state: &Self::State, _cursor: mouse::Cursor, _bounds: iced::Rectangle) -> Self::Primitive {
-        self.clone()
+    fn draw(&self, _state: &Self::State, cursor: mouse::Cursor, _bounds: iced::Rectangle) -> Self::Primitive {
+        let mut cloned: Viewport = self.clone();
+        cloned.cursor = cursor;
+        cloned
     }
 }
 
@@ -98,7 +112,7 @@ impl shader::Primitive for Viewport {
             storage.store(ImageIndex { index: self.workspace.image_index });
         }
 
-        update_viewport(&*bounds);
+        self.update_mouse(&bounds);
 
         let pipeline = storage.get_mut::<pipeline::Pipeline>().unwrap();
 
@@ -192,7 +206,7 @@ impl Viewport {
 
         let crop_uniform_buffer = device.create_buffer(&wgpu::BufferDescriptor {
             label: Some("Crop Uniform Buffer"),
-            size: 32, // Not sure why below is not working
+            size: 32, // Not sure why below is not working (likely alignment issue)
             // size: std::mem::size_of::<crop_uniform::CropUniform>() as u64,
             usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
             mapped_at_creation: false,
