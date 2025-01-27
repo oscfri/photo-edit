@@ -49,6 +49,7 @@ enum Message {
     TintChanged(f32),
     TemperatureChanged(f32),
     SaturationChanged(f32),
+    AngleChanged(f32),
     ImageMouseMessage(MouseMessage),
 }
 
@@ -132,6 +133,10 @@ impl Main {
             },
             Message::SaturationChanged(saturation) => {
                 self.workspace.current_parameters_mut().saturation = saturation;
+                true
+            },
+            Message::AngleChanged(angle) => {
+                self.workspace.current_crop_mut().angle = angle;
                 true
             },
             Message::ImageMouseMessage(image_mouse_message) => {
@@ -274,7 +279,7 @@ impl Main {
     }
 
     fn view_debugger(&self) -> iced::Element<Message> {
-        let debug_str: String = format!("{:?}, {:?}, {:?}, {:?}", self.mouse_position, self.mouse_state, self.view_mode, self.workspace.current_crop());
+        let debug_str: String = format!("{:?}, {:?}", self.mouse_position, self.workspace.current_crop());
         iced::widget::container(iced::widget::text(debug_str))
             .style(iced::widget::container::dark)
             .width(iced::Fill)
@@ -306,6 +311,7 @@ impl Main {
     }
     
     fn view_sliders(&self) -> iced::Element<Message> {
+        let crop: &album::Crop = self.workspace.current_crop();
         let parameters: &album::Parameters = self.workspace.current_parameters();
         let column = iced::widget::column![
                 iced::widget::button("Load").on_press(Message::LoadAlbum),
@@ -321,6 +327,8 @@ impl Main {
                 iced::widget::slider(-100.0..=100.0, parameters.saturation, Message::SaturationChanged),
                 iced::widget::button("Next").on_press(Message::NextImage),
                 iced::widget::button("Crop").on_press(Message::ToggleCropMode),
+                iced::widget::text("Angle"),
+                iced::widget::slider(-180.0..=180.0, crop.angle, Message::AngleChanged),
             ];
         container(column)
             .padding(10)

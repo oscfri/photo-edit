@@ -7,10 +7,11 @@ use crate::album::Crop;
 #[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
 #[repr(C)]
 pub struct CameraUniform {
-    render_transform: [[f32; 4]; 4], // window coordinates -> render coordinates
-    window_transform: [[f32; 4]; 4], // crop coordinates -> window coordinates
-    crop_transform: [[f32; 4]; 4], // uv coordinates -> crop coordinates
-    image_transform: [[f32; 4]; 4], // uv coordinates -> image coordinates
+    window_to_render: [[f32; 4]; 4],
+    base_to_viewport_window: [[f32; 4]; 4],
+    base_to_cropped_base: [[f32; 4]; 4],
+    base_to_image: [[f32; 4]; 4],
+    image_to_viewport: [[f32; 4]; 4],
 }
 
 #[derive(Debug)]
@@ -40,9 +41,34 @@ fn transform(from: &Rectangle, to: &Rectangle) -> cgmath::Matrix4<f32> {
     )
 }
 
+fn create_rotation_transform(degrees_angle: f32) -> cgmath::Matrix4<f32> {
+    let angle: f32 = degrees_angle / 180.0 * std::f32::consts::PI;
+    let cos: f32 = f32::cos(angle);
+    let sin: f32 = f32::sin(angle);
+    let center = cgmath::Matrix4::new(
+        1.0, 0.0, 0.0, -0.5,
+        0.0, 1.0, 0.0, -0.5,
+        0.0, 0.0, 1.0, 0.0,
+        0.0, 0.0, 0.0, 1.0
+    );
+    let rotate = cgmath::Matrix4::new(
+        cos, -sin, 0.0, 0.0,
+        sin, cos, 0.0, 0.0,
+        0.0, 0.0, 1.0, 0.0,
+        0.0, 0.0, 0.0, 1.0
+    );
+    let revert_center = cgmath::Matrix4::new(
+        1.0, 0.0, 0.0, 0.5,
+        0.0, 1.0, 0.0, 0.5,
+        0.0, 0.0, 1.0, 0.0,
+        0.0, 0.0, 0.0, 1.0
+    );
+    center * rotate * revert_center
+}
+
 pub fn apply_image_transform(point: &iced::Point, bounds: &iced::Rectangle, crop: &Crop) -> iced::Point {
     let from: Rectangle = create_viewport_area(bounds, crop);
-    let to: Rectangle = create_crop_area(crop);
+    let to: Rectangle = create_crop_area_old(crop);
     let transform = transform(&from, &to).transpose();
     let transformed_point = transform * cgmath::vec4(point.x, point.y, 0.0, 1.0);
     iced::Point {
@@ -86,7 +112,7 @@ fn create_viewport_area(bounds: &iced::Rectangle, crop: &Crop) -> Rectangle {
     }
 }
 
-fn create_crop_area(crop: &Crop) -> Rectangle {
+fn create_crop_area_old(crop: &Crop) -> Rectangle {
     let crop_width: f32 = (crop.x2 - crop.x1).abs() as f32;
     let crop_height: f32 = (crop.y2 - crop.y1).abs() as f32;
     Rectangle {
@@ -97,12 +123,38 @@ fn create_crop_area(crop: &Crop) -> Rectangle {
     }
 }
 
+fn create_crop_area(crop: &Crop, image_width: usize, image_height: usize) -> Rectangle {
+    let x: f32 = (crop.x1 as f32) / (image_width as f32);
+    let y: f32 = (crop.y1 as f32) / (image_height as f32);
+    let width: f32 = ((crop.x2 - crop.x1).abs() as f32) / (image_width as f32);
+    let height: f32 = ((crop.y2 - crop.y1).abs() as f32) / (image_height as f32);
+    Rectangle {
+        x,
+        y,
+        width,
+        height
+    }
+}
+
 fn create_image_area(image_width: usize, image_height: usize) -> Rectangle {
     Rectangle {
         x: 0.0,
         y: 0.0,
         width: image_width as f32,
         height: image_height as f32
+    }
+}
+
+fn create_uv_area(crop: &Crop, image_width: usize, image_height: usize) -> Rectangle {
+    let x: f32 = (crop.x1 as f32) / (image_width as f32);
+    let y: f32 = (crop.y1 as f32) / (image_height as f32);
+    let width: f32 = ((crop.x2 - crop.x1).abs() as f32) / (image_width as f32);
+    let height: f32 = ((crop.y2 - crop.y1).abs() as f32) / (image_height as f32);
+    Rectangle {
+        x,
+        y,
+        width,
+        height
     }
 }
 
@@ -116,13 +168,15 @@ impl CameraUniform {
         let render_area: Rectangle = create_render_area();
         let window_area: Rectangle = create_window_area(viewport);
         let viewport_area: Rectangle = create_viewport_area(bounds, view);
-        let crop_area: Rectangle = create_crop_area(view);
+        let crop_area: Rectangle = create_crop_area(view, image_width, image_height);
         let image_area: Rectangle = create_image_area(image_width, image_height);
+        let rotation: cgmath::Matrix4<f32> = create_rotation_transform(view.angle);
         Self {
-            render_transform: transform(&window_area, &render_area).into(),
-            window_transform: transform(&crop_area, &viewport_area).into(),
-            crop_transform: transform(&Rectangle::default(), &crop_area).into(),
-            image_transform: transform( &Rectangle::default(), &image_area).into(),
+            window_to_render: transform(&window_area, &render_area).into(),
+            base_to_viewport_window: transform(&Rectangle::default(), &viewport_area).into(),
+            base_to_cropped_base: (transform(&Rectangle::default(), &crop_area) * rotation).into(),
+            base_to_image: transform( &Rectangle::default(), &image_area).into(),
+            image_to_viewport: transform(&image_area, &viewport_area).into(),
         }
     }
 }
