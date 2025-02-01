@@ -136,7 +136,7 @@ impl Main {
                 true
             },
             Message::AngleChanged(angle) => {
-                self.workspace.current_crop_mut().angle = angle;
+                self.workspace.current_crop_mut().degrees_angle = angle;
                 true
             },
             Message::ImageMouseMessage(image_mouse_message) => {
@@ -328,7 +328,7 @@ impl Main {
                 iced::widget::button("Next").on_press(Message::NextImage),
                 iced::widget::button("Crop").on_press(Message::ToggleCropMode),
                 iced::widget::text("Angle"),
-                iced::widget::slider(-180.0..=180.0, crop.angle, Message::AngleChanged),
+                iced::widget::slider(-180.0..=180.0, crop.degrees_angle, Message::AngleChanged),
             ];
         container(column)
             .padding(10)

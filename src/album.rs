@@ -42,7 +42,7 @@ pub struct Crop {
     pub y1: i32,
     pub x2: i32,
     pub y2: i32,
-    pub angle: f32,
+    pub degrees_angle: f32,
 }
 
 pub fn load_album(file_paths: &Vec<PathBuf>) -> Album {
@@ -96,7 +96,7 @@ fn load_album_image(path: &PathBuf) -> AlbumImage {
         y1: 0,
         x2: source_image.width as i32,
         y2: source_image.height as i32,
-        angle: 1.0,
+        degrees_angle: 1.0,
     };
     let thumbnail: RawImage = convert_to_thumbnail(&rgb_image);
     AlbumImage {

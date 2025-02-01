@@ -41,28 +41,26 @@ fn transform(from: &Rectangle, to: &Rectangle) -> cgmath::Matrix4<f32> {
     )
 }
 
-fn create_rotation_transform(degrees_angle: f32) -> cgmath::Matrix4<f32> {
-    let angle: f32 = degrees_angle / 180.0 * std::f32::consts::PI;
+fn create_rotation_transform(crop: &Crop, image_width: usize, image_height: usize) -> cgmath::Matrix4<f32> {
+    let center_x: f32 = (image_width as f32) / 2.0;
+    let center_y: f32 = (image_height as f32) / 2.0;
+    let angle: f32 = crop.degrees_angle / 180.0 * std::f32::consts::PI;
     let cos: f32 = f32::cos(angle);
     let sin: f32 = f32::sin(angle);
-    let center = cgmath::Matrix4::new(
-        1.0, 0.0, 0.0, -0.5,
-        0.0, 1.0, 0.0, -0.5,
-        0.0, 0.0, 1.0, 0.0,
-        0.0, 0.0, 0.0, 1.0
-    );
+    let center_area: Rectangle = Rectangle {
+        x: -center_x,
+        y: -center_y,
+        width: image_width as f32,
+        height: image_height as f32
+    };
+    let center = transform(&Rectangle::default(), &center_area);
     let rotate = cgmath::Matrix4::new(
         cos, -sin, 0.0, 0.0,
         sin, cos, 0.0, 0.0,
         0.0, 0.0, 1.0, 0.0,
         0.0, 0.0, 0.0, 1.0
     );
-    let revert_center = cgmath::Matrix4::new(
-        1.0, 0.0, 0.0, 0.5,
-        0.0, 1.0, 0.0, 0.5,
-        0.0, 0.0, 1.0, 0.0,
-        0.0, 0.0, 0.0, 1.0
-    );
+    let revert_center = transform(&center_area, &Rectangle::default());
     center * rotate * revert_center
 }
 
@@ -145,19 +143,6 @@ fn create_image_area(image_width: usize, image_height: usize) -> Rectangle {
     }
 }
 
-fn create_uv_area(crop: &Crop, image_width: usize, image_height: usize) -> Rectangle {
-    let x: f32 = (crop.x1 as f32) / (image_width as f32);
-    let y: f32 = (crop.y1 as f32) / (image_height as f32);
-    let width: f32 = ((crop.x2 - crop.x1).abs() as f32) / (image_width as f32);
-    let height: f32 = ((crop.y2 - crop.y1).abs() as f32) / (image_height as f32);
-    Rectangle {
-        x,
-        y,
-        width,
-        height
-    }
-}
-
 impl CameraUniform {
     pub fn new(
             bounds: &iced::Rectangle,
@@ -170,7 +155,7 @@ impl CameraUniform {
         let viewport_area: Rectangle = create_viewport_area(bounds, view);
         let crop_area: Rectangle = create_crop_area(view, image_width, image_height);
         let image_area: Rectangle = create_image_area(image_width, image_height);
-        let rotation: cgmath::Matrix4<f32> = create_rotation_transform(view.angle);
+        let rotation: cgmath::Matrix4<f32> = create_rotation_transform(view, image_width, image_height);
         Self {
             window_to_render: transform(&window_area, &render_area).into(),
             base_to_viewport_window: transform(&Rectangle::default(), &viewport_area).into(),

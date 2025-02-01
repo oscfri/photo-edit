@@ -72,7 +72,7 @@ impl WorkSpace {
                 x2: self.current_source_image().width as i32,
                 y1: 0,
                 y2: self.current_source_image().height as i32,
-                angle: self.current_crop().angle,
+                degrees_angle: self.current_crop().degrees_angle,
             },
             view_mode::ViewMode::Normal => self.current_crop().clone()
         }
