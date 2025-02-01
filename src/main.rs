@@ -224,18 +224,18 @@ impl Main {
                     },
                     MouseState::Down => {
                         let crop: &mut Crop = self.workspace.current_crop_mut();
-                        crop.x2 = viewport::get_image_mouse_x();
-                        crop.y2 = viewport::get_image_mouse_y();
+                        crop.width = (viewport::get_image_mouse_x() - crop.center_x).abs() * 2;
+                        crop.height = (viewport::get_image_mouse_y() - crop.center_y).abs() * 2;
                         true
                     }
                 }
             },
             MouseMessage::Press => {
                 let crop: &mut Crop = self.workspace.current_crop_mut();
-                crop.x1 = viewport::get_image_mouse_x();
-                crop.y1 = viewport::get_image_mouse_y();
-                crop.x2 = viewport::get_image_mouse_x();
-                crop.y2 = viewport::get_image_mouse_y();
+                crop.center_x = viewport::get_image_mouse_x();
+                crop.center_y = viewport::get_image_mouse_y();
+                crop.width = 0;
+                crop.height = 0;
                 true
             },
             MouseMessage::Release => {

@@ -38,10 +38,10 @@ pub struct Parameters {
 
 #[derive(Debug, Default, Clone)]
 pub struct Crop {
-    pub x1: i32,
-    pub y1: i32,
-    pub x2: i32,
-    pub y2: i32,
+    pub center_x: i32,
+    pub center_y: i32,
+    pub width: i32,
+    pub height: i32,
     pub degrees_angle: f32,
 }
 
@@ -92,10 +92,10 @@ fn load_album_image(path: &PathBuf) -> AlbumImage {
     let source_image: RawImage = convert_to_raw_image(&rgb_image);
     let parameters: Parameters = Parameters::default();
     let crop: Crop = Crop {
-        x1: 0,
-        y1: 0,
-        x2: source_image.width as i32,
-        y2: source_image.height as i32,
+        center_x: (source_image.width as i32) / 2,
+        center_y: (source_image.height as i32) / 2,
+        width: source_image.width as i32,
+        height: source_image.height as i32,
         degrees_angle: 1.0,
     };
     let thumbnail: RawImage = convert_to_thumbnail(&rgb_image);

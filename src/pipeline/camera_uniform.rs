@@ -1,4 +1,4 @@
-use cgmath::{self, Matrix};
+use cgmath::{self, Matrix, SquareMatrix};
 use iced::widget::shader;
 
 use crate::album::Crop;
@@ -10,8 +10,7 @@ pub struct CameraUniform {
     window_to_render: [[f32; 4]; 4],
     base_to_viewport_window: [[f32; 4]; 4],
     base_to_cropped_base: [[f32; 4]; 4],
-    base_to_image: [[f32; 4]; 4],
-    image_to_viewport: [[f32; 4]; 4],
+    base_to_cropped_base2: [[f32; 4]; 4],
 }
 
 #[derive(Debug)]
@@ -42,14 +41,12 @@ fn transform(from: &Rectangle, to: &Rectangle) -> cgmath::Matrix4<f32> {
 }
 
 fn create_rotation_transform(crop: &Crop, image_width: usize, image_height: usize) -> cgmath::Matrix4<f32> {
-    let center_x: f32 = (image_width as f32) / 2.0;
-    let center_y: f32 = (image_height as f32) / 2.0;
     let angle: f32 = crop.degrees_angle / 180.0 * std::f32::consts::PI;
     let cos: f32 = f32::cos(angle);
     let sin: f32 = f32::sin(angle);
     let center_area: Rectangle = Rectangle {
-        x: -center_x,
-        y: -center_y,
+        x: -crop.center_x as f32,
+        y: -crop.center_y as f32,
         width: image_width as f32,
         height: image_height as f32
     };
@@ -64,11 +61,19 @@ fn create_rotation_transform(crop: &Crop, image_width: usize, image_height: usiz
     center * rotate * revert_center
 }
 
-pub fn apply_image_transform(point: &iced::Point, bounds: &iced::Rectangle, crop: &Crop) -> iced::Point {
-    let from: Rectangle = create_viewport_area(bounds, crop);
-    let to: Rectangle = create_crop_area_old(crop);
-    let transform = transform(&from, &to).transpose();
-    let transformed_point = transform * cgmath::vec4(point.x, point.y, 0.0, 1.0);
+pub fn apply_image_transform(
+        point: &iced::Point,
+        bounds: &iced::Rectangle,
+        crop: &Crop,
+        image_width: usize,
+        image_height: usize) -> iced::Point {
+    let crop_area: Rectangle = create_crop_area(crop);
+    let viewport_area: Rectangle = create_viewport_area(bounds, crop);
+    let rotation: cgmath::Matrix4<f32> = create_rotation_transform(crop, image_width, image_height);
+    let crop_transform = transform(&Rectangle::default(), &crop_area);
+    let viewport_transform = transform(&viewport_area, &Rectangle::default());
+    let transform = viewport_transform * rotation * crop_transform;
+    let transformed_point = transform.transpose() * cgmath::vec4(point.x, point.y, 0.0, 1.0);
     iced::Point {
         x: transformed_point.x / transformed_point.w,
         y: transformed_point.y / transformed_point.w,
@@ -94,9 +99,7 @@ fn create_window_area(viewport: &shader::Viewport) -> Rectangle {
 }
 
 fn create_viewport_area(bounds: &iced::Rectangle, crop: &Crop) -> Rectangle {
-    let crop_width: f32 = (crop.x2 - crop.x1).abs() as f32;
-    let crop_height: f32 = (crop.y2 - crop.y1).abs() as f32;
-    let crop_aspect_ratio: f32 = crop_width / crop_height;
+    let crop_aspect_ratio: f32 = (crop.width as f32) / (crop.height as f32);
     let bounds_aspect_ratio: f32 = bounds.width / bounds.height;
     let width: f32 = bounds.width * (crop_aspect_ratio / bounds_aspect_ratio).min(1.0);
     let height: f32 = bounds.height * (bounds_aspect_ratio / crop_aspect_ratio).min(1.0);
@@ -110,22 +113,11 @@ fn create_viewport_area(bounds: &iced::Rectangle, crop: &Crop) -> Rectangle {
     }
 }
 
-fn create_crop_area_old(crop: &Crop) -> Rectangle {
-    let crop_width: f32 = (crop.x2 - crop.x1).abs() as f32;
-    let crop_height: f32 = (crop.y2 - crop.y1).abs() as f32;
-    Rectangle {
-        x: 0.0,
-        y: 0.0,
-        width: crop_width,
-        height: crop_height
-    }
-}
-
-fn create_crop_area(crop: &Crop, image_width: usize, image_height: usize) -> Rectangle {
-    let x: f32 = (crop.x1 as f32) / (image_width as f32);
-    let y: f32 = (crop.y1 as f32) / (image_height as f32);
-    let width: f32 = ((crop.x2 - crop.x1).abs() as f32) / (image_width as f32);
-    let height: f32 = ((crop.y2 - crop.y1).abs() as f32) / (image_height as f32);
+fn create_crop_area(crop: &Crop) -> Rectangle {
+    let x: f32 = (crop.center_x - crop.width / 2) as f32;
+    let y: f32 = (crop.center_y - crop.height / 2) as f32;
+    let width: f32 = crop.width as f32;
+    let height: f32 = crop.height as f32;
     Rectangle {
         x,
         y,
@@ -134,12 +126,16 @@ fn create_crop_area(crop: &Crop, image_width: usize, image_height: usize) -> Rec
     }
 }
 
-fn create_image_area(image_width: usize, image_height: usize) -> Rectangle {
+fn create_crop_relative_area(crop: &Crop, image_width: usize, image_height: usize) -> Rectangle {
+    let x: f32 = ((crop.center_x - crop.width / 2) as f32) / (image_width as f32);
+    let y: f32 = ((crop.center_y - crop.height / 2) as f32) / (image_height as f32);
+    let width: f32 = (crop.width as f32) / (image_width as f32);
+    let height: f32 = (crop.height as f32) / (image_height as f32);
     Rectangle {
-        x: 0.0,
-        y: 0.0,
-        width: image_width as f32,
-        height: image_height as f32
+        x,
+        y,
+        width,
+        height
     }
 }
 
@@ -148,20 +144,20 @@ impl CameraUniform {
             bounds: &iced::Rectangle,
             viewport: &shader::Viewport,
             view: &Crop,
+            crop: &Crop,
             image_width: usize,
             image_height: usize) -> Self {
         let render_area: Rectangle = create_render_area();
         let window_area: Rectangle = create_window_area(viewport);
         let viewport_area: Rectangle = create_viewport_area(bounds, view);
-        let crop_area: Rectangle = create_crop_area(view, image_width, image_height);
-        let image_area: Rectangle = create_image_area(image_width, image_height);
+        let crop_area: Rectangle = create_crop_relative_area(view, image_width, image_height);
+        let crop_area2: Rectangle = create_crop_relative_area(crop, image_width, image_height);
         let rotation: cgmath::Matrix4<f32> = create_rotation_transform(view, image_width, image_height);
         Self {
             window_to_render: transform(&window_area, &render_area).into(),
             base_to_viewport_window: transform(&Rectangle::default(), &viewport_area).into(),
             base_to_cropped_base: (transform(&Rectangle::default(), &crop_area) * rotation).into(),
-            base_to_image: transform( &Rectangle::default(), &image_area).into(),
-            image_to_viewport: transform(&image_area, &viewport_area).into(),
+            base_to_cropped_base2: (rotation * transform(&crop_area2, &Rectangle::default())).into(),
         }
     }
 }

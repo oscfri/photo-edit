@@ -2,8 +2,7 @@ struct CameraUniform {
     window_to_render: mat4x4<f32>,
     base_to_viewport_window: mat4x4<f32>,
     base_to_cropped_base: mat4x4<f32>,
-    base_to_image: mat4x4<f32>,
-    image_to_viewport: mat4x4<f32>,
+    base_to_cropped_base2: mat4x4<f32>,
 };
 @group(0) @binding(0)
 var<uniform> camera: CameraUniform;
@@ -24,22 +23,18 @@ struct Vertex {
 struct VertexOutput {
     @builtin(position) render_position: vec4<f32>,
     @location(0) tex_coords: vec2<f32>,
-    @location(1) image_position: vec2<f32>,
-    @location(2) viewport_position: vec2<f32>,
+    @location(1) tex_coords2: vec2<f32>,
 };
 
 @vertex
 fn vs_main(vertex: Vertex) -> VertexOutput {
     var out: VertexOutput;
     let base: vec4<f32> = vec4<f32>(vertex.uv, 0.0, 1.0);
-    let image_position = base * camera.base_to_cropped_base * camera.base_to_image;
     let render_position = base * camera.base_to_viewport_window * camera.window_to_render;
-    let viewport_position = base * camera.base_to_image * camera.image_to_viewport;
 
     out.render_position = render_position;
     out.tex_coords = (base * camera.base_to_cropped_base).xy;
-    out.image_position = image_position.xy;
-    out.viewport_position = viewport_position.xy;
+    out.tex_coords2 = (base * camera.base_to_cropped_base2).xy;
     return out;
 }
 
@@ -97,11 +92,9 @@ fn draw_crop_area(vertex: VertexOutput, rgb: vec3<f32>) -> vec3<f32> {
 }
 
 fn in_crop_area(vertex: VertexOutput) -> bool {
-    let position = vertex.viewport_position;
-    let top_left = to_viewport(crop.top_left);
-    let bottom_right = to_viewport(crop.bottom_right);
-    if (position.x < top_left.x || position.x > bottom_right.x ||
-            position.y < top_left.y || position.y > bottom_right.y) {
+    let position = vertex.tex_coords2;
+    if (position.x < 0.0 || position.x > 1.0 ||
+            position.y < 0.0 || position.y > 1.0) {
         return false;
     } else {
         return true;
@@ -109,19 +102,13 @@ fn in_crop_area(vertex: VertexOutput) -> bool {
 }
 
 fn in_crop_border(vertex: VertexOutput) -> bool {
-    let position = vertex.viewport_position;
-    let top_left = to_viewport(crop.top_left) - vec2<f32>(1.0, 1.0);
-    let bottom_right = to_viewport(crop.bottom_right) + vec2<f32>(1.0, 1.0);
-    if (position.x < top_left.x || position.x > bottom_right.x ||
-            position.y < top_left.y || position.y > bottom_right.y) {
+    let position = vertex.tex_coords2;
+    if (position.x < 0.0 || position.x > 1.0 ||
+            position.y < 0.0 || position.y > 1.0) {
         return false;
     } else {
         return true;
     }
-}
-
-fn to_viewport(position: vec2<f32>) -> vec2<f32> {
-    return (vec4<f32>(position, 0.0, 1.0) * camera.image_to_viewport).xy;
 }
 
 /**

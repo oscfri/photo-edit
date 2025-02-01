@@ -75,7 +75,12 @@ impl Viewport {
     fn update_mouse(&self, bounds: &iced::Rectangle) {
         match self.cursor {
             mouse::Cursor::Available(point) => {
-                let image_point: iced::Point = camera_uniform::apply_image_transform(&point, bounds, &self.workspace.view);
+                let image_point: iced::Point = camera_uniform::apply_image_transform(
+                    &point,
+                    bounds,
+                    &self.workspace.view,
+                self.workspace.image.width,
+                self.workspace.image.height);
                 update_image_mouse(image_point.x as i32, image_point.y as i32);
             },
             mouse::Cursor::Unavailable => {} // Do nothing
@@ -120,6 +125,7 @@ impl shader::Primitive for Viewport {
                 &bounds,
                 &viewport,
                 &self.workspace.view,
+                &self.workspace.crop,
                 self.workspace.image.width,
                 self.workspace.image.height);
         let parameter_uniform = parameter_uniform::ParameterUniform::new(&self.workspace.parameters);
