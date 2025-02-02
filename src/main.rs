@@ -35,6 +35,7 @@ enum MouseState {
 enum MouseMessage {
     Over,
     Press,
+    RightPress,
     Release
 }
 
@@ -141,26 +142,7 @@ impl Main {
             },
             Message::ImageMouseMessage(image_mouse_message) => {
                 self.update_mouse_on_image(image_mouse_message)
-            },
-            // Message::ImageMousePress => {
-                // TODO: This doesn't really work. Mouse position doesn't necessarily need to correspond to the
-                // pixel value. Will fix this when a custom image renderer is implemented.
-                // false
-                // TODO: Reimplement this
-                // let x: usize = self.mouse_position.x as usize;
-                // let y: usize = self.mouse_position.y as usize;
-                // let current_image = self.current_image_mut();
-                // match current_image.pixel_at(x, y) {
-                //     Some(pixel) => {
-                //         current_image.parameters.tint = -pixel.tint;
-                //         current_image.parameters.temperature = -pixel.temperature;
-                //         true
-                //     },
-                //     None => {
-                //         false
-                //     }
-                // }
-            // }
+            }
         };
 
         if should_update_image {
@@ -200,17 +182,49 @@ impl Main {
             MouseMessage::Press => {
                 self.mouse_state = MouseState::Down;
             },
+            MouseMessage::RightPress => {}, // Do nothing
             MouseMessage::Release => {
                 self.mouse_state = MouseState::Up;
-            }
+            },
         }
         
         match self.view_mode {
             ViewMode::Normal => {
-                false
+                self.update_mouse_normal_mode(image_mouse_message)
             },
             ViewMode::Crop => {
                 self.update_mouse_crop_mode(image_mouse_message)
+            }
+        }
+    }
+
+    fn update_mouse_normal_mode(&mut self, image_mouse_message: MouseMessage) -> bool {
+        match image_mouse_message {
+            MouseMessage::Over => {
+                false
+            },
+            MouseMessage::Press => {
+                false
+            },
+            MouseMessage::RightPress => {
+                // White balance
+                let x: usize = viewport::get_image_mouse_x() as usize;
+                let y: usize = viewport::get_image_mouse_y() as usize;
+                let current_image: &album::AlbumImage = self.workspace.current_image();
+                match current_image.lab_pixel_at(x, y) {
+                    Some(pixel) => {
+                        let parameters: &mut album::Parameters = self.workspace.current_parameters_mut();
+                        parameters.tint = -pixel.tint;
+                        parameters.temperature = -pixel.temperature;
+                        true
+                    },
+                    None => {
+                        false
+                    }
+                }
+            },
+            MouseMessage::Release => {
+                false
             }
         }
     }
@@ -243,9 +257,12 @@ impl Main {
                 crop.height = 0;
                 true
             },
-            MouseMessage::Release => {
+            MouseMessage::RightPress => {
                 false
             }
+            MouseMessage::Release => {
+                false
+            },
         }
     }
     
@@ -279,6 +296,7 @@ impl Main {
         let image_mouse_area = iced::widget::mouse_area(image_area)
             .on_move(|_point| Message::ImageMouseMessage(MouseMessage::Over))
             .on_press(Message::ImageMouseMessage(MouseMessage::Press))
+            .on_right_press(Message::ImageMouseMessage(MouseMessage::RightPress))
             .on_release(Message::ImageMouseMessage(MouseMessage::Release));
         image_mouse_area.into()
     }
