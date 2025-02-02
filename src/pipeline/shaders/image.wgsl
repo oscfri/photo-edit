@@ -29,12 +29,14 @@ struct VertexOutput {
 @vertex
 fn vs_main(vertex: Vertex) -> VertexOutput {
     var out: VertexOutput;
-    let base: vec4<f32> = vec4<f32>(vertex.uv - 0.5, 0.0, 1.0);
+    let base: vec4<f32> = vec4<f32>(vertex.uv, 0.0, 1.0);
     let render_position = base * camera.base_to_viewport_window * camera.window_to_render;
+    let view_coords = base * camera.base_to_cropped_base;
+    let crop_coords = view_coords * camera.base_to_cropped_base2;
 
     out.render_position = render_position;
-    out.tex_coords = (base * camera.base_to_cropped_base).xy;
-    out.tex_coords2 = (base * camera.base_to_cropped_base * camera.base_to_cropped_base2).xy;
+    out.tex_coords = view_coords.xy / view_coords.w;
+    out.tex_coords2 = crop_coords.xy / crop_coords.w;
     return out;
 }
 

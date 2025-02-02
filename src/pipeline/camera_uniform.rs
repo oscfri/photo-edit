@@ -2,6 +2,7 @@ use cgmath::{self, Matrix};
 use iced::widget::shader;
 
 use crate::album::Crop;
+use crate::pipeline::transform::{transform, Rectangle};
 
 // It's important we're working with 4x4 matrixes. Otherwise we'll run into annoying memory alignment issues.
 #[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
@@ -11,61 +12,6 @@ pub struct CameraUniform {
     base_to_viewport_window: [[f32; 4]; 4],
     base_to_cropped_base: [[f32; 4]; 4],
     base_to_cropped_base2: [[f32; 4]; 4],
-}
-
-#[derive(Debug)]
-struct Rectangle {
-    center_x: f32,
-    center_y: f32,
-    width: f32,
-    height: f32,
-    angle_degrees: f32
-}
-
-impl Default for Rectangle {
-    fn default() -> Self {
-        Self { center_x: 0.0, center_y: 0.0, width: 1.0, height: 1.0, angle_degrees: 0.0 }
-    }
-}
-
-fn translate_transform(x: f32, y: f32) -> cgmath::Matrix4<f32> {
-    cgmath::Matrix4::new(
-        1.0, 0.0, 0.0, x,
-        0.0, 1.0, 0.0, y,
-        0.0, 0.0, 1.0, 0.0,
-        0.0, 0.0, 0.0, 1.0
-    )
-}
-
-fn scale_transform(x: f32, y: f32) -> cgmath::Matrix4<f32> {
-    cgmath::Matrix4::new(
-        x, 0.0, 0.0, 0.0,
-        0.0, y, 0.0, 0.0,
-        0.0, 0.0, 1.0, 0.0,
-        0.0, 0.0, 0.0, 1.0
-    )
-}
-
-fn rotate_transform(angle_degrees: f32) -> cgmath::Matrix4<f32> {
-    let angle_radians: f32 = angle_degrees / 180.0 * std::f32::consts::PI;
-    let cos: f32 = f32::cos(angle_radians);
-    let sin: f32 = f32::sin(angle_radians);
-    cgmath::Matrix4::new(
-        cos, -sin, 0.0, 0.0,
-        sin, cos, 0.0, 0.0,
-        0.0, 0.0, 1.0, 0.0,
-        0.0, 0.0, 0.0, 1.0
-    )
-}
-
-fn transform(from: &Rectangle, to: &Rectangle) -> cgmath::Matrix4<f32> {
-    let from_center: cgmath::Matrix4<f32> = translate_transform(-from.center_x, -from.center_y);
-    let from_scale: cgmath::Matrix4<f32> = scale_transform(1.0 / from.width, 1.0 / from.height);
-    let from_rotate: cgmath::Matrix4<f32> = rotate_transform(-from.angle_degrees);
-    let to_rotate: cgmath::Matrix4<f32> = rotate_transform(to.angle_degrees);
-    let to_scale: cgmath::Matrix4<f32> = scale_transform(to.width, to.height);
-    let to_center: cgmath::Matrix4<f32> = translate_transform(to.center_x, to.center_y);
-    from_center * from_rotate * from_scale * to_scale * to_rotate * to_center
 }
 
 pub fn apply_image_transform(
@@ -144,6 +90,16 @@ fn create_crop_relative_area(crop: &Crop, image_width: usize, image_height: usiz
     }
 }
 
+fn create_uv_area() -> Rectangle {
+    Rectangle {
+        center_x: 0.5,
+        center_y: 0.5,
+        width: 1.0,
+        height: 1.0,
+        angle_degrees: 0.0
+    }
+}
+
 impl CameraUniform {
     pub fn new(
             bounds: &iced::Rectangle,
@@ -157,11 +113,12 @@ impl CameraUniform {
         let viewport_area: Rectangle = create_viewport_area(bounds, view);
         let view_area: Rectangle = create_crop_relative_area(view, image_width, image_height);
         let crop_area: Rectangle = create_crop_relative_area(crop, image_width, image_height);
+        let uv_area: Rectangle = create_uv_area();
         Self {
             window_to_render: transform(&window_area, &render_area).into(),
-            base_to_viewport_window: transform(&Rectangle::default(), &viewport_area).into(),
-            base_to_cropped_base: transform(&Rectangle::default(), &view_area).into(),
-            base_to_cropped_base2: transform(&crop_area, &view_area).into(),
+            base_to_viewport_window: transform(&uv_area, &viewport_area).into(),
+            base_to_cropped_base: transform(&uv_area, &view_area).into(),
+            base_to_cropped_base2: transform(&crop_area, &uv_area).into(),
         }
     }
 }

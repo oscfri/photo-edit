@@ -224,8 +224,13 @@ impl Main {
                     },
                     MouseState::Down => {
                         let crop: &mut Crop = self.workspace.current_crop_mut();
-                        crop.width = (viewport::get_image_mouse_x() - crop.center_x).abs();
-                        crop.height = (viewport::get_image_mouse_y() - crop.center_y).abs();
+                        let width: f32 = (viewport::get_image_mouse_x() - crop.center_x) as f32;
+                        let height: f32 = (viewport::get_image_mouse_y() - crop.center_y) as f32;
+                        let angle: f32 = crop.angle_degrees / 180.0 * std::f32::consts::PI;
+                        let sin: f32 = f32::sin(angle);
+                        let cos: f32 = f32::cos(angle);
+                        crop.width = ((width * cos + height * sin).abs() * 2.0) as i32;
+                        crop.height = ((-width * sin + height * cos).abs() * 2.0) as i32;
                         true
                     }
                 }
