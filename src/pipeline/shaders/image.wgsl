@@ -60,25 +60,42 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
     let texture_sample: vec4<f32> = textureSample(t_diffuse, s_diffuse, in.tex_coords);
     let rgb: vec3<f32> = texture_sample.xyz;
     let lab: vec3<f32> = rgb_to_lab(rgb);
-    let lab_applied: vec3<f32> = apply_parameters(lab);
+    let lab_applied: vec3<f32> = apply_parameters(lab, in.tex_coords);
     let rgb_applied: vec3<f32> = lab_to_rgb(lab_applied);
     let rgb_final: vec3<f32> = draw_crop_area(in, rgb_applied);
 
     return vec4<f32>(rgb_final, 1.0);
 }
 
-fn apply_parameters(lab: vec3<f32>) -> vec3<f32> {
-    var adjusted: vec3<f32> = lab;
+fn apply_parameters(lab: vec3<f32>, position: vec2<f32>) -> vec3<f32> {
+    let globally_applied: vec3<f32> = apply_global_parameters(lab);
+    let masked: vec3<f32> = apply_radial_parameters(globally_applied, position);
+    return masked;
+}
+
+fn apply_global_parameters(lab: vec3<f32>) -> vec3<f32> {
+    var applied: vec3<f32> = lab;
 
     let multiplier: vec3<f32> = (vec3<f32>(parameters.contrast, parameters.saturation, parameters.saturation) + 100.0) / 100.0;
     let adder: vec3<f32> = vec3<f32>(parameters.brightness, parameters.tint, parameters.temperature);
 
-    adjusted -= vec3<f32>(50.0, 0.0, 0.0); // Center brightness value
-    adjusted *= multiplier;
-    adjusted += adder;
-    adjusted += vec3<f32>(50.0, 0.0, 0.0); // Revert brightness value
+    applied -= vec3<f32>(50.0, 0.0, 0.0); // Center brightness value
+    applied *= multiplier;
+    applied += adder;
+    applied += vec3<f32>(50.0, 0.0, 0.0); // Revert brightness value
 
-    return adjusted;
+    return applied;
+}
+
+fn apply_radial_parameters(lab: vec3<f32>, position: vec2<f32>) -> vec3<f32> {
+    let distance = distance(position, vec2<f32>(0.75, 0.75));
+    let radius = 0.25;
+    let alpha = clamp((radius - distance) / radius, 0.0, 1.0);
+    if (alpha > 0.0) {
+        return lab + vec3<f32>(20.0, 0.0, 0.0) * alpha;
+    } else {
+        return lab;
+    }
 }
 
 fn draw_crop_area(vertex: VertexOutput, rgb: vec3<f32>) -> vec3<f32> {
