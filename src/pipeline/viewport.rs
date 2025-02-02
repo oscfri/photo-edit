@@ -78,9 +78,7 @@ impl Viewport {
                 let image_point: iced::Point = camera_uniform::apply_image_transform(
                     &point,
                     bounds,
-                    &self.workspace.view,
-                self.workspace.image.width,
-                self.workspace.image.height);
+                    &self.workspace.view);
                 update_image_mouse(image_point.x as i32, image_point.y as i32);
             },
             mouse::Cursor::Unavailable => {} // Do nothing
