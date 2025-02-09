@@ -15,8 +15,8 @@ impl Main {
 pub struct View<'a> {
     viewport: &'a viewport::Viewport,
     mouse_position: Point,
-    current_crop: &'a album::Crop,
-    current_parameters: &'a album::Parameters,
+    crop: &'a album::Crop,
+    parameters: &'a album::Parameters,
     album_images: &'a Vec<album::AlbumImage>
 }
 
@@ -24,10 +24,10 @@ impl<'a> View<'a> {
     pub fn new(
             viewport: &'a viewport::Viewport,
             mouse_position: Point,
-            current_crop: &'a album::Crop,
-            current_parameters: &'a album::Parameters,
+            crop: &'a album::Crop,
+            parameters: &'a album::Parameters,
             album_images: &'a Vec<album::AlbumImage>) -> Self {
-        Self { viewport, mouse_position, current_crop, current_parameters, album_images }
+        Self { viewport, mouse_position, crop, parameters, album_images }
     }
 
     pub fn view(&self) -> iced::Element<'a, Message> {
@@ -62,7 +62,7 @@ impl<'a> View<'a> {
     }
 
     fn view_debugger(&self) -> iced::Element<'a, Message> {
-        let debug_str: String = format!("{:?}, {:?}", self.mouse_position, self.current_crop);
+        let debug_str: String = format!("{:?}, {:?}", self.mouse_position, self.crop);
         iced::widget::container(iced::widget::text(debug_str))
             .style(iced::widget::container::dark)
             .width(iced::Fill)
@@ -94,27 +94,25 @@ impl<'a> View<'a> {
     }
     
     fn view_sliders(&self) -> iced::Element<'a, Message> {
-        let crop: &album::Crop = self.current_crop;
-        let parameters: &album::Parameters = self.current_parameters;
         let column = iced::widget::column![
                 iced::widget::button("Load").on_press(Message::LoadAlbum),
                 iced::widget::text("Brightness"),
-                iced::widget::slider(-100.0..=100.0, parameters.brightness, Message::BrightnessChanged),
+                iced::widget::slider(-100.0..=100.0, self.parameters.brightness, Message::BrightnessChanged),
                 iced::widget::text("Contrast"),
-                iced::widget::slider(-100.0..=100.0, parameters.contrast, Message::ContrastChanged),
+                iced::widget::slider(-100.0..=100.0, self.parameters.contrast, Message::ContrastChanged),
                 iced::widget::text("Tint"),
-                iced::widget::slider(-100.0..=100.0, parameters.tint, Message::TintChanged),
+                iced::widget::slider(-100.0..=100.0, self.parameters.tint, Message::TintChanged),
                 iced::widget::text("Temperature"),
-                iced::widget::slider(-100.0..=100.0, parameters.temperature, Message::TemperatureChanged),
+                iced::widget::slider(-100.0..=100.0, self.parameters.temperature, Message::TemperatureChanged),
                 iced::widget::text("Saturation"),
-                iced::widget::slider(-100.0..=100.0, parameters.saturation, Message::SaturationChanged),
+                iced::widget::slider(-100.0..=100.0, self.parameters.saturation, Message::SaturationChanged),
                 iced::widget::text("Mask Brightness"),
-                iced::widget::slider(-100.0..=100.0, parameters.radial_masks[0].brightness, |brightness| Message::MaskBrightnessChanged(0, brightness)),
+                iced::widget::slider(-100.0..=100.0, self.parameters.radial_masks[0].brightness, |brightness| Message::MaskBrightnessChanged(0, brightness)),
                 iced::widget::button("Next").on_press(Message::NextImage),
                 iced::widget::button("Crop").on_press(Message::ToggleCropMode),
                 iced::widget::button("Mask").on_press(Message::ToggleMaskMode(0)),
                 iced::widget::text("Angle"),
-                iced::widget::slider(-180.0..=180.0, crop.angle_degrees, Message::AngleChanged),
+                iced::widget::slider(-180.0..=180.0, self.crop.angle_degrees, Message::AngleChanged),
             ];
         iced::widget::container(column)
             .padding(10)
