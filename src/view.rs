@@ -1,4 +1,16 @@
-use crate::{album, pipeline::viewport, Message, MouseMessage, Point};
+use crate::{album, pipeline::viewport, Main, Message, MouseMessage, Point};
+
+impl Main {
+    pub fn view(&self) -> iced::Element<Message> {
+        let view = View::new(
+            &self.viewport,
+            self.mouse_position,
+            self.workspace.current_crop(),
+            self.workspace.current_parameters(),
+            self.workspace.album_images());
+        view.view()
+    }
+}
 
 pub struct View<'a> {
     viewport: &'a viewport::Viewport,
