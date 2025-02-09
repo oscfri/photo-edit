@@ -1,6 +1,6 @@
 use crate::{album, pipeline::viewport, workspace, Main, Message, MouseMessage, MouseState, Point, ViewMode};
 
-use std::path::PathBuf;
+use std::{path::PathBuf, usize};
 
 pub fn make_viewport(workspace: &workspace::WorkSpace, view_mode: &ViewMode) -> viewport::Viewport {
     viewport::Viewport::new(
@@ -27,21 +27,11 @@ impl Main {
                 true
             },
             Message::ToggleCropMode => {
-                if !matches!(self.view_mode, ViewMode::Crop) {
-                    self.view_mode = ViewMode::Crop;
-                } else {
-                    self.view_mode = ViewMode::Normal;
-                }
-                true
-            }
+                self.toggle_view_mode(ViewMode::Crop)
+            },
             Message::ToggleMaskMode(mask_index) => {
-                if !matches!(self.view_mode, ViewMode::Mask(mask_index)) {
-                    self.view_mode = ViewMode::Mask(mask_index);
-                } else {
-                    self.view_mode = ViewMode::Normal;
-                }
-                true
-            }
+                self.toggle_view_mode(ViewMode::Mask(mask_index))
+            },
             Message::BrightnessChanged(brightness) => {
                 self.workspace.current_parameters_mut().brightness = brightness;
                 true
@@ -62,6 +52,18 @@ impl Main {
                 self.workspace.current_parameters_mut().saturation = saturation;
                 true
             },
+            Message::AddMask => {
+                let current_parameters = self.workspace.current_parameters_mut();
+                let new_mask_index = current_parameters.radial_masks.len();
+                current_parameters.radial_masks.push(album::RadialMask::default());
+                self.toggle_view_mode(ViewMode::Mask(new_mask_index))
+            },
+            Message::DeleteMask(mask_index) => {
+                let current_parameters = self.workspace.current_parameters_mut();
+                current_parameters.radial_masks.remove(mask_index);
+                self.view_mode = ViewMode::Normal;
+                true
+            },
             Message::MaskBrightnessChanged(index, brightness) => {
                 self.workspace.current_parameters_mut().radial_masks[index].brightness = brightness;
                 true
@@ -80,6 +82,15 @@ impl Main {
         }
 
         iced::Task::none()
+    }
+
+    fn toggle_view_mode(&mut self, view_mode: ViewMode) -> bool {
+        if self.view_mode == view_mode {
+            self.view_mode = ViewMode::Normal;
+        } else {
+            self.view_mode = view_mode;
+        }
+        true
     }
 
     fn open_file_dialog(&mut self) -> bool {

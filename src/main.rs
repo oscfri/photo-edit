@@ -51,6 +51,8 @@ enum Message {
     TintChanged(f32),
     TemperatureChanged(f32),
     SaturationChanged(f32),
+    AddMask,
+    DeleteMask(usize),
     MaskBrightnessChanged(usize, f32),
     AngleChanged(f32),
     ImageMouseMessage(MouseMessage),

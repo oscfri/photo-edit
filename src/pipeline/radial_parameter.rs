@@ -13,7 +13,7 @@ pub struct RadialParameter {
 #[repr(C)]
 pub struct RadialParameters {
     entries: [RadialParameter; 128],
-    count: i32
+    count: u32
 }
 
 impl RadialParameters {
@@ -27,7 +27,7 @@ impl RadialParameters {
         }
         RadialParameters {
             entries,
-            count: 1
+            count: parameters.radial_masks.len() as u32
         }
     }
 }

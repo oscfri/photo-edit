@@ -1,4 +1,4 @@
-use crate::{album, pipeline::viewport, Main, Message, MouseMessage, Point};
+use crate::{album::{self, RadialMask}, pipeline::viewport, view_mode, Main, Message, MouseMessage, Point};
 
 impl Main {
     pub fn view(&self) -> iced::Element<Message> {
@@ -7,7 +7,8 @@ impl Main {
             self.mouse_position,
             self.workspace.current_crop(),
             self.workspace.current_parameters(),
-            self.workspace.album_images());
+            self.workspace.album_images(),
+            &self.view_mode);
         view.view()
     }
 }
@@ -17,7 +18,8 @@ pub struct View<'a> {
     mouse_position: Point,
     crop: &'a album::Crop,
     parameters: &'a album::Parameters,
-    album_images: &'a Vec<album::AlbumImage>
+    album_images: &'a Vec<album::AlbumImage>,
+    view_mode: &'a view_mode::ViewMode,
 }
 
 impl<'a> View<'a> {
@@ -26,8 +28,9 @@ impl<'a> View<'a> {
             mouse_position: Point,
             crop: &'a album::Crop,
             parameters: &'a album::Parameters,
-            album_images: &'a Vec<album::AlbumImage>) -> Self {
-        Self { viewport, mouse_position, crop, parameters, album_images }
+            album_images: &'a Vec<album::AlbumImage>,
+            view_mode: &'a view_mode::ViewMode) -> Self {
+        Self { viewport, mouse_position, crop, parameters, album_images, view_mode }
     }
 
     pub fn view(&self) -> iced::Element<'a, Message> {
@@ -62,7 +65,7 @@ impl<'a> View<'a> {
     }
 
     fn view_debugger(&self) -> iced::Element<'a, Message> {
-        let debug_str: String = format!("{:?}, {:?}", self.mouse_position, self.crop);
+        let debug_str: String = format!("{:?}, {:?}", self.mouse_position, self.view_mode);
         iced::widget::container(iced::widget::text(debug_str))
             .style(iced::widget::container::dark)
             .width(iced::Fill)
@@ -96,6 +99,24 @@ impl<'a> View<'a> {
     fn view_sliders(&self) -> iced::Element<'a, Message> {
         let column = iced::widget::column![
                 iced::widget::button("Load").on_press(Message::LoadAlbum),
+                self.view_main_parameter_sliders(),
+                self.view_all_mask_parameter_sliders(),
+                iced::widget::button("Add mask").on_press(Message::AddMask),
+                iced::widget::button("Next").on_press(Message::NextImage),
+                iced::widget::button("Crop").on_press(Message::ToggleCropMode),
+                iced::widget::text("Angle"),
+                iced::widget::slider(-180.0..=180.0, self.crop.angle_degrees, Message::AngleChanged),
+            ];
+        iced::widget::container(column)
+            .padding(10)
+            .width(300)
+            .height(iced::Fill)
+            .style(iced::widget::container::bordered_box)
+            .into()
+    }
+
+    fn view_main_parameter_sliders(&self) -> iced::Element<'a, Message> {
+        iced::widget::column![
                 iced::widget::text("Brightness"),
                 iced::widget::slider(-100.0..=100.0, self.parameters.brightness, Message::BrightnessChanged),
                 iced::widget::text("Contrast"),
@@ -105,20 +126,26 @@ impl<'a> View<'a> {
                 iced::widget::text("Temperature"),
                 iced::widget::slider(-100.0..=100.0, self.parameters.temperature, Message::TemperatureChanged),
                 iced::widget::text("Saturation"),
-                iced::widget::slider(-100.0..=100.0, self.parameters.saturation, Message::SaturationChanged),
-                iced::widget::text("Mask Brightness"),
-                iced::widget::slider(-100.0..=100.0, self.parameters.radial_masks[0].brightness, |brightness| Message::MaskBrightnessChanged(0, brightness)),
-                iced::widget::button("Next").on_press(Message::NextImage),
-                iced::widget::button("Crop").on_press(Message::ToggleCropMode),
-                iced::widget::button("Mask").on_press(Message::ToggleMaskMode(0)),
-                iced::widget::text("Angle"),
-                iced::widget::slider(-180.0..=180.0, self.crop.angle_degrees, Message::AngleChanged),
-            ];
-        iced::widget::container(column)
-            .padding(10)
-            .width(300)
-            .height(iced::Fill)
-            .style(iced::widget::container::bordered_box)
+                iced::widget::slider(-100.0..=100.0, self.parameters.saturation, Message::SaturationChanged)
+            ]
+            .into()
+    }
+
+    fn view_all_mask_parameter_sliders(&self) -> iced::Element<'a, Message> {
+        let mask_sliders = self.parameters.radial_masks.iter()
+            .enumerate()
+            .map(|(mask_index, radial_mask)| self.view_mask_parameter_sliders(radial_mask, mask_index));
+        
+        iced::widget::Column::with_children(mask_sliders).into()
+    }
+
+    fn view_mask_parameter_sliders(&self, radial_mask: &RadialMask, mask_index: usize) -> iced::Element<'a, Message> {
+        iced::widget::column![
+                iced::widget::button("Edit mask").on_press(Message::ToggleMaskMode(mask_index)),
+                iced::widget::button("Delete mask").on_press(Message::DeleteMask(mask_index)),
+                iced::widget::text("Brightness"),
+                iced::widget::slider(-100.0..=100.0, radial_mask.brightness, move |brightness| Message::MaskBrightnessChanged(mask_index, brightness)),
+            ]
             .into()
     }
 }

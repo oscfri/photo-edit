@@ -32,7 +32,7 @@ struct RadialParameter {
 }
 struct RadialParameters {
     entries: array<RadialParameter, 128>,
-    count: i32
+    count: u32
 }
 @group(0) @binding(3)
 var<uniform> radial_parameters: RadialParameters;
@@ -84,7 +84,7 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
 
 fn apply_parameters(lab: vec3<f32>, position: vec2<f32>) -> vec3<f32> {
     let globally_applied: vec3<f32> = apply_global_parameters(lab);
-    let masked: vec3<f32> = apply_radial_parameters(globally_applied, position);
+    let masked: vec3<f32> = apply_all_radial_parameters(globally_applied, position);
     return masked;
 }
 
@@ -102,8 +102,18 @@ fn apply_global_parameters(lab: vec3<f32>) -> vec3<f32> {
     return applied;
 }
 
-fn apply_radial_parameters(lab: vec3<f32>, position: vec2<f32>) -> vec3<f32> {
-    let radial_parameter = radial_parameters.entries[0];
+fn apply_all_radial_parameters(lab: vec3<f32>, position: vec2<f32>) -> vec3<f32> {
+    var applied: vec3<f32> = lab;
+
+    for (var i = 0u; i < radial_parameters.count; i++) {
+        applied = apply_radial_parameters(i, applied, position);
+    }
+
+    return applied;
+}
+
+fn apply_radial_parameters(index: u32, lab: vec3<f32>, position: vec2<f32>) -> vec3<f32> {
+    let radial_parameter = radial_parameters.entries[index];
     let distance = distance(position, vec2<f32>(radial_parameter.center_x, radial_parameter.center_y));
     let radius = radial_parameter.radius;
     let alpha = clamp((radius - distance) / radius, 0.0, 1.0);

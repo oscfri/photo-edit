@@ -112,7 +112,13 @@ fn load_album_image(path: &PathBuf) -> AlbumImage {
     parameters.radial_masks.push(RadialMask {
         center_x: 500,
         center_y: 500,
-        radius: 0.5,
+        radius: 100.0,
+        brightness: 10.0,
+    });
+    parameters.radial_masks.push(RadialMask {
+        center_x: 500,
+        center_y: 500,
+        radius: 100.0,
         brightness: 10.0,
     });
 
