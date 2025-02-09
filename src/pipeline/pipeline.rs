@@ -9,9 +9,9 @@ use super::{crop_uniform, parameter_uniform, radial_parameter};
 pub struct Pipeline {
     pipeline: wgpu::RenderPipeline,
     vertices: wgpu::Buffer,
-    camera_uniform: wgpu::Buffer,
-    parameter_uniform: wgpu::Buffer,
-    crop_uniform: wgpu::Buffer,
+    camera_buffer: wgpu::Buffer,
+    parameter_buffer: wgpu::Buffer,
+    crop_buffer: wgpu::Buffer,
     radial_parameters_buffer: wgpu::Buffer,
     uniform_bind_group: wgpu::BindGroup,
     diffuse_texture: wgpu::Texture,
@@ -22,9 +22,9 @@ impl Pipeline {
     pub fn new(
             pipeline: wgpu::RenderPipeline,
             vertices: wgpu::Buffer,
-            camera_uniform: wgpu::Buffer,
-            parameter_uniform: wgpu::Buffer,
-            crop_uniform: wgpu::Buffer,
+            camera_buffer: wgpu::Buffer,
+            parameter_buffer: wgpu::Buffer,
+            crop_buffer: wgpu::Buffer,
             radial_parameters_buffer: wgpu::Buffer,
             uniform_bind_group: wgpu::BindGroup,
             diffuse_texture: wgpu::Texture,
@@ -32,9 +32,9 @@ impl Pipeline {
         Self {
             pipeline,
             vertices,
-            camera_uniform,
-            parameter_uniform,
-            crop_uniform,
+            camera_buffer,
+            parameter_buffer,
+            crop_buffer,
             radial_parameters_buffer,
             uniform_bind_group,
             diffuse_texture,
@@ -55,9 +55,9 @@ impl Pipeline {
             height: image.height as u32,
             depth_or_array_layers: 1
         };
-        queue.write_buffer(&self.camera_uniform, 0, bytemuck::bytes_of(camera_uniform));
-        queue.write_buffer(&self.parameter_uniform, 0, bytemuck::bytes_of(parameter_uniform));
-        queue.write_buffer(&self.crop_uniform, 0, bytemuck::bytes_of(crop_uniform));
+        queue.write_buffer(&self.camera_buffer, 0, bytemuck::bytes_of(camera_uniform));
+        queue.write_buffer(&self.parameter_buffer, 0, bytemuck::bytes_of(parameter_uniform));
+        queue.write_buffer(&self.crop_buffer, 0, bytemuck::bytes_of(crop_uniform));
         queue.write_buffer(&self.radial_parameters_buffer, 0, bytemuck::bytes_of(radial_parameter));
         queue.write_texture(
             wgpu::ImageCopyTexture {

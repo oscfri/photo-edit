@@ -129,9 +129,9 @@ impl shader::Primitive for Viewport {
                 self.workspace.image.height);
         let parameter_uniform = parameter_uniform::ParameterUniform::new(&self.workspace.parameters);
         let crop_uniform = crop_uniform::CropUniform::new(&self.view_mode);
-        let radial_parameter = radial_parameter::RadialParameters::new(&self.workspace.parameters);
+        let radial_parameters = radial_parameter::RadialParameters::new(&self.workspace.parameters);
 
-        pipeline.update(queue, &self.workspace.image, &camera_uniform, &parameter_uniform, &crop_uniform, &radial_parameter);
+        pipeline.update(queue, &self.workspace.image, &camera_uniform, &parameter_uniform, &crop_uniform, &radial_parameters);
     }
 
     fn render(
