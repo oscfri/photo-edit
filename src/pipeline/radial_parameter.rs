@@ -1,0 +1,33 @@
+use crate::album::Parameters;
+
+#[derive(Default, Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
+#[repr(C)]
+pub struct RadialParameter {
+    center_x: f32,
+    center_y: f32,
+    radius: f32,
+    brightness: f32
+}
+
+#[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
+#[repr(C)]
+pub struct RadialParameters {
+    entries: [RadialParameter; 128],
+    count: i32
+}
+
+impl RadialParameters {
+    pub fn new(parameters: &Parameters) -> RadialParameters {
+        let mut entries = [RadialParameter::default(); 128];
+        for (index, radial_mask) in parameters.radial_masks.iter().take(entries.len()).enumerate() {
+            entries[index].center_x = radial_mask.center_x as f32;
+            entries[index].center_y = radial_mask.center_y as f32;
+            entries[index].radius = radial_mask.radius;
+            entries[index].brightness = radial_mask.brightness;
+        }
+        RadialParameters {
+            entries,
+            count: 1
+        }
+    }
+}

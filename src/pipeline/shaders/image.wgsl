@@ -3,6 +3,7 @@ struct CameraUniform {
     base_to_viewport_window: mat4x4<f32>,
     base_to_cropped_base: mat4x4<f32>,
     base_to_cropped_base2: mat4x4<f32>,
+    base_to_image_area: mat4x4<f32>,
 };
 @group(0) @binding(0)
 var<uniform> camera: CameraUniform;
@@ -27,7 +28,7 @@ struct RadialParameter {
     center_x: f32,
     center_y: f32,
     radius: f32,
-    _filler: f32
+    brightness: f32
 }
 struct RadialParameters {
     entries: array<RadialParameter, 128>,
@@ -45,6 +46,7 @@ struct VertexOutput {
     @builtin(position) render_position: vec4<f32>,
     @location(0) view_coords: vec2<f32>,
     @location(1) crop_coords: vec2<f32>,
+    @location(2) image_coords: vec2<f32>,
 };
 
 @vertex
@@ -54,10 +56,12 @@ fn vs_main(vertex: Vertex) -> VertexOutput {
     let render_position = base * camera.base_to_viewport_window * camera.window_to_render;
     let view_coords = base * camera.base_to_cropped_base;
     let crop_coords = view_coords * camera.base_to_cropped_base2;
+    let image_coords = base * camera.base_to_image_area;
 
     out.render_position = render_position;
     out.view_coords = view_coords.xy / view_coords.w;
     out.crop_coords = crop_coords.xy / crop_coords.w;
+    out.image_coords = image_coords.xy / image_coords.w;
     return out;
 }
 
@@ -71,7 +75,7 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
     let texture_sample: vec4<f32> = textureSample(t_diffuse, s_diffuse, in.view_coords);
     let rgb: vec3<f32> = texture_sample.xyz;
     let lab: vec3<f32> = rgb_to_lab(rgb);
-    let lab_applied: vec3<f32> = apply_parameters(lab, in.view_coords);
+    let lab_applied: vec3<f32> = apply_parameters(lab, in.image_coords);
     let rgb_applied: vec3<f32> = lab_to_rgb(lab_applied);
     let rgb_final: vec3<f32> = draw_crop_area(in, rgb_applied);
 
@@ -104,7 +108,7 @@ fn apply_radial_parameters(lab: vec3<f32>, position: vec2<f32>) -> vec3<f32> {
     let radius = radial_parameter.radius;
     let alpha = clamp((radius - distance) / radius, 0.0, 1.0);
     if (alpha > 0.0) {
-        return lab + vec3<f32>(20.0, 0.0, 0.0) * alpha;
+        return lab + vec3<f32>(radial_parameter.brightness, 0.0, 0.0) * alpha;
     } else {
         return lab;
     }

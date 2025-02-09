@@ -43,13 +43,15 @@ enum MouseMessage {
 enum Message {
     LoadAlbum,
     NextImage,
-    ToggleCropMode,
     SetImage(usize),
+    ToggleCropMode,
+    ToggleMaskMode(usize),
     BrightnessChanged(f32),
     ContrastChanged(f32),
     TintChanged(f32),
     TemperatureChanged(f32),
     SaturationChanged(f32),
+    MaskBrightnessChanged(usize, f32),
     AngleChanged(f32),
     ImageMouseMessage(MouseMessage),
 }
@@ -68,6 +70,10 @@ fn make_viewport(workspace: &WorkSpace, view_mode: &view_mode::ViewMode) -> view
     viewport::Viewport::new(
             workspace.make_viewport(&view_mode),
             view_mode.clone())
+}
+
+fn calculate_distance(x1: i32, y1: i32, x2: i32, y2: i32) -> f32 {
+    (((x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2)) as f32).sqrt()
 }
 
 impl Main {
@@ -116,6 +122,14 @@ impl Main {
                 }
                 true
             }
+            Message::ToggleMaskMode(mask_index) => {
+                if !matches!(self.view_mode, ViewMode::Mask(mask_index)) {
+                    self.view_mode = ViewMode::Mask(mask_index);
+                } else {
+                    self.view_mode = ViewMode::Normal;
+                }
+                true
+            }
             Message::BrightnessChanged(brightness) => {
                 self.workspace.current_parameters_mut().brightness = brightness;
                 true
@@ -134,6 +148,10 @@ impl Main {
             },
             Message::SaturationChanged(saturation) => {
                 self.workspace.current_parameters_mut().saturation = saturation;
+                true
+            },
+            Message::MaskBrightnessChanged(index, brightness) => {
+                self.workspace.current_parameters_mut().radial_masks[index].brightness = brightness;
                 true
             },
             Message::AngleChanged(angle) => {
@@ -194,6 +212,9 @@ impl Main {
             },
             ViewMode::Crop => {
                 self.update_mouse_crop_mode(image_mouse_message)
+            },
+            ViewMode::Mask(mask_index) => {
+                self.update_mouse_mask_mode(image_mouse_message, mask_index)
             }
         }
     }
@@ -257,12 +278,45 @@ impl Main {
                 crop.height = 0;
                 true
             },
-            MouseMessage::RightPress => {
+            MouseMessage::RightPress | MouseMessage::Release => {
                 false
             }
-            MouseMessage::Release => {
+        }
+    }
+
+    fn update_mouse_mask_mode(&mut self, image_mouse_message: MouseMessage, mask_index: usize) -> bool {
+        match image_mouse_message {
+            MouseMessage::Over => {
+                match self.mouse_state {
+                    MouseState::Up => {
+                        false
+                    },
+                    MouseState::Down => {
+                        let parameters: &mut album::Parameters = self.workspace.current_parameters_mut();
+                        let center_x = parameters.radial_masks[mask_index].center_x;
+                        let center_y = parameters.radial_masks[mask_index].center_y;
+                        parameters.radial_masks[mask_index].radius = calculate_distance(
+                            center_x,
+                            center_y,
+                            viewport::get_image_mouse_x(),
+                            viewport::get_image_mouse_y());
+                        true
+                    }
+                }
+            },
+            MouseMessage::Press => {
+                let parameters: &mut album::Parameters = self.workspace.current_parameters_mut();
+                parameters.radial_masks[mask_index].center_x = viewport::get_image_mouse_x();
+                parameters.radial_masks[mask_index].center_y = viewport::get_image_mouse_y();
+                parameters.radial_masks[mask_index].radius = 0.0;
+                true
+            },
+            MouseMessage::RightPress => {
                 false
             },
+            MouseMessage::Release => {
+                false
+            }
         }
     }
     
@@ -348,8 +402,11 @@ impl Main {
                 iced::widget::slider(-100.0..=100.0, parameters.temperature, Message::TemperatureChanged),
                 iced::widget::text("Saturation"),
                 iced::widget::slider(-100.0..=100.0, parameters.saturation, Message::SaturationChanged),
+                iced::widget::text("Mask Brightness"),
+                iced::widget::slider(-100.0..=100.0, parameters.radial_masks[0].brightness, |brightness| Message::MaskBrightnessChanged(0, brightness)),
                 iced::widget::button("Next").on_press(Message::NextImage),
                 iced::widget::button("Crop").on_press(Message::ToggleCropMode),
+                iced::widget::button("Mask").on_press(Message::ToggleMaskMode(0)),
                 iced::widget::text("Angle"),
                 iced::widget::slider(-180.0..=180.0, crop.angle_degrees, Message::AngleChanged),
             ];

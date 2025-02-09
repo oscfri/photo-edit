@@ -40,7 +40,16 @@ pub struct Parameters {
     pub contrast: f32,
     pub tint: f32,
     pub temperature: f32,
-    pub saturation: f32
+    pub saturation: f32,
+    pub radial_masks: Vec<RadialMask>
+}
+
+#[derive(Debug, Default, Clone)]
+pub struct RadialMask {
+    pub center_x: i32,
+    pub center_y: i32,
+    pub radius: f32,
+    pub brightness: f32,
 }
 
 #[derive(Debug, Default, Clone)]
@@ -97,7 +106,16 @@ fn convert_to_raw_image(image: &RgbImage) -> RawImage {
 fn load_album_image(path: &PathBuf) -> AlbumImage {
     let rgb_image: RgbImage = load_image(&path);
     let source_image: RawImage = convert_to_raw_image(&rgb_image);
-    let parameters: Parameters = Parameters::default();
+    let mut parameters: Parameters = Parameters::default();
+
+    // TODO: Don't do this
+    parameters.radial_masks.push(RadialMask {
+        center_x: 500,
+        center_y: 500,
+        radius: 0.5,
+        brightness: 10.0,
+    });
+
     let crop: Crop = Crop {
         center_x: (source_image.width as i32) / 2,
         center_y: (source_image.height as i32) / 2,

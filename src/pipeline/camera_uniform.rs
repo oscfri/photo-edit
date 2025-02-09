@@ -11,7 +11,8 @@ pub struct CameraUniform {
     window_to_render: [[f32; 4]; 4],
     base_to_viewport_window: [[f32; 4]; 4],
     base_to_cropped_base: [[f32; 4]; 4],
-    base_to_cropped_base2: [[f32; 4]; 4],
+    base_to_cropped_base2: [[f32; 4]; 4], // TODO: Come up with good name
+    base_to_image_area: [[f32; 4]; 4],
 }
 
 pub fn apply_image_transform(
@@ -90,6 +91,20 @@ fn create_crop_relative_area(crop: &Crop, image_width: usize, image_height: usiz
     }
 }
 
+fn create_crop_image_area(crop: &Crop) -> Rectangle {
+    let center_x: f32 = crop.center_x as f32;
+    let center_y: f32 = crop.center_y as f32;
+    let width: f32 = crop.width as f32;
+    let height: f32 = crop.height as f32;
+    Rectangle {
+        center_x,
+        center_y,
+        width,
+        height,
+        angle_degrees: crop.angle_degrees
+    }
+}
+
 fn create_uv_area() -> Rectangle {
     Rectangle {
         center_x: 0.5,
@@ -113,12 +128,14 @@ impl CameraUniform {
         let viewport_area: Rectangle = create_viewport_area(bounds, view);
         let view_area: Rectangle = create_crop_relative_area(view, image_width, image_height);
         let crop_area: Rectangle = create_crop_relative_area(crop, image_width, image_height);
+        let image_area: Rectangle = create_crop_image_area(view);
         let uv_area: Rectangle = create_uv_area();
         Self {
             window_to_render: transform(&window_area, &render_area).into(),
             base_to_viewport_window: transform(&uv_area, &viewport_area).into(),
             base_to_cropped_base: transform(&uv_area, &view_area).into(),
             base_to_cropped_base2: transform(&crop_area, &uv_area).into(),
+            base_to_image_area: transform(&uv_area, &image_area).into()
         }
     }
 }
