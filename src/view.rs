@@ -101,12 +101,9 @@ impl<'a> View<'a> {
                 iced::widget::button("Load").on_press(Message::LoadAlbum),
                 self.view_main_parameter_sliders(),
                 self.view_all_mask_parameter_sliders(),
-                iced::widget::button("Add mask").on_press(Message::AddMask),
-                iced::widget::button("Next").on_press(Message::NextImage),
-                iced::widget::button("Crop").on_press(Message::ToggleCropMode),
-                iced::widget::text("Angle"),
-                iced::widget::slider(-180.0..=180.0, self.crop.angle_degrees, Message::AngleChanged),
-            ];
+                self.view_misc_buttons()
+            ]
+            .spacing(30);
         iced::widget::container(column)
             .padding(10)
             .width(300)
@@ -136,15 +133,37 @@ impl<'a> View<'a> {
             .enumerate()
             .map(|(mask_index, radial_mask)| self.view_mask_parameter_sliders(radial_mask, mask_index));
         
-        iced::widget::Column::with_children(mask_sliders).into()
+        let mask_elements = iced::widget::Column::with_children(mask_sliders)
+            .spacing(10);
+
+        iced::widget::column![
+                mask_elements,
+                iced::widget::button("Add mask").on_press(Message::AddMask),
+            ]
+            .spacing(10)
+            .into()
     }
 
     fn view_mask_parameter_sliders(&self, radial_mask: &RadialMask, mask_index: usize) -> iced::Element<'a, Message> {
+        let buttons = iced::widget::row![
+                iced::widget::button("Edit").on_press(Message::ToggleMaskMode(mask_index)),
+                iced::widget::button("Delete").on_press(Message::DeleteMask(mask_index)),
+            ]
+            .spacing(10);
         iced::widget::column![
-                iced::widget::button("Edit mask").on_press(Message::ToggleMaskMode(mask_index)),
-                iced::widget::button("Delete mask").on_press(Message::DeleteMask(mask_index)),
                 iced::widget::text("Brightness"),
                 iced::widget::slider(-100.0..=100.0, radial_mask.brightness, move |brightness| Message::MaskBrightnessChanged(mask_index, brightness)),
+                buttons,
+            ]
+            .into()
+    }
+
+    fn view_misc_buttons(&self) -> iced::Element<'a, Message> {
+        iced::widget::column![
+                iced::widget::button("Next").on_press(Message::NextImage),
+                iced::widget::button("Crop").on_press(Message::ToggleCropMode),
+                iced::widget::text("Angle"),
+                iced::widget::slider(-180.0..=180.0, self.crop.angle_degrees, Message::AngleChanged)
             ]
             .into()
     }

@@ -106,22 +106,7 @@ fn convert_to_raw_image(image: &RgbImage) -> RawImage {
 fn load_album_image(path: &PathBuf) -> AlbumImage {
     let rgb_image: RgbImage = load_image(&path);
     let source_image: RawImage = convert_to_raw_image(&rgb_image);
-    let mut parameters: Parameters = Parameters::default();
-
-    // TODO: Don't do this
-    parameters.radial_masks.push(RadialMask {
-        center_x: 500,
-        center_y: 500,
-        radius: 100.0,
-        brightness: 10.0,
-    });
-    parameters.radial_masks.push(RadialMask {
-        center_x: 500,
-        center_y: 500,
-        radius: 100.0,
-        brightness: 10.0,
-    });
-
+    let parameters: Parameters = Parameters::default();
     let crop: Crop = Crop {
         center_x: (source_image.width as i32) / 2,
         center_y: (source_image.height as i32) / 2,
