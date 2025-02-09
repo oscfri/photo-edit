@@ -6,6 +6,8 @@ use crate::pipeline::pipeline;
 use crate::pipeline::vertex;
 use crate::pipeline::camera_uniform;
 
+use std::num;
+
 use iced::mouse;
 use iced::widget::shader;
 use iced::widget::shader::wgpu;
@@ -13,6 +15,7 @@ use wgpu::util::DeviceExt;
 
 use super::crop_uniform;
 use super::parameter_uniform;
+use super::radial_parameter;
 
 // Hack to access viewport size. It doesn't seem like we can access the viewport size directly (at least not according
 // to any documentation I've found). We need to know the viewport size so we can convert mouse coordinates from "window"
@@ -110,6 +113,7 @@ impl shader::Primitive for Viewport {
             storage: &mut shader::Storage,
             bounds: &iced::Rectangle,
             viewport: &shader::Viewport) {
+
         if self.needs_update(&storage) {
             storage.store(self.create_pipeline(device, format));
             storage.store(ImageIndex { index: self.workspace.image_index });
@@ -127,9 +131,10 @@ impl shader::Primitive for Viewport {
                 self.workspace.image.width,
                 self.workspace.image.height);
         let parameter_uniform = parameter_uniform::ParameterUniform::new(&self.workspace.parameters);
-        let crop_uniform = crop_uniform::CropUniform::new(&self.workspace.crop, &self.view_mode);
+        let crop_uniform = crop_uniform::CropUniform::new(&self.view_mode);
+        let radial_parameter = radial_parameter::RadialParameters::new();
 
-        pipeline.update(queue, &self.workspace.image, &camera_uniform, &parameter_uniform, &crop_uniform);
+        pipeline.update(queue, &self.workspace.image, &camera_uniform, &parameter_uniform, &crop_uniform, &radial_parameter);
     }
 
     fn render(
@@ -157,8 +162,8 @@ impl Viewport {
     }
 
     fn create_pipeline(&self, device: &wgpu::Device, format: wgpu::TextureFormat) -> pipeline::Pipeline {
-        let vertices = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-                label: Some("Vertex buffer"),
+        let vertex_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                label: Some("vertex_buffer"),
                 contents: bytemuck::cast_slice(&vertex::vertices_square()),
                 usage: wgpu::BufferUsages::VERTEX,
             });
@@ -170,13 +175,13 @@ impl Viewport {
         };
         let diffuse_texture = device.create_texture(
             &wgpu::TextureDescriptor {
+                label: Some("diffuse_texture"),
                 size: texture_size,
                 mip_level_count: 1,
                 sample_count: 1,
                 dimension: wgpu::TextureDimension::D2,
                 format: wgpu::TextureFormat::Rgba8UnormSrgb,
                 usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
-                label: Some("Image texture"),
                 view_formats: &[],
             }
         );
@@ -193,29 +198,36 @@ impl Viewport {
         });
 
         let camera_uniform_buffer = device.create_buffer(&wgpu::BufferDescriptor {
-            label: Some("Camera Uniform Buffer"),
+            label: Some("camera_uniform_buffer"),
             size: std::mem::size_of::<camera_uniform::CameraUniform>() as u64,
             usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
             mapped_at_creation: false,
         });
 
         let parameter_uniform_buffer = device.create_buffer(&wgpu::BufferDescriptor {
-            label: Some("Parameter Uniform Buffer"),
+            label: Some("parameter_uniform_buffer"),
             size: std::mem::size_of::<parameter_uniform::ParameterUniform>() as u64,
             usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
             mapped_at_creation: false,
         });
 
         let crop_uniform_buffer = device.create_buffer(&wgpu::BufferDescriptor {
-            label: Some("Crop Uniform Buffer"),
+            label: Some("crop_uniform_buffer"),
             size: 24, // Not sure why below is not working (likely alignment issue)
             // size: std::mem::size_of::<crop_uniform::CropUniform>() as u64,
             usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
             mapped_at_creation: false,
         });
 
+        let radial_parameters_buffer = device.create_buffer(&wgpu::BufferDescriptor {
+            label: Some("radial_parameters_buffer"),
+            size: std::mem::size_of::<radial_parameter::RadialParameters>() as u64,
+            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+            mapped_at_creation: false,
+        });
+
         let uniform_bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-            label: Some("The uniform bind group layout"),
+            label: Some("uniform_bind_group_layout"),
             entries: &[
                 // Camera
                 wgpu::BindGroupLayoutEntry {
@@ -249,12 +261,23 @@ impl Viewport {
                         min_binding_size: None,
                     },
                     count: None,
+                },
+                // Radial parameters
+                wgpu::BindGroupLayoutEntry {
+                    binding: 3,
+                    visibility: wgpu::ShaderStages::VERTEX_FRAGMENT,
+                    ty: wgpu::BindingType::Buffer {
+                        ty: wgpu::BufferBindingType::Uniform,
+                        has_dynamic_offset: false,
+                        min_binding_size: None
+                    },
+                    count: None
                 }
             ],
         });
 
         let uniform_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
-            label: Some("The uniform bind group"),
+            label: Some("uniform_bind_group"),
             layout: &uniform_bind_group_layout,
             entries: &[
                 wgpu::BindGroupEntry {
@@ -269,10 +292,15 @@ impl Viewport {
                     binding: 2,
                     resource: crop_uniform_buffer.as_entire_binding(),
                 },
+                wgpu::BindGroupEntry {
+                    binding: 3,
+                    resource: radial_parameters_buffer.as_entire_binding(),
+                },
             ],
         });
 
         let texture_bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+            label: Some("texture_bind_group_layout"),
             entries: &[
                 wgpu::BindGroupLayoutEntry {
                     binding: 0,
@@ -293,11 +321,10 @@ impl Viewport {
                     count: None,
                 }
             ],
-            label: Some("Texture Bind Group Layout")
         });
         let diffuse_bind_group = device.create_bind_group(
             &wgpu::BindGroupDescriptor {
-                    label: Some("Diffuse Bind Group"),
+                    label: Some("diffuse_bind_group"),
                     layout: &texture_bind_group_layout,
                     entries: &[
                         wgpu::BindGroupEntry {
@@ -315,13 +342,13 @@ impl Viewport {
         let shader = device.create_shader_module(wgpu::include_wgsl!("shaders/image.wgsl"));
 
         let render_pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-            label: Some("Render Pipeline Layout"),
+            label: Some("render_pipeline_layout"),
             bind_group_layouts: &[&uniform_bind_group_layout, &texture_bind_group_layout],
             push_constant_ranges: &[],
         });
 
         let pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
-            label: Some("The pipeline"),
+            label: Some("pipeline"),
             layout: Some(&render_pipeline_layout),
             vertex: wgpu::VertexState {
                 module: &shader,
@@ -349,10 +376,11 @@ impl Viewport {
         
         pipeline::Pipeline::new(
             pipeline,
-            vertices,
+            vertex_buffer,
             camera_uniform_buffer,
             parameter_uniform_buffer,
             crop_uniform_buffer,
+            radial_parameters_buffer,
             uniform_bind_group,
             diffuse_texture,
             diffuse_bind_group

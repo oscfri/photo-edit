@@ -7,13 +7,34 @@ struct CameraUniform {
 @group(0) @binding(0)
 var<uniform> camera: CameraUniform;
 
+struct ParameterUniform {
+    brightness: f32,
+    contrast: f32,
+    tint: f32,
+    temperature: f32,
+    saturation: f32
+};
+@group(0) @binding(1)
+var<uniform> parameters: ParameterUniform;
+
 struct CropUniform {
-    top_left: vec2<f32>,
-    bottom_right: vec2<f32>,
     visible: i32
 };
 @group(0) @binding(2)
 var<uniform> crop: CropUniform;
+
+struct RadialParameter {
+    center_x: f32,
+    center_y: f32,
+    radius: f32,
+    _filler: f32
+}
+struct RadialParameters {
+    entries: array<RadialParameter, 128>,
+    count: i32
+}
+@group(0) @binding(3)
+var<uniform> radial_parameters: RadialParameters;
 
 struct Vertex {
     @location(0) position: vec2<f32>,
@@ -22,8 +43,8 @@ struct Vertex {
 
 struct VertexOutput {
     @builtin(position) render_position: vec4<f32>,
-    @location(0) tex_coords: vec2<f32>,
-    @location(1) tex_coords2: vec2<f32>,
+    @location(0) view_coords: vec2<f32>,
+    @location(1) crop_coords: vec2<f32>,
 };
 
 @vertex
@@ -35,20 +56,10 @@ fn vs_main(vertex: Vertex) -> VertexOutput {
     let crop_coords = view_coords * camera.base_to_cropped_base2;
 
     out.render_position = render_position;
-    out.tex_coords = view_coords.xy / view_coords.w;
-    out.tex_coords2 = crop_coords.xy / crop_coords.w;
+    out.view_coords = view_coords.xy / view_coords.w;
+    out.crop_coords = crop_coords.xy / crop_coords.w;
     return out;
 }
-
-struct ParameterUniform {
-    brightness: f32,
-    contrast: f32,
-    tint: f32,
-    temperature: f32,
-    saturation: f32
-};
-@group(0) @binding(1)
-var<uniform> parameters: ParameterUniform;
 
 @group(1) @binding(0)
 var t_diffuse: texture_2d<f32>;
@@ -57,10 +68,10 @@ var s_diffuse: sampler;
 
 @fragment
 fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
-    let texture_sample: vec4<f32> = textureSample(t_diffuse, s_diffuse, in.tex_coords);
+    let texture_sample: vec4<f32> = textureSample(t_diffuse, s_diffuse, in.view_coords);
     let rgb: vec3<f32> = texture_sample.xyz;
     let lab: vec3<f32> = rgb_to_lab(rgb);
-    let lab_applied: vec3<f32> = apply_parameters(lab, in.tex_coords);
+    let lab_applied: vec3<f32> = apply_parameters(lab, in.view_coords);
     let rgb_applied: vec3<f32> = lab_to_rgb(lab_applied);
     let rgb_final: vec3<f32> = draw_crop_area(in, rgb_applied);
 
@@ -88,8 +99,9 @@ fn apply_global_parameters(lab: vec3<f32>) -> vec3<f32> {
 }
 
 fn apply_radial_parameters(lab: vec3<f32>, position: vec2<f32>) -> vec3<f32> {
-    let distance = distance(position, vec2<f32>(0.75, 0.75));
-    let radius = 0.25;
+    let radial_parameter = radial_parameters.entries[0];
+    let distance = distance(position, vec2<f32>(radial_parameter.center_x, radial_parameter.center_y));
+    let radius = radial_parameter.radius;
     let alpha = clamp((radius - distance) / radius, 0.0, 1.0);
     if (alpha > 0.0) {
         return lab + vec3<f32>(20.0, 0.0, 0.0) * alpha;
@@ -111,7 +123,7 @@ fn draw_crop_area(vertex: VertexOutput, rgb: vec3<f32>) -> vec3<f32> {
 }
 
 fn in_crop_area(vertex: VertexOutput) -> bool {
-    let position = vertex.tex_coords2;
+    let position = vertex.crop_coords;
     if (position.x < 0.0 || position.x > 1.0 ||
             position.y < 0.0 || position.y > 1.0) {
         return false;
@@ -121,7 +133,7 @@ fn in_crop_area(vertex: VertexOutput) -> bool {
 }
 
 fn in_crop_border(vertex: VertexOutput) -> bool {
-    let position = vertex.tex_coords2;
+    let position = vertex.crop_coords;
     if (position.x < 0.0 || position.x > 1.0 ||
             position.y < 0.0 || position.y > 1.0) {
         return false;
