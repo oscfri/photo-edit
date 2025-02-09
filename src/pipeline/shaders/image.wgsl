@@ -89,17 +89,20 @@ fn apply_parameters(lab: vec3<f32>, position: vec2<f32>) -> vec3<f32> {
 }
 
 fn apply_global_parameters(lab: vec3<f32>) -> vec3<f32> {
-    var applied: vec3<f32> = lab;
+    var applied: vec4<f32> = vec4<f32>(lab, 1.0);
 
-    let multiplier: vec3<f32> = (vec3<f32>(parameters.contrast, parameters.saturation, parameters.saturation) + 100.0) / 100.0;
-    let adder: vec3<f32> = vec3<f32>(parameters.brightness, parameters.tint, parameters.temperature);
+    let matrix: mat4x4<f32> = mat4x4<f32>(
+        vec4<f32>(parameters.contrast, 0.0, 0.0, parameters.brightness),
+        vec4<f32>(0.0, parameters.saturation, 0.0, parameters.tint),
+        vec4<f32>(0.0, 0.0, parameters.saturation, parameters.temperature),
+        vec4<f32>(0.0, 0.0, 0.0, 1.0)
+    );
 
-    applied -= vec3<f32>(50.0, 0.0, 0.0); // Center brightness value
-    applied *= multiplier;
-    applied += adder;
-    applied += vec3<f32>(50.0, 0.0, 0.0); // Revert brightness value
+    applied -= vec4<f32>(50.0, 0.0, 0.0, 0.0); // Center brightness value
+    applied = applied * matrix;
+    applied += vec4<f32>(50.0, 0.0, 0.0, 0.0); // Revert brightness value
 
-    return applied;
+    return applied.xyz / applied.w;
 }
 
 fn apply_all_radial_parameters(lab: vec3<f32>, position: vec2<f32>) -> vec3<f32> {
