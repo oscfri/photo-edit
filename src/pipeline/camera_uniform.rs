@@ -15,15 +15,16 @@ pub struct CameraUniform {
     base_to_image_area: [[f32; 4]; 4],
 }
 
-pub fn apply_image_transform(
+pub fn point_to_image_position(
         point: &iced::Point,
         bounds: &iced::Rectangle,
         crop: &Crop) -> iced::Point {
     let crop_area: Rectangle = create_crop_area(crop);
     let viewport_area: Rectangle = create_viewport_area(bounds, crop);
-    let crop_transform = transform(&Rectangle::default(), &crop_area);
-    let viewport_transform = transform(&viewport_area, &Rectangle::default());
-    let transform = viewport_transform * crop_transform;
+
+    let view_to_crop = transform(&viewport_area, &crop_area);
+
+    let transform = view_to_crop;
     let transformed_point = transform.transpose() * cgmath::vec4(point.x, point.y, 0.0, 1.0);
     iced::Point {
         x: transformed_point.x / transformed_point.w,
@@ -105,6 +106,20 @@ fn create_crop_image_area(crop: &Crop) -> Rectangle {
     }
 }
 
+fn create_aspect_area(image_width: usize, image_height: usize) -> Rectangle {
+    let image_width_f32: f32 = image_width as f32;
+    let image_height_f32: f32 = image_height as f32;
+    let width: f32 = (image_width_f32 / image_height_f32).min(1.0);
+    let height: f32 = (image_height_f32 / image_width_f32).min(1.0);
+    Rectangle {
+        center_x: 0.5,
+        center_y: 0.5,
+        width,
+        height,
+        angle_degrees: 0.0
+    }
+}
+
 fn create_uv_area() -> Rectangle {
     Rectangle {
         center_x: 0.5,
@@ -129,12 +144,19 @@ impl CameraUniform {
         let view_area: Rectangle = create_crop_relative_area(view, image_width, image_height);
         let crop_area: Rectangle = create_crop_relative_area(crop, image_width, image_height);
         let image_area: Rectangle = create_crop_image_area(view);
+        let aspect_area: Rectangle = create_aspect_area(image_width, image_height);
         let uv_area: Rectangle = create_uv_area();
+
+        let base_to_aspect = transform(&uv_area, &aspect_area);
+        let aspect_to_base = transform(&aspect_area, &uv_area);
+        let uv_to_view = transform(&uv_area, &view_area);
+        let crop_to_uv = transform(&crop_area, &uv_area);
+
         Self {
             window_to_render: transform(&window_area, &render_area).into(),
             base_to_viewport_window: transform(&uv_area, &viewport_area).into(),
-            base_to_cropped_base: transform(&uv_area, &view_area).into(),
-            base_to_cropped_base2: transform(&crop_area, &uv_area).into(),
+            base_to_cropped_base: (base_to_aspect * uv_to_view * aspect_to_base).into(),
+            base_to_cropped_base2: (base_to_aspect * crop_to_uv * aspect_to_base).into(),
             base_to_image_area: transform(&uv_area, &image_area).into()
         }
     }

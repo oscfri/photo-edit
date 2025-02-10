@@ -75,7 +75,7 @@ impl Viewport {
     fn update_mouse(&self, bounds: &iced::Rectangle) {
         match self.cursor {
             mouse::Cursor::Available(point) => {
-                let image_point: iced::Point = camera_uniform::apply_image_transform(
+                let image_point: iced::Point = camera_uniform::point_to_image_position(
                     &point,
                     bounds,
                     &self.workspace.view);
