@@ -1,15 +1,17 @@
 mod album;
 mod types;
 mod pipeline;
-mod workspace;
+mod repository;
 mod update;
 mod view;
 mod view_mode;
+mod workspace;
 
 use iced;
 use pipeline::viewport;
 use view_mode::ViewMode;
 use workspace::WorkSpace;
+use repository::repository_factory;
 use std::path::PathBuf;
 
 pub fn main() -> iced::Result {
@@ -71,10 +73,16 @@ struct Main {
 impl<'a> Main {
 
     fn new() -> Self {
-        let workspace: WorkSpace = workspace::load_workspace(&vec![
-            PathBuf::from("example.png"),
-            PathBuf::from("example2.jpg")
-        ]);
+        let mut repository = repository_factory::RepositoryFactory::new().create().unwrap();
+
+        repository.print_albums().unwrap();
+
+        let file_names = repository.get_album_photos(0).unwrap().iter()
+            .map(|album_photo| album_photo.file_name.clone())
+            .map(PathBuf::from)
+            .collect();
+
+        let workspace: WorkSpace = workspace::load_workspace(&file_names);
 
         let mouse_position: Point = Point {
             x: 0,
