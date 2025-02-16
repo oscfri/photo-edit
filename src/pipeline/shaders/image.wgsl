@@ -91,18 +91,17 @@ fn apply_parameters(lab: vec3<f32>, position: vec2<f32>) -> vec3<f32> {
 fn apply_global_parameters(lab: vec3<f32>) -> vec3<f32> {
     var applied: vec4<f32> = vec4<f32>(lab, 1.0);
 
+    let contrast: f32 = parameters.contrast + (parameters.brightness / 50.0);
+    let saturation: f32 = parameters.saturation + (parameters.brightness / 50.0);
+
     let matrix: mat4x4<f32> = mat4x4<f32>(
-        vec4<f32>(parameters.contrast, 0.0, 0.0, parameters.brightness),
-        vec4<f32>(0.0, parameters.saturation, 0.0, parameters.tint),
-        vec4<f32>(0.0, 0.0, parameters.saturation, parameters.temperature),
+        vec4<f32>(contrast, 0.0, 0.0, parameters.brightness),
+        vec4<f32>(0.0, saturation, 0.0, parameters.tint),
+        vec4<f32>(0.0, 0.0, saturation, parameters.temperature),
         vec4<f32>(0.0, 0.0, 0.0, 1.0)
     );
 
-    applied -= vec4<f32>(50.0, 0.0, 0.0, 0.0); // Center brightness value
-    applied = applied * matrix;
-    applied += vec4<f32>(50.0, 0.0, 0.0, 0.0); // Revert brightness value
-
-    return applied.xyz / applied.w;
+    return apply_matrix_parameters(lab, matrix);
 }
 
 fn apply_all_radial_parameters(lab: vec3<f32>, position: vec2<f32>) -> vec3<f32> {
@@ -120,11 +119,34 @@ fn apply_radial_parameters(index: u32, lab: vec3<f32>, position: vec2<f32>) -> v
     let distance = distance(position, vec2<f32>(radial_parameter.center_x, radial_parameter.center_y));
     let radius = radial_parameter.radius;
     let alpha = clamp((radius - distance) / radius, 0.0, 1.0);
+
     if (alpha > 0.0) {
-        return lab + vec3<f32>(radial_parameter.brightness, 0.0, 0.0) * alpha;
+        let contrast: f32 = 1.0 + (radial_parameter.brightness / 50.0);
+        let saturation: f32 = 1.0 + (radial_parameter.brightness / 50.0);
+
+        let matrix: mat4x4<f32> = mat4x4<f32>(
+            vec4<f32>(contrast, 0.0, 0.0, radial_parameter.brightness),
+            vec4<f32>(0.0, saturation, 0.0, 0.0),
+            vec4<f32>(0.0, 0.0, saturation, 0.0),
+            vec4<f32>(0.0, 0.0, 0.0, 1.0)
+        );
+
+        return lab * (1.0 - alpha) + apply_matrix_parameters(lab, matrix) * alpha;
     } else {
         return lab;
     }
+}
+
+fn apply_matrix_parameters(
+        lab: vec3<f32>,
+        matrix: mat4x4<f32>) -> vec3<f32> {
+    var applied: vec4<f32> = vec4<f32>(lab, 1.0);
+    
+    applied -= vec4<f32>(50.0, 0.0, 0.0, 0.0); // Center brightness value
+    applied = applied * matrix;
+    applied += vec4<f32>(50.0, 0.0, 0.0, 0.0); // Revert brightness value
+
+    return applied.xyz / applied.w;
 }
 
 fn draw_crop_area(vertex: VertexOutput, rgb: vec3<f32>) -> vec3<f32> {
