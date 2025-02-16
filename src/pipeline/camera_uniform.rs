@@ -79,10 +79,17 @@ fn create_crop_area(crop: &Crop) -> Rectangle {
 }
 
 fn create_crop_relative_area(crop: &Crop, image_width: usize, image_height: usize) -> Rectangle {
-    let center_x: f32 = (crop.center_x as f32) / (image_width as f32);
-    let center_y: f32 = (crop.center_y as f32) / (image_height as f32);
-    let width: f32 = (crop.width as f32) / (image_width as f32);
-    let height: f32 = (crop.height as f32) / (image_height as f32);
+    let image_width_f32: f32 = image_width as f32;
+    let image_height_f32: f32 = image_height as f32;
+    // Need to offset the center point to accomodate for the aspect ratio conversion
+    // (not exactly sure why this is needed, or why this works)
+    let max_side: f32 = (image_width_f32).max(image_height_f32);
+    let offset_x: f32 = (image_height_f32 - image_width_f32).max(0.0) / 2.0;
+    let offset_y: f32 = (image_width_f32 - image_height_f32).max(0.0) / 2.0;
+    let center_x: f32 = (crop.center_x as f32 + offset_x) / max_side;
+    let center_y: f32 = (crop.center_y as f32 + offset_y) / max_side;
+    let width: f32 = (crop.width as f32) / image_width_f32;
+    let height: f32 = (crop.height as f32) / image_height_f32;
     Rectangle {
         center_x,
         center_y,
