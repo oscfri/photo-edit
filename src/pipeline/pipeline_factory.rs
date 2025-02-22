@@ -73,8 +73,8 @@ impl<'a> PipelineFactory<'a> {
 
     fn create_image_texture(&self, label: &str) -> wgpu::Texture {
         let texture_size = wgpu::Extent3d {
-            width: self.workspace.image.width as u32,
-            height: self.workspace.image.height as u32,
+            width: self.workspace.get_image_width() as u32,
+            height: self.workspace.get_image_height() as u32,
             depth_or_array_layers: 1
         };
         self.device.create_texture(

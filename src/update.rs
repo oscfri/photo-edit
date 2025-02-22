@@ -1,118 +1,90 @@
-use crate::{album, pipeline::viewport, workspace, Main, Message, MouseMessage, MouseState, Point, ViewMode};
+use crate::{pipeline::viewport, workspace, Main, Message, MouseMessage, MouseState, Point, ViewMode};
 
-use std::{path::PathBuf, usize};
+use std::usize;
 
-pub fn make_viewport(workspace: &workspace::WorkSpace, view_mode: &ViewMode) -> viewport::Viewport {
-    viewport::Viewport::new(
-            workspace.make_viewport(&view_mode),
-            view_mode.clone())
-}
-
-fn calculate_distance(x1: i32, y1: i32, x2: i32, y2: i32) -> f32 {
-    (((x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2)) as f32).sqrt()
+// TODO: This function should move to somewhere else...
+pub fn make_viewport(workspace: &workspace::Workspace) -> viewport::Viewport {
+    viewport::Viewport::new(workspace.make_viewport(), workspace.get_view_mode())
 }
 
 impl Main {
     pub fn update(&mut self, message: Message) -> iced::Task<Message> {
-        let should_update_image: bool = match message {
+        match message {
             Message::LoadAlbum => {
-                self.open_file_dialog()
+                // self.open_file_dialog()
             },
             Message::NextImage => {
                 self.workspace.next_image_index();
-                true
             },
             Message::SetImage(index) => {
                 self.workspace.set_image_index(index);
-                true
             },
             Message::ToggleCropMode => {
-                self.toggle_view_mode(ViewMode::Crop)
+                self.workspace.toggle_view_mode(ViewMode::Crop);
             },
             Message::ToggleMaskMode(mask_index) => {
-                self.toggle_view_mode(ViewMode::Mask(mask_index))
+                self.workspace.toggle_view_mode(ViewMode::Mask(mask_index));
             },
             Message::BrightnessChanged(brightness) => {
-                self.workspace.current_parameters_mut().brightness = brightness;
-                true
+                self.workspace.set_brightness(brightness);
             },
             Message::ContrastChanged(contrast) => {
-                self.workspace.current_parameters_mut().contrast = contrast;
-                true
+                self.workspace.set_contrast(contrast);
             },
             Message::TintChanged(tint) => {
-                self.workspace.current_parameters_mut().tint = tint;
-                true
+                self.workspace.set_tint(tint);
             },
             Message::TemperatureChanged(temperature) => {
-                self.workspace.current_parameters_mut().temperature = temperature;
-                true
+                self.workspace.set_temperature(temperature);
             },
             Message::SaturationChanged(saturation) => {
-                self.workspace.current_parameters_mut().saturation = saturation;
-                true
+                self.workspace.set_saturation(saturation);
             },
             Message::AddMask => {
-                let current_parameters = self.workspace.current_parameters_mut();
-                let new_mask_index = current_parameters.radial_masks.len();
-                current_parameters.radial_masks.push(album::RadialMask::default());
-                self.toggle_view_mode(ViewMode::Mask(new_mask_index))
+                self.workspace.add_mask();
             },
             Message::DeleteMask(mask_index) => {
-                let current_parameters = self.workspace.current_parameters_mut();
-                current_parameters.radial_masks.remove(mask_index);
-                self.view_mode = ViewMode::Normal;
-                true
+                self.workspace.delete_mask(mask_index);
             },
             Message::MaskBrightnessChanged(index, brightness) => {
-                self.workspace.current_parameters_mut().radial_masks[index].brightness = brightness;
-                true
+                self.workspace.set_mask_brightness(index, brightness);
             },
-            Message::AngleChanged(angle) => {
-                self.workspace.current_crop_mut().angle_degrees = angle;
-                true
+            Message::AngleChanged(angle_degrees) => {
+                self.workspace.set_crop_angle(angle_degrees);
             },
             Message::ImageMouseMessage(image_mouse_message) => {
-                self.update_mouse_on_image(image_mouse_message)
+                self.update_mouse_on_image(image_mouse_message);
             }
         };
 
-        if should_update_image {
+        if self.workspace.get_has_updated() {
             self.update_image_task();
         }
 
         iced::Task::none()
     }
 
-    fn toggle_view_mode(&mut self, view_mode: ViewMode) -> bool {
-        if self.view_mode == view_mode {
-            self.view_mode = ViewMode::Normal;
-        } else {
-            self.view_mode = view_mode;
-        }
-        true
-    }
+    // TODO: Figure out what to do with this
+    // fn open_file_dialog(&mut self) -> bool {
+    //     let path: PathBuf = std::env::current_dir().unwrap();
 
-    fn open_file_dialog(&mut self) -> bool {
-        let path: PathBuf = std::env::current_dir().unwrap();
+    //     let result = native_dialog::FileDialog::new()
+    //         .set_location(&path)
+    //         .add_filter("image", &["png", "jpg"])
+    //         .show_open_multiple_file();
 
-        let result = native_dialog::FileDialog::new()
-            .set_location(&path)
-            .add_filter("image", &["png", "jpg"])
-            .show_open_multiple_file();
+    //     match result {
+    //         Ok(file_paths) => {
+    //             self.workspace = workspace::load_workspace(&file_paths);
+    //             true
+    //         },
+    //         _ => {
+    //             false
+    //         }
+    //     }
+    // }
 
-        match result {
-            Ok(file_paths) => {
-                self.workspace = workspace::load_workspace(&file_paths);
-                true
-            },
-            _ => {
-                false
-            }
-        }
-    }
-
-    fn update_mouse_on_image(&mut self, image_mouse_message: MouseMessage) -> bool {
+    fn update_mouse_on_image(&mut self, image_mouse_message: MouseMessage) {
         match image_mouse_message {
             MouseMessage::Over => {
                 self.mouse_position = Point {
@@ -129,136 +101,79 @@ impl Main {
             _ => {}
         }
         
-        match self.view_mode {
+        match self.workspace.get_view_mode() {
             ViewMode::Normal => {
-                self.update_mouse_normal_mode(image_mouse_message)
+                self.update_mouse_normal_mode(image_mouse_message);
             },
             ViewMode::Crop => {
-                self.update_mouse_crop_mode(image_mouse_message)
+                self.update_mouse_crop_mode(image_mouse_message);
             },
             ViewMode::Mask(mask_index) => {
-                self.update_mouse_mask_mode(image_mouse_message, mask_index)
+                self.update_mouse_mask_mode(image_mouse_message, mask_index);
             }
         }
     }
 
-    fn update_mouse_normal_mode(&mut self, image_mouse_message: MouseMessage) -> bool {
+    fn update_mouse_normal_mode(&mut self, image_mouse_message: MouseMessage) {
         match image_mouse_message {
-            MouseMessage::Over => {
-                false
-            },
-            MouseMessage::Press => {
-                false
-            },
             MouseMessage::RightPress => {
-                // White balance
                 let x: usize = viewport::get_image_mouse_x() as usize;
                 let y: usize = viewport::get_image_mouse_y() as usize;
-                let current_image: &album::AlbumImage = self.workspace.current_image();
-                match current_image.lab_pixel_at(x, y) {
-                    Some(pixel) => {
-                        let parameters: &mut album::Parameters = self.workspace.current_parameters_mut();
-                        parameters.tint = -pixel.tint;
-                        parameters.temperature = -pixel.temperature;
-                        true
-                    },
-                    None => {
-                        false
-                    }
-                }
-            },
-            MouseMessage::Release => {
-                false
+                self.workspace.white_balance_at(x, y);
             },
             MouseMessage::Scroll(scroll_delta) => {
-                self.update_zoom(scroll_delta);
-                true
+                self.workspace.update_zoom(scroll_delta);
             },
+            _ => {}
         }
     }
 
-    fn update_mouse_crop_mode(&mut self, image_mouse_message: MouseMessage) -> bool {
+    fn update_mouse_crop_mode(&mut self, image_mouse_message: MouseMessage) {
         match image_mouse_message {
             MouseMessage::Over => {
                 match self.mouse_state {
-                    MouseState::Up => {
-                        false
-                    },
                     MouseState::Down => {
-                        let crop: &mut album::Crop = self.workspace.current_crop_mut();
-                        let width: f32 = (viewport::get_image_mouse_x() - crop.center_x) as f32;
-                        let height: f32 = (viewport::get_image_mouse_y() - crop.center_y) as f32;
-                        let angle: f32 = crop.angle_degrees / 180.0 * std::f32::consts::PI;
-                        let sin: f32 = f32::sin(angle);
-                        let cos: f32 = f32::cos(angle);
-                        crop.width = ((width * cos + height * sin).abs() * 2.0) as i32;
-                        crop.height = ((-width * sin + height * cos).abs() * 2.0) as i32;
-                        true
-                    }
+                        let x: i32 = viewport::get_image_mouse_x();
+                        let y: i32 = viewport::get_image_mouse_y();
+                        self.workspace.update_crop(x, y);
+                    },
+                    _ => {}
                 }
             },
             MouseMessage::Press => {
-                let crop: &mut album::Crop = self.workspace.current_crop_mut();
-                crop.center_x = viewport::get_image_mouse_x();
-                crop.center_y = viewport::get_image_mouse_y();
-                crop.width = 0;
-                crop.height = 0;
-                true
+                let x: i32 = viewport::get_image_mouse_x();
+                let y: i32 = viewport::get_image_mouse_y();
+                self.workspace.new_crop(x, y);
             },
-            MouseMessage::RightPress | MouseMessage::Release => {
-                false
-            },
-            _ => {
-                false
-            }
+            _ => {}
         }
     }
 
-    fn update_mouse_mask_mode(&mut self, image_mouse_message: MouseMessage, mask_index: usize) -> bool {
+    fn update_mouse_mask_mode(&mut self, image_mouse_message: MouseMessage, mask_index: usize) {
         match image_mouse_message {
             MouseMessage::Over => {
                 match self.mouse_state {
-                    MouseState::Up => {
-                        false
-                    },
                     MouseState::Down => {
-                        let parameters: &mut album::Parameters = self.workspace.current_parameters_mut();
-                        let center_x = parameters.radial_masks[mask_index].center_x;
-                        let center_y = parameters.radial_masks[mask_index].center_y;
-                        parameters.radial_masks[mask_index].radius = calculate_distance(
-                            center_x,
-                            center_y,
-                            viewport::get_image_mouse_x(),
-                            viewport::get_image_mouse_y());
-                        true
-                    }
+                        let x: i32 = viewport::get_image_mouse_x();
+                        let y: i32 = viewport::get_image_mouse_y();
+                        self.workspace.update_mask_radius(mask_index, x, y);
+                    },
+                    _ => {}
                 }
             },
             MouseMessage::Press => {
-                let parameters: &mut album::Parameters = self.workspace.current_parameters_mut();
-                parameters.radial_masks[mask_index].center_x = viewport::get_image_mouse_x();
-                parameters.radial_masks[mask_index].center_y = viewport::get_image_mouse_y();
-                parameters.radial_masks[mask_index].radius = 0.0;
-                true
-            },
-            MouseMessage::RightPress => {
-                false
-            },
-            MouseMessage::Release => {
-                false
+                let x: i32 = viewport::get_image_mouse_x();
+                let y: i32 = viewport::get_image_mouse_y();
+                self.workspace.update_mask_position(mask_index, x, y);
             },
             MouseMessage::Scroll(scroll_delta) => {
-                self.update_zoom(scroll_delta);
-                true
-            }
+                self.workspace.update_zoom(scroll_delta);
+            },
+            _ => {}
         }
-    }
-
-    fn update_zoom(&mut self, scroll_delta: f32) {
-        self.workspace.current_image_view_mut().update_zoom(scroll_delta * 0.05);
     }
     
     fn update_image_task(&mut self) {
-        self.viewport = make_viewport(&self.workspace, &self.view_mode);
+        self.viewport = make_viewport(&self.workspace);
     }
 }

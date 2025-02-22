@@ -10,9 +10,9 @@ mod ui;
 use iced;
 use pipeline::viewport;
 use view_mode::ViewMode;
-use workspace::WorkSpace;
+use workspace::Workspace;
+use workspace::workspace_factory::WorkspaceFactory;
 use repository::repository_factory;
-use std::path::PathBuf;
 use ui::message::{Message, MouseMessage, MouseState};
 use ui::window::Window;
 
@@ -30,10 +30,9 @@ struct Point {
 }
 
 struct Main {
-    workspace: WorkSpace,
+    workspace: Workspace,
 
     mouse_position: Point,
-    view_mode: ViewMode,
     mouse_state: MouseState,
 
     viewport: viewport::Viewport
@@ -43,41 +42,27 @@ impl<'a> Main {
 
     fn new() -> Self {
         let mut repository = repository_factory::RepositoryFactory::new().create().unwrap();
+        let workspace = WorkspaceFactory::new(&mut repository).create();
 
-        repository.print_albums().unwrap();
-
-        let file_names = repository.get_album_photos(0).unwrap().iter()
-            .map(|album_photo| album_photo.file_name.clone())
-            .map(PathBuf::from)
-            .collect();
-
-        let workspace: WorkSpace = workspace::load_workspace(&file_names);
+        repository.print_albums().unwrap(); // Just for demo
 
         let mouse_position: Point = Point {
             x: 0,
             y: 0
         };
-        let mode: view_mode::ViewMode = view_mode::ViewMode::Normal;
-        let viewport = update::make_viewport(&workspace, &mode);
+        let viewport = update::make_viewport(&workspace);
         let mouse_state: MouseState = MouseState::Up;
 
         Self {
             workspace,
             mouse_position,
-            view_mode: mode,
             mouse_state,
             viewport
         }
     }
 
     pub fn view(&self) -> iced::Element<Message> {
-        let window: Window<'_> = Window::compose(
-            self.workspace.album_images(),
-            &self.viewport,
-            &self.mouse_position,
-            &self.view_mode,
-            self.workspace.current_parameters(),
-            self.workspace.current_crop().angle_degrees);
+        let window: Window<'_> = Window::new(&self.workspace, &self.viewport, &self.mouse_position);
         window.view()
     }
 }

@@ -6,7 +6,7 @@ use crate::view_mode::ViewMode;
 pub struct RenderPane<'a> {
     viewport: &'a Viewport,
     mouse_position: &'a Point,
-    view_mode: &'a ViewMode
+    view_mode: ViewMode
 }
 
 fn on_scroll(scroll_delta: iced::mouse::ScrollDelta) -> Message {
@@ -25,11 +25,19 @@ impl <'a> RenderPane<'a> {
     pub fn new(
             viewport: &'a Viewport,
             mouse_position: &'a Point,
-            view_mode: &'a ViewMode) -> Self {
+            view_mode: ViewMode) -> Self {
         Self { viewport, mouse_position, view_mode }
     }
 
     pub fn view(&self) -> iced::Element<'a, Message> {
+        iced::widget::column![
+                self.view_viewport(),
+                self.view_debugger()
+            ]
+            .into()
+    }
+
+    fn view_viewport(&self) -> iced::Element<'a, Message> {
         let image_area = iced::widget::shader(self.viewport)
             .width(iced::Fill)
             .height(iced::Fill);
@@ -42,7 +50,6 @@ impl <'a> RenderPane<'a> {
         image_mouse_area.into()
     }
 
-    // TODO: Fix this
     fn view_debugger(&self) -> iced::Element<'a, Message> {
         let debug_str: String = format!("{:?}, {:?}", self.mouse_position, self.view_mode);
         iced::widget::container(iced::widget::text(debug_str))

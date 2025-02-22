@@ -41,7 +41,7 @@ fn update_image_mouse(mouse_x: i32, mouse_y: i32) {
 
 #[derive(Debug, Clone)]
 pub struct ViewportWorkspace {
-    pub image: RawImage,
+    image: RawImage,
     image_index: usize,
     parameters: Parameters,
     crop: Crop,
@@ -56,6 +56,14 @@ impl ViewportWorkspace {
             crop: Crop,
             view: Crop) -> Self {
         Self { image, image_index, parameters, crop, view }
+    }
+
+    pub fn get_image_width(&self) -> usize {
+        self.image.width
+    }
+
+    pub fn get_image_height(&self) -> usize {
+        self.image.height
     }
 }
 

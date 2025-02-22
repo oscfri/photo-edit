@@ -1,4 +1,5 @@
-use crate::album;
+use crate::{album, view_mode};
+use crate::workspace::Workspace;
 use crate::Point;
 use crate::viewport::Viewport;
 use crate::view_mode::ViewMode;
@@ -17,28 +18,18 @@ pub struct Window<'a> {
 
 impl<'a> Window<'a> {
     pub fn new(
-            image_selection_pane: ImageSelectionPane<'a>,
-            render_pane: RenderPane<'a>,
-            toolbox_pane: ToolboxPane<'a>) -> Self {
-        Self { image_selection_pane, render_pane, toolbox_pane}
-    }
-
-    pub fn compose(
-            album_images: &'a Vec<album::AlbumImage>,
+            workspace: &'a Workspace,
             viewport: &'a Viewport,
-            mouse_position: &'a Point,
-            view_mode: &'a ViewMode,
-            parameters: &'a Parameters,
-            angle_degrees: f32) -> Window<'a> {
+            mouse_position: &'a Point) -> Window<'a> {
+        let album_images = workspace.album_images();
+        let view_mode = workspace.get_view_mode();
+        let parameters = workspace.current_parameters();
+        let angle_degrees = workspace.current_crop().angle_degrees;
         let image_selection_pane: ImageSelectionPane<'a> = ImageSelectionPane::new(album_images);
         let render_pane: RenderPane<'a> = RenderPane::new(viewport, mouse_position, view_mode);
         let toolbox_pane: ToolboxPane<'a> = ToolboxPane::new(parameters, angle_degrees);
 
-        Window::new(
-            image_selection_pane,
-            render_pane,
-            toolbox_pane
-        )
+        Self { image_selection_pane, render_pane, toolbox_pane }
     }
 
     pub fn view(&self) -> iced::Element<'a, Message> {
