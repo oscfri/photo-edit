@@ -47,18 +47,23 @@ pub struct Parameters {
 
 #[derive(Debug, Default, Clone)]
 pub struct ImageView {
-    center_x: f32,
-    center_y: f32,
+    offset_x: f32,
+    offset_y: f32,
     zoom: f32,
 }
 
 impl ImageView {
-    pub fn get_center_x(&self) -> f32 {
-        self.center_x
+    pub fn get_offset_x(&self) -> f32 {
+        self.offset_x
     }
 
-    pub fn get_center_y(&self) -> f32 {
-        self.center_y
+    pub fn get_offset_y(&self) -> f32 {
+        self.offset_y
+    }
+
+    pub fn update_offset(&mut self, x: f32, y: f32) {
+        self.offset_x = x;
+        self.offset_y = y;
     }
 
     pub fn get_zoom(&self) -> f32 {
@@ -140,8 +145,8 @@ fn load_album_image(path: &PathBuf) -> AlbumImage {
     let source_image: RawImage = convert_to_raw_image(&rgb_image);
     let parameters: Parameters = Parameters::default();
     let image_view: ImageView = ImageView {
-        center_x: 0.5,
-        center_y: 0.5,
+        offset_x: 0.0,
+        offset_y: 0.0,
         zoom: 0.0
     };
     let crop: Crop = Crop {

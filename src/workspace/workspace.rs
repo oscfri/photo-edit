@@ -6,7 +6,13 @@ pub struct Workspace {
     album: album::Album,
     image_index: usize,
     view_mode: ViewMode,
-    has_updated: bool
+    has_updated: bool,
+
+    // For view dragging (there's probably a better way to handle this)
+    mouse_origin_x: i32,
+    mouse_origin_y: i32,
+    offset_origin_x: i32,
+    offset_origin_y: i32,
 }
 
 fn calculate_distance(x1: i32, y1: i32, x2: i32, y2: i32) -> f32 {
@@ -19,7 +25,11 @@ impl Workspace {
             album,
             image_index,
             view_mode: ViewMode::Normal,
-            has_updated: true
+            has_updated: true,
+            mouse_origin_x: 0,
+            mouse_origin_y: 0,
+            offset_origin_x: 0,
+            offset_origin_y: 0,
         }
     }
 
@@ -179,8 +189,23 @@ impl Workspace {
         crop.height = 0;
     }
 
-    pub fn update_zoom(&mut self, scroll_delta: f32) {
+    pub fn update_view_zoom(&mut self, scroll_delta: f32) {
         self.current_image_view_mut().update_zoom(scroll_delta * 0.05);
+    }
+
+    pub fn new_view_offset_origin(&mut self, x: i32, y: i32) {
+        self.mouse_origin_x = x;
+        self.mouse_origin_y = y;
+        self.offset_origin_x = self.current_image_view().get_offset_x() as i32;
+        self.offset_origin_y = self.current_image_view().get_offset_y() as i32;
+    }
+
+    pub fn update_view_offset(&mut self, x: i32, y: i32) {
+        let delta_x: i32 = self.mouse_origin_x - x;
+        let delta_y: i32 = self.mouse_origin_y - y;
+        let offset_x: f32 = (self.offset_origin_x + delta_x) as f32;
+        let offset_y: f32 = (self.offset_origin_y + delta_y) as f32;
+        self.current_image_view_mut().update_offset(offset_x, offset_y);
     }
 
     pub fn current_view(&self) -> album::Crop {
@@ -199,13 +224,14 @@ impl Workspace {
 
     fn make_view(&self) -> album::Crop {
         let current_crop: &album::Crop = self.current_crop();
-        let scale: f32 = 1.0 / (f32::powf(2.0, self.current_image_view().get_zoom()));
+        let current_image_view: &album::ImageView = self.current_image_view();
+        let scale: f32 = 1.0 / (f32::powf(2.0, current_image_view.get_zoom()));
         album::Crop {
-            center_x: current_crop.center_x,
-            center_y: current_crop.center_y,
+            center_x: current_crop.center_x + (current_image_view.get_offset_x() as i32),
+            center_y: current_crop.center_y + (current_image_view.get_offset_y() as i32),
             width: ((current_crop.width as f32) * scale) as i32,
             height: ((current_crop.height as f32) * scale) as i32,
-            angle_degrees: current_crop.angle_degrees
+            ..current_crop.clone()
         }
     }
 

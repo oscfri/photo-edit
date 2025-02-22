@@ -20,6 +20,8 @@ use super::radial_parameter;
 // space to "image" space.
 static mut IMAGE_MOUSE_X: i32 = 0;
 static mut IMAGE_MOUSE_Y: i32 = 0;
+static mut RELATIVE_MOUSE_X: i32 = 0;
+static mut RELATIVE_MOUSE_Y: i32 = 0;
 
 pub fn get_image_mouse_x() -> i32 {
     unsafe {
@@ -33,10 +35,29 @@ pub fn get_image_mouse_y() -> i32 {
     }
 }
 
+pub fn get_relative_mouse_x() -> i32 {
+    unsafe {
+        RELATIVE_MOUSE_X
+    }
+}
+
+pub fn get_relative_mouse_y() -> i32 {
+    unsafe {
+        RELATIVE_MOUSE_Y
+    }
+}
+
 fn update_image_mouse(mouse_x: i32, mouse_y: i32) {
     unsafe {
         IMAGE_MOUSE_X = mouse_x;
         IMAGE_MOUSE_Y = mouse_y;
+    }
+}
+
+fn update_relative_mouse(mouse_x: i32, mouse_y: i32) {
+    unsafe {
+        RELATIVE_MOUSE_X = mouse_x;
+        RELATIVE_MOUSE_Y = mouse_y;
     }
 }
 
@@ -101,6 +122,15 @@ impl Viewport {
                     bounds,
                     &self.workspace.view);
                 update_image_mouse(image_point.x as i32, image_point.y as i32);
+                let relative_point: iced::Point = camera_uniform::point_to_image_position(
+                    &point,
+                    bounds,
+                    &Crop {
+                        center_x: 0,
+                        center_y: 0,
+                        ..self.workspace.view.clone()
+                    });
+                update_relative_mouse(relative_point.x as i32, relative_point.y as i32);
             },
             mouse::Cursor::Unavailable => {} // Do nothing
         }

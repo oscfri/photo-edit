@@ -3,12 +3,20 @@ use crate::{pipeline::viewport::{self, Viewport}, Main, Message, MouseMessage, M
 use std::usize;
 
 #[derive(Clone, Copy)]
+struct MousePosition {
+    image_x: i32,
+    image_y: i32,
+    relative_x: i32,
+    relative_y: i32
+}
+
+#[derive(Clone, Copy)]
 enum MouseEvent {
-    Press(i32, i32),
-    Release(i32, i32),
-    RightPress(i32, i32),
-    Down(i32, i32),
-    Over(i32, i32),
+    Press(MousePosition),
+    Release(MousePosition),
+    RightPress(MousePosition),
+    Down(MousePosition),
+    Over(MousePosition),
     Scroll(f32)
 }
 
@@ -108,11 +116,17 @@ impl Main {
 
     fn update_mouse_normal_mode(&mut self, mouse_event: MouseEvent) {
         match mouse_event {
-            MouseEvent::RightPress(x, y) => {
-                self.workspace.white_balance_at(x, y);
+            MouseEvent::RightPress(mouse_position) => {
+                self.workspace.white_balance_at(mouse_position.image_x, mouse_position.image_y);
             },
             MouseEvent::Scroll(scroll_delta) => {
-                self.workspace.update_zoom(scroll_delta);
+                self.workspace.update_view_zoom(scroll_delta);
+            },
+            MouseEvent::Down(mouse_position) => {
+                self.workspace.update_view_offset(mouse_position.relative_x, mouse_position.relative_y);
+            },
+            MouseEvent::Press(mouse_position) => {
+                self.workspace.new_view_offset_origin(mouse_position.relative_x, mouse_position.relative_y);
             },
             _ => {}
         }
@@ -120,11 +134,11 @@ impl Main {
 
     fn update_mouse_crop_mode(&mut self, mouse_event: MouseEvent) {
         match mouse_event {
-            MouseEvent::Down(x, y) => {
-                self.workspace.update_crop(x, y);
+            MouseEvent::Down(mouse_position) => {
+                self.workspace.update_crop(mouse_position.image_x, mouse_position.image_y);
             },
-            MouseEvent::Press(x, y) => {
-                self.workspace.new_crop(x, y);
+            MouseEvent::Press(mouse_position) => {
+                self.workspace.new_crop(mouse_position.image_x, mouse_position.image_y);
             },
             _ => {}
         }
@@ -132,40 +146,48 @@ impl Main {
 
     fn update_mouse_mask_mode(&mut self, mouse_event: MouseEvent, mask_index: usize) {
         match mouse_event {
-            MouseEvent::Down(x, y) => {
-                self.workspace.update_mask_radius(mask_index, x, y);
+            MouseEvent::Down(mouse_position) => {
+                self.workspace.update_mask_radius(mask_index, mouse_position.image_x, mouse_position.image_y);
             },
-            MouseEvent::Press(x, y) => {
-                self.workspace.update_mask_position(mask_index, x, y);
+            MouseEvent::Press(mouse_position) => {
+                self.workspace.update_mask_position(mask_index, mouse_position.image_x, mouse_position.image_y);
             },
             MouseEvent::Scroll(scroll_delta) => {
-                self.workspace.update_zoom(scroll_delta);
+                self.workspace.update_view_zoom(scroll_delta);
             },
             _ => {}
         }
     }
 
     fn to_mouse_event(&mut self, image_mouse_message: MouseMessage) -> MouseEvent {
-        let x: i32 = viewport::get_image_mouse_x();
-        let y: i32 = viewport::get_image_mouse_y();
+        let image_mouse_x: i32 = viewport::get_image_mouse_x();
+        let image_mouse_y: i32 = viewport::get_image_mouse_y();
+        let relative_mouse_x: i32 = viewport::get_relative_mouse_x();
+        let relative_mouse_y: i32 = viewport::get_relative_mouse_y();
+        let mouse_position: MousePosition = MousePosition {
+            image_x: image_mouse_x, 
+            image_y: image_mouse_y,
+            relative_x: relative_mouse_x,
+            relative_y: relative_mouse_y
+        };
         match image_mouse_message {
             MouseMessage::Over => {
-                self.mouse_position = Point { x, y };
+                self.mouse_position = Point { x: mouse_position.image_x, y: mouse_position.image_y };
                 match self.mouse_state {
-                    MouseState::Down => MouseEvent::Down(x, y),
-                    MouseState::Up => MouseEvent::Over(x, y),
+                    MouseState::Down => MouseEvent::Down(mouse_position),
+                    MouseState::Up => MouseEvent::Over(mouse_position),
                 }
             },
             MouseMessage::Press => {
                 self.mouse_state = MouseState::Down;
-                MouseEvent::Press(x, y)
+                MouseEvent::Press(mouse_position)
             },
             MouseMessage::Release => {
                 self.mouse_state = MouseState::Up;
-                MouseEvent::Release(x, y)
+                MouseEvent::Release(mouse_position)
             },
             MouseMessage::RightPress => {
-                MouseEvent::RightPress(x, y)
+                MouseEvent::RightPress(mouse_position)
             },
             MouseMessage::Scroll(scroll_delta) => {
                 MouseEvent::Scroll(scroll_delta)
