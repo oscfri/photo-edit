@@ -27,7 +27,7 @@ impl Workspace {
         self.has_updated
     }
 
-    fn set_has_updated(&mut self) {
+    fn mark_has_updated(&mut self) {
         self.has_updated = true;
     }
 
@@ -48,7 +48,7 @@ impl Workspace {
     }
 
     fn current_image_mut(&mut self) -> &mut AlbumImage {
-        self.set_has_updated(); // If this has been called, then an update is probably needed
+        self.mark_has_updated(); // If this has been called, then an update is probably needed
         &mut self.album.images[self.image_index]
     }
 
@@ -61,7 +61,7 @@ impl Workspace {
     }
 
     fn current_parameters_mut(&mut self) -> &mut album::Parameters {
-        self.set_has_updated(); // If this has been called, then an update is probably needed
+        self.mark_has_updated(); // If this has been called, then an update is probably needed
         &mut self.current_image_mut().parameters
     }
 
@@ -70,7 +70,7 @@ impl Workspace {
     }
 
     pub fn current_image_view_mut(&mut self) -> &mut album::ImageView {
-        self.set_has_updated(); // If this has been called, then an update is probably needed
+        self.mark_has_updated(); // If this has been called, then an update is probably needed
         &mut self.current_image_mut().image_view
     }
 
@@ -79,7 +79,7 @@ impl Workspace {
     }
 
     fn current_crop_mut(&mut self) -> &mut album::Crop {
-        self.set_has_updated(); // If this has been called, then an update is probably needed
+        self.mark_has_updated(); // If this has been called, then an update is probably needed
         &mut self.current_image_mut().crop
     }
 
@@ -88,7 +88,7 @@ impl Workspace {
     }
 
     pub fn toggle_view_mode(&mut self, view_mode: ViewMode) {
-        self.set_has_updated();
+        self.mark_has_updated();
         self.view_mode = self.view_mode.toggle_view_mode(view_mode);
     }
 
@@ -210,10 +210,14 @@ impl Workspace {
     }
 
     pub fn next_image_index(&mut self) {
+        self.mark_has_updated();
+
         self.image_index = (self.image_index + 1) % self.album.images.len();
     }
 
     pub fn set_image_index(&mut self, index: usize) {
+        self.mark_has_updated();
+        
         if index < self.album.images.len() {
             self.image_index = index;
         }
