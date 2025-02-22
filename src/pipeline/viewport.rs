@@ -4,7 +4,7 @@ use crate::types::RawImage;
 use crate::view_mode::ViewMode;
 use crate::pipeline::pipeline;
 use crate::pipeline::camera_uniform;
-use crate::workspace::Workspace;
+use crate::workspace::workspace::Workspace;
 
 use iced::mouse;
 use iced::widget::shader;

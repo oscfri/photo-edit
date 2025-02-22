@@ -1,4 +1,4 @@
-use crate::workspace::Workspace;
+use crate::workspace::workspace::Workspace;
 use crate::Point;
 use crate::viewport::Viewport;
 

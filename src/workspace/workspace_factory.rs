@@ -1,7 +1,7 @@
 use crate::album;
 use crate::repository::repository::Repository;
 
-use super::Workspace;
+use super::workspace::Workspace;
 
 use std::path::PathBuf;
 

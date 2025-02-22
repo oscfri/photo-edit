@@ -10,7 +10,7 @@ mod ui;
 use iced;
 use pipeline::viewport;
 use view_mode::ViewMode;
-use workspace::Workspace;
+use workspace::workspace::Workspace;
 use workspace::workspace_factory::WorkspaceFactory;
 use repository::repository_factory;
 use ui::message::{Message, MouseMessage, MouseState};
@@ -43,7 +43,7 @@ impl<'a> Main {
     fn new() -> Self {
         let mut repository = repository_factory::RepositoryFactory::new().create().unwrap();
         repository.print_albums().unwrap(); // Just for demo
-        
+
         let workspace = WorkspaceFactory::new(&mut repository).create();
         let viewport: Viewport = Viewport::from_workspace(&workspace);
         let mouse_position: Point = Point::default();
