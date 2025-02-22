@@ -79,7 +79,7 @@ impl Workspace {
         &self.current_image().image_view
     }
 
-    pub fn current_image_view_mut(&mut self) -> &mut album::ImageView {
+    fn current_image_view_mut(&mut self) -> &mut album::ImageView {
         self.mark_has_updated(); // If this has been called, then an update is probably needed
         &mut self.current_image_mut().image_view
     }
