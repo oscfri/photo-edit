@@ -1,11 +1,6 @@
-use crate::{pipeline::viewport, workspace, Main, Message, MouseMessage, MouseState, Point, ViewMode};
+use crate::{pipeline::viewport::{self, Viewport}, workspace, Main, Message, MouseMessage, MouseState, Point, ViewMode};
 
 use std::usize;
-
-// TODO: This function should move to somewhere else...
-pub fn make_viewport(workspace: &workspace::Workspace) -> viewport::Viewport {
-    viewport::Viewport::new(workspace.make_viewport(), workspace.get_view_mode())
-}
 
 impl Main {
     pub fn update(&mut self, message: Message) -> iced::Task<Message> {
@@ -58,7 +53,8 @@ impl Main {
         };
 
         if self.workspace.get_has_updated() {
-            self.update_image_task();
+            self.viewport = Viewport::from_workspace(&self.workspace);
+            self.workspace.reset_has_updated();
         }
 
         iced::Task::none()
@@ -171,9 +167,5 @@ impl Main {
             },
             _ => {}
         }
-    }
-    
-    fn update_image_task(&mut self) {
-        self.viewport = make_viewport(&self.workspace);
     }
 }

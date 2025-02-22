@@ -15,6 +15,7 @@ use workspace::workspace_factory::WorkspaceFactory;
 use repository::repository_factory;
 use ui::message::{Message, MouseMessage, MouseState};
 use ui::window::Window;
+use viewport::Viewport;
 
 pub fn main() -> iced::Result {
     iced::application("A cool image editor", Main::update, Main::view)
@@ -23,7 +24,7 @@ pub fn main() -> iced::Result {
         .run()
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Default)]
 struct Point {
     x: i32,
     y: i32
@@ -32,32 +33,27 @@ struct Point {
 struct Main {
     workspace: Workspace,
 
+    viewport: Viewport,
     mouse_position: Point,
-    mouse_state: MouseState,
-
-    viewport: viewport::Viewport
+    mouse_state: MouseState
 }
 
 impl<'a> Main {
 
     fn new() -> Self {
         let mut repository = repository_factory::RepositoryFactory::new().create().unwrap();
-        let workspace = WorkspaceFactory::new(&mut repository).create();
-
         repository.print_albums().unwrap(); // Just for demo
-
-        let mouse_position: Point = Point {
-            x: 0,
-            y: 0
-        };
-        let viewport = update::make_viewport(&workspace);
+        
+        let workspace = WorkspaceFactory::new(&mut repository).create();
+        let viewport: Viewport = Viewport::from_workspace(&workspace);
+        let mouse_position: Point = Point::default();
         let mouse_state: MouseState = MouseState::Up;
 
         Self {
             workspace,
+            viewport,
             mouse_position,
-            mouse_state,
-            viewport
+            mouse_state
         }
     }
 

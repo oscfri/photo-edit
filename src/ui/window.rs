@@ -1,9 +1,6 @@
-use crate::{album, view_mode};
 use crate::workspace::Workspace;
 use crate::Point;
 use crate::viewport::Viewport;
-use crate::view_mode::ViewMode;
-use crate::album::Parameters;
 
 use crate::ui::message::Message;
 use crate::ui::panes::image_selection_pane::ImageSelectionPane;
@@ -25,8 +22,9 @@ impl<'a> Window<'a> {
         let view_mode = workspace.get_view_mode();
         let parameters = workspace.current_parameters();
         let angle_degrees = workspace.current_crop().angle_degrees;
+
         let image_selection_pane: ImageSelectionPane<'a> = ImageSelectionPane::new(album_images);
-        let render_pane: RenderPane<'a> = RenderPane::new(viewport, mouse_position, view_mode);
+        let render_pane: RenderPane<'a> = RenderPane::new(&viewport, mouse_position, view_mode);
         let toolbox_pane: ToolboxPane<'a> = ToolboxPane::new(parameters, angle_degrees);
 
         Self { image_selection_pane, render_pane, toolbox_pane }

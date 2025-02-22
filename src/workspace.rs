@@ -1,7 +1,6 @@
 pub mod workspace_factory;
 
 use crate::album::{self, AlbumImage};
-use crate::pipeline::viewport;
 use crate::view_mode::ViewMode;
 use crate::{types, view_mode};
 
@@ -32,6 +31,14 @@ impl Workspace {
 
     fn set_has_updated(&mut self) {
         self.has_updated = true;
+    }
+
+    pub fn reset_has_updated(&mut self) {
+        self.has_updated = false;
+    }
+
+    pub fn get_image_index(&self) -> usize {
+        self.image_index
     }
 
     pub fn album_images(&self) -> &Vec<album::AlbumImage> {
@@ -176,16 +183,6 @@ impl Workspace {
 
     pub fn update_zoom(&mut self, scroll_delta: f32) {
         self.current_image_view_mut().update_zoom(scroll_delta * 0.05);
-    }
-
-    pub fn make_viewport(&self) -> viewport::ViewportWorkspace {
-        let view: album::Crop = self.current_view();
-        viewport::ViewportWorkspace::new(
-            self.current_source_image().clone(),
-            self.image_index,
-            self.current_parameters().clone(),
-            self.current_crop().clone(),
-            view)
     }
 
     pub fn current_view(&self) -> album::Crop {

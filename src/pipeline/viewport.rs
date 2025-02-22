@@ -4,6 +4,7 @@ use crate::types::RawImage;
 use crate::view_mode::ViewMode;
 use crate::pipeline::pipeline;
 use crate::pipeline::camera_uniform;
+use crate::workspace::Workspace;
 
 use iced::mouse;
 use iced::widget::shader;
@@ -78,6 +79,23 @@ impl Viewport {
     pub fn new(workspace: ViewportWorkspace, view_mode: ViewMode) -> Self {
         let cursor: mouse::Cursor = mouse::Cursor::Unavailable;
         Self { workspace, view_mode, cursor }
+    }
+
+    pub fn from_workspace(workspace: &Workspace) -> Self {
+        let view: Crop = workspace.current_view();
+        let viewport_workspace = ViewportWorkspace::new(
+            workspace.current_source_image().clone(),
+            workspace.get_image_index(),
+            workspace.current_parameters().clone(),
+            workspace.current_crop().clone(),
+            view);
+        let view_mode: ViewMode = workspace.get_view_mode();
+        let cursor: mouse::Cursor = mouse::Cursor::Unavailable;
+        Self {
+            workspace: viewport_workspace,
+            view_mode,
+            cursor
+        }
     }
 
     fn update_mouse(&self, bounds: &iced::Rectangle) {
