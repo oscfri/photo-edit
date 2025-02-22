@@ -150,9 +150,9 @@ impl Workspace {
         self.current_crop_mut().angle_degrees = angle_degrees;
     }
 
-    pub fn white_balance_at(&mut self, x: usize, y: usize) {
+    pub fn white_balance_at(&mut self, x: i32, y: i32) {
         let current_image: &album::AlbumImage = self.current_image();
-        match current_image.lab_pixel_at(x, y) {
+        match current_image.lab_pixel_at(x as usize, y as usize) {
             Some(pixel) => {
                 let parameters: &mut album::Parameters = self.current_parameters_mut();
                 parameters.tint = -pixel.tint;

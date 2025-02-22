@@ -1,6 +1,16 @@
-use crate::{pipeline::viewport::{self, Viewport}, workspace, Main, Message, MouseMessage, MouseState, Point, ViewMode};
+use crate::{pipeline::viewport::{self, Viewport}, Main, Message, MouseMessage, MouseState, Point, ViewMode};
 
 use std::usize;
+
+#[derive(Clone, Copy)]
+enum MouseEvent {
+    Press(i32, i32),
+    Release(i32, i32),
+    RightPress(i32, i32),
+    Down(i32, i32),
+    Over(i32, i32),
+    Scroll(f32)
+}
 
 impl Main {
     pub fn update(&mut self, message: Message) -> iced::Task<Message> {
@@ -81,91 +91,85 @@ impl Main {
     // }
 
     fn update_mouse_on_image(&mut self, image_mouse_message: MouseMessage) {
-        match image_mouse_message {
-            MouseMessage::Over => {
-                self.mouse_position = Point {
-                    x: viewport::get_image_mouse_x(),
-                    y: viewport::get_image_mouse_y(),
-                };
-            },
-            MouseMessage::Press => {
-                self.mouse_state = MouseState::Down;
-            },
-            MouseMessage::Release => {
-                self.mouse_state = MouseState::Up;
-            },
-            _ => {}
-        }
+        let mouse_event: MouseEvent = self.to_mouse_event(image_mouse_message);
         
         match self.workspace.get_view_mode() {
             ViewMode::Normal => {
-                self.update_mouse_normal_mode(image_mouse_message);
+                self.update_mouse_normal_mode(mouse_event);
             },
             ViewMode::Crop => {
-                self.update_mouse_crop_mode(image_mouse_message);
+                self.update_mouse_crop_mode(mouse_event);
             },
             ViewMode::Mask(mask_index) => {
-                self.update_mouse_mask_mode(image_mouse_message, mask_index);
+                self.update_mouse_mask_mode(mouse_event, mask_index);
             }
         }
     }
 
-    fn update_mouse_normal_mode(&mut self, image_mouse_message: MouseMessage) {
-        match image_mouse_message {
-            MouseMessage::RightPress => {
-                let x: usize = viewport::get_image_mouse_x() as usize;
-                let y: usize = viewport::get_image_mouse_y() as usize;
+    fn update_mouse_normal_mode(&mut self, mouse_event: MouseEvent) {
+        match mouse_event {
+            MouseEvent::RightPress(x, y) => {
                 self.workspace.white_balance_at(x, y);
             },
-            MouseMessage::Scroll(scroll_delta) => {
+            MouseEvent::Scroll(scroll_delta) => {
                 self.workspace.update_zoom(scroll_delta);
             },
             _ => {}
         }
     }
 
-    fn update_mouse_crop_mode(&mut self, image_mouse_message: MouseMessage) {
-        match image_mouse_message {
-            MouseMessage::Over => {
-                match self.mouse_state {
-                    MouseState::Down => {
-                        let x: i32 = viewport::get_image_mouse_x();
-                        let y: i32 = viewport::get_image_mouse_y();
-                        self.workspace.update_crop(x, y);
-                    },
-                    _ => {}
-                }
+    fn update_mouse_crop_mode(&mut self, mouse_event: MouseEvent) {
+        match mouse_event {
+            MouseEvent::Down(x, y) => {
+                self.workspace.update_crop(x, y);
             },
-            MouseMessage::Press => {
-                let x: i32 = viewport::get_image_mouse_x();
-                let y: i32 = viewport::get_image_mouse_y();
+            MouseEvent::Press(x, y) => {
                 self.workspace.new_crop(x, y);
             },
             _ => {}
         }
     }
 
-    fn update_mouse_mask_mode(&mut self, image_mouse_message: MouseMessage, mask_index: usize) {
-        match image_mouse_message {
-            MouseMessage::Over => {
-                match self.mouse_state {
-                    MouseState::Down => {
-                        let x: i32 = viewport::get_image_mouse_x();
-                        let y: i32 = viewport::get_image_mouse_y();
-                        self.workspace.update_mask_radius(mask_index, x, y);
-                    },
-                    _ => {}
-                }
+    fn update_mouse_mask_mode(&mut self, mouse_event: MouseEvent, mask_index: usize) {
+        match mouse_event {
+            MouseEvent::Down(x, y) => {
+                self.workspace.update_mask_radius(mask_index, x, y);
             },
-            MouseMessage::Press => {
-                let x: i32 = viewport::get_image_mouse_x();
-                let y: i32 = viewport::get_image_mouse_y();
+            MouseEvent::Press(x, y) => {
                 self.workspace.update_mask_position(mask_index, x, y);
             },
-            MouseMessage::Scroll(scroll_delta) => {
+            MouseEvent::Scroll(scroll_delta) => {
                 self.workspace.update_zoom(scroll_delta);
             },
             _ => {}
+        }
+    }
+
+    fn to_mouse_event(&mut self, image_mouse_message: MouseMessage) -> MouseEvent {
+        let x: i32 = viewport::get_image_mouse_x();
+        let y: i32 = viewport::get_image_mouse_y();
+        match image_mouse_message {
+            MouseMessage::Over => {
+                self.mouse_position = Point { x, y };
+                match self.mouse_state {
+                    MouseState::Down => MouseEvent::Down(x, y),
+                    MouseState::Up => MouseEvent::Over(x, y),
+                }
+            },
+            MouseMessage::Press => {
+                self.mouse_state = MouseState::Down;
+                MouseEvent::Press(x, y)
+            },
+            MouseMessage::Release => {
+                self.mouse_state = MouseState::Up;
+                MouseEvent::Release(x, y)
+            },
+            MouseMessage::RightPress => {
+                MouseEvent::RightPress(x, y)
+            },
+            MouseMessage::Scroll(scroll_delta) => {
+                MouseEvent::Scroll(scroll_delta)
+            }
         }
     }
 }

@@ -76,11 +76,6 @@ pub struct Viewport {
 }
 
 impl Viewport {
-    pub fn new(workspace: ViewportWorkspace, view_mode: ViewMode) -> Self {
-        let cursor: mouse::Cursor = mouse::Cursor::Unavailable;
-        Self { workspace, view_mode, cursor }
-    }
-
     pub fn from_workspace(workspace: &Workspace) -> Self {
         let view: Crop = workspace.current_view();
         let viewport_workspace = ViewportWorkspace::new(
