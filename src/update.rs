@@ -123,10 +123,10 @@ impl Main {
             MouseMessage::Press => {
                 self.mouse_state = MouseState::Down;
             },
-            MouseMessage::RightPress => {}, // Do nothing
             MouseMessage::Release => {
                 self.mouse_state = MouseState::Up;
             },
+            _ => {}
         }
         
         match self.view_mode {
@@ -169,7 +169,11 @@ impl Main {
             },
             MouseMessage::Release => {
                 false
-            }
+            },
+            MouseMessage::Scroll(scroll_delta) => {
+                self.update_zoom(scroll_delta);
+                true
+            },
         }
     }
 
@@ -202,6 +206,9 @@ impl Main {
                 true
             },
             MouseMessage::RightPress | MouseMessage::Release => {
+                false
+            },
+            _ => {
                 false
             }
         }
@@ -239,8 +246,16 @@ impl Main {
             },
             MouseMessage::Release => {
                 false
+            },
+            MouseMessage::Scroll(scroll_delta) => {
+                self.update_zoom(scroll_delta);
+                true
             }
         }
+    }
+
+    fn update_zoom(&mut self, scroll_delta: f32) {
+        self.workspace.current_image_view_mut().update_zoom(scroll_delta * 0.05);
     }
     
     fn update_image_task(&mut self) {

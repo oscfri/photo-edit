@@ -11,6 +11,7 @@ pub struct Album {
 pub struct AlbumImage {
     pub source_image: RawImage,
     pub parameters: Parameters,
+    pub image_view: ImageView,
     pub crop: Crop,
     pub thumbnail: RawImage
 }
@@ -42,6 +43,37 @@ pub struct Parameters {
     pub temperature: f32,
     pub saturation: f32,
     pub radial_masks: Vec<RadialMask>
+}
+
+#[derive(Debug, Default, Clone)]
+pub struct ImageView {
+    center_x: f32,
+    center_y: f32,
+    zoom: f32,
+}
+
+impl ImageView {
+    pub fn get_center_x(&self) -> f32 {
+        self.center_x
+    }
+
+    pub fn get_center_y(&self) -> f32 {
+        self.center_y
+    }
+
+    pub fn get_zoom(&self) -> f32 {
+        self.zoom
+    }
+
+    pub fn update_zoom(&mut self, zoom_delta: f32) {
+        self.zoom += zoom_delta;
+
+        if self.zoom < 0.0 {
+            self.zoom = 0.0;
+        } else if self.zoom > 10.0 {
+            self.zoom = 10.0
+        }
+    }
 }
 
 #[derive(Debug, Default, Clone)]
@@ -107,6 +139,11 @@ fn load_album_image(path: &PathBuf) -> AlbumImage {
     let rgb_image: RgbImage = load_image(&path);
     let source_image: RawImage = convert_to_raw_image(&rgb_image);
     let parameters: Parameters = Parameters::default();
+    let image_view: ImageView = ImageView {
+        center_x: 0.5,
+        center_y: 0.5,
+        zoom: 0.0
+    };
     let crop: Crop = Crop {
         center_x: (source_image.width as i32) / 2,
         center_y: (source_image.height as i32) / 2,
@@ -118,6 +155,7 @@ fn load_album_image(path: &PathBuf) -> AlbumImage {
     AlbumImage {
         source_image,
         parameters,
+        image_view,
         crop,
         thumbnail,
     }

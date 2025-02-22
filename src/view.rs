@@ -6,6 +6,7 @@ impl Main {
             &self.viewport,
             self.mouse_position,
             self.workspace.current_crop(),
+            self.workspace.current_image_view(),
             self.workspace.current_parameters(),
             self.workspace.album_images(),
             &self.view_mode);
@@ -17,9 +18,22 @@ pub struct View<'a> {
     viewport: &'a viewport::Viewport,
     mouse_position: Point,
     crop: &'a album::Crop,
+    image_view: &'a album::ImageView,
     parameters: &'a album::Parameters,
     album_images: &'a Vec<album::AlbumImage>,
     view_mode: &'a view_mode::ViewMode,
+}
+
+fn on_scroll(scroll_delta: iced::mouse::ScrollDelta) -> Message {
+    let mouse_message: MouseMessage = match scroll_delta {
+        iced::mouse::ScrollDelta::Pixels { x: _, y } => {
+            MouseMessage::Scroll(y)
+        },
+        iced::mouse::ScrollDelta::Lines { x: _, y } => {
+            MouseMessage::Scroll(y)
+        },
+    };
+    Message::ImageMouseMessage(mouse_message)
 }
 
 impl<'a> View<'a> {
@@ -27,10 +41,11 @@ impl<'a> View<'a> {
             viewport: &'a viewport::Viewport,
             mouse_position: Point,
             crop: &'a album::Crop,
+            image_view: &'a album::ImageView,
             parameters: &'a album::Parameters,
             album_images: &'a Vec<album::AlbumImage>,
             view_mode: &'a view_mode::ViewMode) -> Self {
-        Self { viewport, mouse_position, crop, parameters, album_images, view_mode }
+        Self { viewport, mouse_position, crop, image_view, parameters, album_images, view_mode }
     }
 
     pub fn view(&self) -> iced::Element<'a, Message> {
@@ -60,7 +75,8 @@ impl<'a> View<'a> {
             .on_move(|_point| Message::ImageMouseMessage(MouseMessage::Over))
             .on_press(Message::ImageMouseMessage(MouseMessage::Press))
             .on_right_press(Message::ImageMouseMessage(MouseMessage::RightPress))
-            .on_release(Message::ImageMouseMessage(MouseMessage::Release));
+            .on_release(Message::ImageMouseMessage(MouseMessage::Release))
+            .on_scroll(on_scroll);
         image_mouse_area.into()
     }
 

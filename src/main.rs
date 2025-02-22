@@ -27,6 +27,7 @@ struct Point {
     y: i32
 }
 
+// TODO: This should be in a separate file
 #[derive(Debug, Clone)]
 enum MouseState {
     Up,
@@ -38,7 +39,8 @@ enum MouseMessage {
     Over,
     Press,
     RightPress,
-    Release
+    Release,
+    Scroll(f32),
 }
 
 #[derive(Debug, Clone)]

@@ -47,6 +47,14 @@ impl WorkSpace {
         &mut self.current_image_mut().parameters
     }
 
+    pub fn current_image_view(&self) -> &album::ImageView {
+        &self.current_image().image_view
+    }
+
+    pub fn current_image_view_mut(&mut self) -> &mut album::ImageView {
+        &mut self.current_image_mut().image_view
+    }
+
     pub fn current_crop(&self) -> &album::Crop {
         &self.current_image().crop
     }
@@ -67,6 +75,7 @@ impl WorkSpace {
 
     pub fn current_view(&self, view_mode: &view_mode::ViewMode) -> album::Crop {
         match view_mode {
+            // Show full image in Crop mode
             view_mode::ViewMode::Crop => album::Crop {
                 center_x: (self.current_source_image().width as i32) / 2,
                 center_y: (self.current_source_image().height as i32) / 2,
@@ -74,7 +83,19 @@ impl WorkSpace {
                 height: self.current_source_image().height as i32,
                 angle_degrees: self.current_crop().angle_degrees,
             },
-            view_mode::ViewMode::Normal | view_mode::ViewMode::Mask(_) => self.current_crop().clone()
+            view_mode::ViewMode::Normal | view_mode::ViewMode::Mask(_) => self.make_view()
+        }
+    }
+
+    fn make_view(&self) -> album::Crop {
+        let current_crop: &album::Crop = self.current_crop();
+        let scale: f32 = 1.0 / (f32::powf(2.0, self.current_image_view().get_zoom()));
+        album::Crop {
+            center_x: current_crop.center_x,
+            center_y: current_crop.center_y,
+            width: ((current_crop.width as f32) * scale) as i32,
+            height: ((current_crop.height as f32) * scale) as i32,
+            angle_degrees: current_crop.angle_degrees
         }
     }
 
