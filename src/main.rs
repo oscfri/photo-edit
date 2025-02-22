@@ -3,9 +3,9 @@ mod types;
 mod pipeline;
 mod repository;
 mod update;
-mod view;
 mod view_mode;
 mod workspace;
+mod ui;
 
 use iced;
 use pipeline::viewport;
@@ -13,6 +13,8 @@ use view_mode::ViewMode;
 use workspace::WorkSpace;
 use repository::repository_factory;
 use std::path::PathBuf;
+use ui::message::{Message, MouseMessage, MouseState};
+use ui::window::Window;
 
 pub fn main() -> iced::Result {
     iced::application("A cool image editor", Main::update, Main::view)
@@ -25,41 +27,6 @@ pub fn main() -> iced::Result {
 struct Point {
     x: i32,
     y: i32
-}
-
-// TODO: This should be in a separate file
-#[derive(Debug, Clone)]
-enum MouseState {
-    Up,
-    Down
-}
-
-#[derive(Debug, Clone)]
-enum MouseMessage {
-    Over,
-    Press,
-    RightPress,
-    Release,
-    Scroll(f32),
-}
-
-#[derive(Debug, Clone)]
-enum Message {
-    LoadAlbum,
-    NextImage,
-    SetImage(usize),
-    ToggleCropMode,
-    ToggleMaskMode(usize),
-    BrightnessChanged(f32),
-    ContrastChanged(f32),
-    TintChanged(f32),
-    TemperatureChanged(f32),
-    SaturationChanged(f32),
-    AddMask,
-    DeleteMask(usize),
-    MaskBrightnessChanged(usize, f32),
-    AngleChanged(f32),
-    ImageMouseMessage(MouseMessage),
 }
 
 struct Main {
@@ -101,6 +68,17 @@ impl<'a> Main {
             mouse_state,
             viewport
         }
+    }
+
+    pub fn view(&self) -> iced::Element<Message> {
+        let window: Window<'_> = Window::compose(
+            self.workspace.album_images(),
+            &self.viewport,
+            &self.mouse_position,
+            &self.view_mode,
+            self.workspace.current_parameters(),
+            self.workspace.current_crop().angle_degrees);
+        window.view()
     }
 }
 
