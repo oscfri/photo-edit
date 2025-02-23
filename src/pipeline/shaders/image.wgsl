@@ -69,6 +69,8 @@ fn vs_main(vertex: Vertex) -> VertexOutput {
 var t_diffuse: texture_2d<f32>;
 @group(1) @binding(1)
 var s_diffuse: sampler;
+@group(1) @binding(2)
+var t_output: texture_storage_2d<rgba8unorm, write>;
 
 @fragment
 fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
@@ -78,6 +80,8 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
     let lab_applied: vec3<f32> = apply_parameters(lab, in.image_coords);
     let rgb_applied: vec3<f32> = lab_to_rgb(lab_applied);
     let rgb_final: vec3<f32> = draw_crop_area(in, rgb_applied);
+
+    textureStore(t_output, vec2<i32>(0, 0), vec4<f32>(1.0, 1.0, 1.0, 1.0));
 
     return vec4<f32>(rgb_final, 1.0);
 }

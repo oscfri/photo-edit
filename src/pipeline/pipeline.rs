@@ -15,7 +15,9 @@ pub struct Pipeline {
     radial_parameters_buffer: wgpu::Buffer,
     uniform_bind_group: wgpu::BindGroup,
     diffuse_texture: wgpu::Texture,
-    diffuse_bind_group: wgpu::BindGroup
+    diffuse_bind_group: wgpu::BindGroup,
+    output_texture: wgpu::Texture,
+    output_texture_buffer: wgpu::Buffer,
 }
 
 impl Pipeline {
@@ -28,7 +30,9 @@ impl Pipeline {
             radial_parameters_buffer: wgpu::Buffer,
             uniform_bind_group: wgpu::BindGroup,
             diffuse_texture: wgpu::Texture,
-            diffuse_bind_group: wgpu::BindGroup) -> Self {
+            diffuse_bind_group: wgpu::BindGroup,
+            output_texture: wgpu::Texture,
+            output_texture_buffer: wgpu::Buffer) -> Self {
         Self {
             pipeline,
             vertex_buffer,
@@ -38,7 +42,9 @@ impl Pipeline {
             radial_parameters_buffer,
             uniform_bind_group,
             diffuse_texture,
-            diffuse_bind_group
+            diffuse_bind_group,
+            output_texture,
+            output_texture_buffer,
         }
     }
 
@@ -50,11 +56,6 @@ impl Pipeline {
             parameter_uniform: &parameter_uniform::ParameterUniform,
             crop_uniform: &crop_uniform::CropUniform,
             radial_parameters: &radial_parameter::RadialParameters) {
-        let texture_size = wgpu::Extent3d {
-            width: image.width as u32,
-            height: image.height as u32,
-            depth_or_array_layers: 1
-        };
         queue.write_buffer(&self.camera_buffer, 0, bytemuck::bytes_of(camera_uniform));
         queue.write_buffer(&self.parameter_buffer, 0, bytemuck::bytes_of(parameter_uniform));
         queue.write_buffer(&self.crop_buffer, 0, bytemuck::bytes_of(crop_uniform));
@@ -72,7 +73,11 @@ impl Pipeline {
                 bytes_per_row: Some(4 * image.width as u32),
                 rows_per_image: Some(image.height as u32)
             },
-            texture_size
+            wgpu::Extent3d {
+                width: image.width as u32,
+                height: image.height as u32,
+                depth_or_array_layers: 1
+            }
         );
     }
 
@@ -80,7 +85,8 @@ impl Pipeline {
             &self,
             encoder: &mut wgpu::CommandEncoder,
             target: &wgpu::TextureView,
-            viewport: iced::Rectangle<u32>) {
+            viewport: &iced::Rectangle<u32>) {
+        // TODO: Move this to a separate function
         let mut pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
             label: Some("viewport"),
             color_attachments: &[Some(
@@ -103,5 +109,36 @@ impl Pipeline {
         pass.set_bind_group(1, &self.diffuse_bind_group, &[]);
         pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
         pass.draw(0..6, 0..1);
+
+        // TODO: Figure out how to do this
+        // encoder.copy_texture_to_buffer(
+        //     wgpu::ImageCopyTexture {
+        //         texture: &self.output_texture,
+        //         mip_level: 0,
+        //         origin: wgpu::Origin3d::ZERO,
+        //         aspect: wgpu::TextureAspect::All,
+        //     },
+        //     wgpu::ImageCopyBufferBase {
+        //         buffer: &self.output_texture_buffer,
+        //         layout: wgpu::ImageDataLayout {
+        //             offset: 0,
+        //             bytes_per_row: Some(256 * 4),
+        //             rows_per_image: None
+        //         }
+        //     },
+        //     wgpu::Extent3d {
+        //         width: 256,
+        //         height: 256,
+        //         depth_or_array_layers: 1
+        //     });
+    }
+
+    pub fn get_output_texture_data(&self) -> Vec<u32> {
+        let buffer_slice = self.output_texture_buffer.slice(..);
+        let data = buffer_slice.get_mapped_range();
+        data
+            .chunks_exact(4)
+            .map(|b| u32::from_ne_bytes(b.try_into().unwrap()))
+            .collect()
     }
 }

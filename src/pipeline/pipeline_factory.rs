@@ -30,36 +30,40 @@ impl<'a> PipelineFactory<'a> {
     pub fn create(&self) -> pipeline::Pipeline {
         let vertex_buffer = self.create_vertex_buffer("vertex_buffer");
 
-        let camera_uniform_buffer = self.create_uniform_buffer(size_of::<CameraUniform>(), "camera_uniform_buffer");
-        let parameter_uniform_buffer = self.create_uniform_buffer(size_of::<ParameterUniform>(), "parameter_uniform_buffer");
-        let crop_uniform_buffer = self.create_uniform_buffer(size_of::<CropUniform>(), "crop_uniform_buffer");
+        let camera_buffer = self.create_uniform_buffer(size_of::<CameraUniform>(), "camera_buffer");
+        let parameter_buffer = self.create_uniform_buffer(size_of::<ParameterUniform>(), "parameter_buffer");
+        let crop_buffer = self.create_uniform_buffer(size_of::<CropUniform>(), "crop_buffer");
         let radial_parameters_buffer = self.create_uniform_buffer(size_of::<RadialParameters>(), "radial_parameters_buffer");
+        let output_texture_buffer = self.create_storage_buffer(4 * 256 * 256 as usize, "output_texture_buffer");
 
         let buffers = &[
-            &camera_uniform_buffer,
-            &parameter_uniform_buffer,
-            &crop_uniform_buffer,
+            &camera_buffer,
+            &parameter_buffer,
+            &crop_buffer,
             &radial_parameters_buffer
         ];
         let uniform_bind_group_layout = self.create_bind_group_layout(4, "uniform_bind_group_layout");
         let uniform_bind_group = self.create_bind_group(&uniform_bind_group_layout, buffers, "uniform_bind_group");
 
         let diffuse_texture = self.create_image_texture("diffuse_texture"); 
+        let output_texture = self.create_storage_texture("output_texture"); 
         let texture_bind_group_layout = self.create_texture_bind_group_layout("texture_bind_group_layout");
-        let diffuse_bind_group = self.create_diffuse_bind_group(&diffuse_texture, &texture_bind_group_layout, "diffuse_bind_group");
+        let diffuse_bind_group = self.create_diffuse_bind_group(&diffuse_texture, &output_texture, &texture_bind_group_layout, "diffuse_bind_group");
 
         let pipeline = self.create_render_pipeline(&uniform_bind_group_layout, &texture_bind_group_layout);
         
         pipeline::Pipeline::new(
             pipeline,
             vertex_buffer,
-            camera_uniform_buffer,
-            parameter_uniform_buffer,
-            crop_uniform_buffer,
+            camera_buffer,
+            parameter_buffer,
+            crop_buffer,
             radial_parameters_buffer,
             uniform_bind_group,
             diffuse_texture,
-            diffuse_bind_group
+            diffuse_bind_group,
+            output_texture,
+            output_texture_buffer
         )
     }
 
@@ -72,15 +76,14 @@ impl<'a> PipelineFactory<'a> {
     }
 
     fn create_image_texture(&self, label: &str) -> wgpu::Texture {
-        let texture_size = wgpu::Extent3d {
-            width: self.workspace.get_image_width() as u32,
-            height: self.workspace.get_image_height() as u32,
-            depth_or_array_layers: 1
-        };
         self.device.create_texture(
             &wgpu::TextureDescriptor {
                 label: Some(label),
-                size: texture_size,
+                size: wgpu::Extent3d {
+                    width: self.workspace.get_image_width() as u32,
+                    height: self.workspace.get_image_height() as u32,
+                    depth_or_array_layers: 1
+                },
                 mip_level_count: 1,
                 sample_count: 1,
                 dimension: wgpu::TextureDimension::D2,
@@ -91,11 +94,40 @@ impl<'a> PipelineFactory<'a> {
         )
     }
 
+    fn create_storage_texture(&self, label: &str) -> wgpu::Texture {
+        // TODO: This should correspond to the crop size
+        self.device.create_texture(
+            &wgpu::TextureDescriptor {
+                label: Some(label),
+                size: wgpu::Extent3d {
+                    width: 256,
+                    height: 256,
+                    depth_or_array_layers: 1
+                },
+                mip_level_count: 1,
+                sample_count: 1,
+                dimension: wgpu::TextureDimension::D2,
+                format: wgpu::TextureFormat::Rgba8Unorm,
+                usage: wgpu::TextureUsages::STORAGE_BINDING | wgpu::TextureUsages::COPY_SRC,
+                view_formats: &[],
+            }
+        )
+    }
+
     fn create_uniform_buffer(&self, size: usize, label: &str) -> wgpu::Buffer {
         self.device.create_buffer(&wgpu::BufferDescriptor {
             label: Some(label),
             size: size as u64,
             usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+            mapped_at_creation: false,
+        })
+    }
+
+    fn create_storage_buffer(&self, size: usize, label: &str) -> wgpu::Buffer {
+        self.device.create_buffer(&wgpu::BufferDescriptor {
+            label: Some(label),
+            size: size as u64,
+            usage: wgpu::BufferUsages::MAP_READ | wgpu::BufferUsages::COPY_DST,
             mapped_at_creation: false,
         })
     }
@@ -165,6 +197,16 @@ impl<'a> PipelineFactory<'a> {
                     visibility: wgpu::ShaderStages::FRAGMENT,
                     ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
                     count: None,
+                },
+                wgpu::BindGroupLayoutEntry {
+                    binding: 2,
+                    visibility: wgpu::ShaderStages::FRAGMENT, // TODO: Should this be in COMPUTE shader?
+                    ty: wgpu::BindingType::StorageTexture {
+                        access: wgpu::StorageTextureAccess::WriteOnly,
+                        format: wgpu::TextureFormat::Rgba8Unorm,
+                        view_dimension: wgpu::TextureViewDimension::D2
+                    },
+                    count: None,
                 }
             ],
         })
@@ -173,6 +215,7 @@ impl<'a> PipelineFactory<'a> {
     fn create_diffuse_bind_group(
             &self,
             diffuse_texture: &wgpu::Texture,
+            output_texture: &wgpu::Texture,
             texture_bind_group_layout: &wgpu::BindGroupLayout,
             label: &str) -> wgpu::BindGroup {
         let diffuse_texture_view = diffuse_texture.create_view(&wgpu::TextureViewDescriptor::default());
@@ -185,6 +228,8 @@ impl<'a> PipelineFactory<'a> {
             mipmap_filter: wgpu::FilterMode::Nearest,
             ..Default::default()
         });
+
+        let output_texture_view = output_texture.create_view(&wgpu::TextureViewDescriptor::default());
 
         self.device.create_bind_group(
             &wgpu::BindGroupDescriptor {
@@ -199,6 +244,10 @@ impl<'a> PipelineFactory<'a> {
                             binding: 1,
                             resource: wgpu::BindingResource::Sampler(&diffuse_sampler),
                         },
+                        wgpu::BindGroupEntry {
+                            binding: 2,
+                            resource: wgpu::BindingResource::TextureView(&output_texture_view)
+                        }
                     ]
                 }
         )

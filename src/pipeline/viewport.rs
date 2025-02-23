@@ -150,6 +150,8 @@ impl<Message> shader::Program<Message> for Viewport {
         cloned.cursor = cursor;
         cloned
     }
+
+    // TODO: There's a `mouse_interaction` that could potentially be used
 }
 
 impl shader::Primitive for Viewport {
@@ -161,8 +163,10 @@ impl shader::Primitive for Viewport {
             storage: &mut shader::Storage,
             bounds: &iced::Rectangle,
             viewport: &shader::Viewport) {
+        
+        let needs_update: bool = self.needs_update(&storage);
 
-        if self.needs_update(&storage) {
+        if needs_update {
             storage.store(self.create_pipeline(device, format));
             storage.store(ImageIndex { index: self.workspace.image_index });
         }
@@ -170,6 +174,10 @@ impl shader::Primitive for Viewport {
         self.update_mouse(&bounds);
 
         let pipeline = storage.get_mut::<pipeline::Pipeline>().unwrap();
+
+        if !needs_update {
+            // pipeline.get_output_texture_data();
+        }
 
         let camera_uniform = camera_uniform::CameraUniform::new(
                 &bounds,
@@ -195,7 +203,7 @@ impl shader::Primitive for Viewport {
         pipeline.render(
             encoder,
             target,
-            *clip_bounds);
+            clip_bounds);
     }
 }
 
