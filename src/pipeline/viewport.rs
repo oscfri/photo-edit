@@ -4,16 +4,15 @@ use crate::types::RawImage;
 use crate::view_mode::ViewMode;
 use crate::pipeline::pipeline;
 use crate::pipeline::camera_uniform;
+use crate::workspace;
 use crate::workspace::workspace::Workspace;
 
 use iced::mouse;
 use iced::widget::shader;
 use iced::widget::shader::wgpu;
 
-use super::crop_uniform;
-use super::parameter_uniform;
 use super::pipeline_factory::PipelineFactory;
-use super::radial_parameter;
+use super::transform::Rectangle;
 
 // Hack to access viewport size. It doesn't seem like we can access the viewport size directly (at least not according
 // to any documentation I've found). We need to know the viewport size so we can convert mouse coordinates from "window"
@@ -63,20 +62,20 @@ fn update_relative_mouse(mouse_x: i32, mouse_y: i32) {
 
 #[derive(Debug, Clone)]
 pub struct ViewportWorkspace {
-    image: RawImage,
-    image_index: usize,
-    parameters: Parameters,
-    crop: Crop,
-    view: Crop
+    pub image: RawImage,
+    pub image_index: usize,
+    pub parameters: Parameters,
+    pub crop: Crop,
+    pub view: Crop
 }
 
 impl ViewportWorkspace {
-    pub fn new(
-            image: RawImage,
-            image_index: usize,
-            parameters: Parameters,
-            crop: Crop,
-            view: Crop) -> Self {
+    pub fn new(workspace: &Workspace) -> Self {
+        let image = workspace.current_source_image().clone();
+        let image_index = workspace.get_image_index();
+        let parameters = workspace.current_parameters().clone();
+        let crop = workspace.current_crop().clone();
+        let view: Crop = workspace.current_view();
         Self { image, image_index, parameters, crop, view }
     }
 
@@ -97,14 +96,8 @@ pub struct Viewport {
 }
 
 impl Viewport {
-    pub fn from_workspace(workspace: &Workspace) -> Self {
-        let view: Crop = workspace.current_view();
-        let viewport_workspace = ViewportWorkspace::new(
-            workspace.current_source_image().clone(),
-            workspace.get_image_index(),
-            workspace.current_parameters().clone(),
-            workspace.current_crop().clone(),
-            view);
+    pub fn new(workspace: &Workspace) -> Self {
+        let viewport_workspace = ViewportWorkspace::new(workspace);
         let view_mode: ViewMode = workspace.get_view_mode();
         let cursor: mouse::Cursor = mouse::Cursor::Unavailable;
         Self {
@@ -115,16 +108,18 @@ impl Viewport {
     }
 
     fn update_mouse(&self, bounds: &iced::Rectangle) {
+        let bounds_rectangle = Self::bounds_to_rectangle(bounds);
         match self.cursor {
             mouse::Cursor::Available(point) => {
+                let bounds_rectangle = Self::bounds_to_rectangle(bounds);
                 let image_point: iced::Point = camera_uniform::point_to_image_position(
                     &point,
-                    bounds,
+                    &bounds_rectangle,
                     &self.workspace.view);
                 update_image_mouse(image_point.x as i32, image_point.y as i32);
                 let relative_point: iced::Point = camera_uniform::point_to_image_position(
                     &point,
-                    bounds,
+                    &bounds_rectangle,
                     &Crop {
                         center_x: 0,
                         center_y: 0,
@@ -133,6 +128,43 @@ impl Viewport {
                 update_relative_mouse(relative_point.x as i32, relative_point.y as i32);
             },
             mouse::Cursor::Unavailable => {} // Do nothing
+        }
+    }
+
+    fn needs_update(&self, storage: &shader::Storage) -> bool {
+        if storage.has::<ImageIndex>() {
+            let image_index: &ImageIndex = storage.get::<ImageIndex>().unwrap();
+            image_index.index != self.workspace.image_index
+        } else {
+            !storage.has::<pipeline::Pipeline>()
+        }
+    }
+
+    fn create_pipeline(&self, device: &wgpu::Device, format: wgpu::TextureFormat) -> pipeline::Pipeline {
+        let image_width = self.workspace.get_image_width();
+        let image_height = self.workspace.get_image_height();
+        PipelineFactory::new(image_width, image_height, device, format).create()
+    }
+
+    fn bounds_to_rectangle(bounds: &iced::Rectangle) -> Rectangle {
+        let center_x: f32 = bounds.x + bounds.width / 2.0;
+        let center_y: f32 = bounds.y + bounds.height / 2.0;
+        Rectangle {
+            center_x,
+            center_y,
+            width: bounds.width,
+            height: bounds.height,
+            angle_degrees: 0.0
+        }
+    }
+
+    fn viewport_to_rectangle(viewport: &shader::Viewport) -> Rectangle {
+        Rectangle {
+            center_x: (viewport.physical_width() as f32) / 2.0,
+            center_y: (viewport.physical_height() as f32) / 2.0,
+            width: viewport.physical_width() as f32,
+            height: viewport.physical_height() as f32,
+            angle_degrees: 0.0
         }
     }
 }
@@ -175,22 +207,10 @@ impl shader::Primitive for Viewport {
 
         let pipeline = storage.get_mut::<pipeline::Pipeline>().unwrap();
 
-        if !needs_update {
-            // pipeline.get_output_texture_data();
-        }
+        let bounds_rectangle = Self::bounds_to_rectangle(bounds);
+        let viewport_rectangle = Self::viewport_to_rectangle(viewport);
 
-        let camera_uniform = camera_uniform::CameraUniform::new(
-                &bounds,
-                &viewport,
-                &self.workspace.view,
-                &self.workspace.crop,
-                self.workspace.image.width,
-                self.workspace.image.height);
-        let parameter_uniform = parameter_uniform::ParameterUniform::new(&self.workspace.parameters);
-        let crop_uniform = crop_uniform::CropUniform::new(&self.view_mode);
-        let radial_parameters = radial_parameter::RadialParameters::new(&self.workspace.parameters);
-
-        pipeline.update(queue, &self.workspace.image, &camera_uniform, &parameter_uniform, &crop_uniform, &radial_parameters);
+        pipeline.update(queue, &self.workspace, &self.view_mode, &bounds_rectangle, &viewport_rectangle);
     }
 
     fn render(
@@ -199,25 +219,25 @@ impl shader::Primitive for Viewport {
             storage: &shader::Storage,
             target: &wgpu::TextureView,
             clip_bounds: &iced::Rectangle<u32>) {
+        let mut pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+            label: Some("viewport"),
+            color_attachments: &[Some(
+                wgpu::RenderPassColorAttachment {
+                    view: target,
+                    resolve_target: None,
+                    ops: wgpu::Operations {
+                        load: wgpu::LoadOp::Load,
+                        store: wgpu::StoreOp::Store,
+                    }
+                }
+            )],
+            depth_stencil_attachment: None,
+            timestamp_writes: None,
+            occlusion_query_set: None
+        });
+        pass.set_scissor_rect(clip_bounds.x, clip_bounds.y, clip_bounds.width, clip_bounds.height);
+
         let pipeline = storage.get::<pipeline::Pipeline>().unwrap();
-        pipeline.render(
-            encoder,
-            target,
-            clip_bounds);
-    }
-}
-
-impl Viewport {
-    fn needs_update(&self, storage: &shader::Storage) -> bool {
-        if storage.has::<ImageIndex>() {
-            let image_index: &ImageIndex = storage.get::<ImageIndex>().unwrap();
-            image_index.index != self.workspace.image_index
-        } else {
-            !storage.has::<pipeline::Pipeline>()
-        }
-    }
-
-    fn create_pipeline(&self, device: &wgpu::Device, format: wgpu::TextureFormat) -> pipeline::Pipeline {
-        PipelineFactory::new(&self.workspace, device, format).create()
+        pipeline.render_pass(&mut pass);
     }
 }

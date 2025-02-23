@@ -6,7 +6,6 @@ use std::mem::size_of;
 
 use crate::pipeline::pipeline;
 use crate::pipeline::vertex;
-use crate::pipeline::viewport;
 
 use super::camera_uniform::CameraUniform;
 use super::crop_uniform::CropUniform;
@@ -14,17 +13,19 @@ use super::parameter_uniform::ParameterUniform;
 use super::radial_parameter::RadialParameters;
 
 pub struct PipelineFactory<'a> {
-    workspace: &'a viewport::ViewportWorkspace,
+    image_width: usize,
+    image_height: usize,
     device: &'a wgpu::Device,
     format: wgpu::TextureFormat
 }
 
 impl<'a> PipelineFactory<'a> {
     pub fn new(
-            workspace: &'a viewport::ViewportWorkspace,
+            image_width: usize,
+            image_height: usize,
             device: &'a wgpu::Device,
             format: wgpu::TextureFormat) -> Self {
-        Self { workspace, device, format }
+        Self { image_width, image_height, device, format }
     }
 
     pub fn create(&self) -> pipeline::Pipeline {
@@ -80,8 +81,8 @@ impl<'a> PipelineFactory<'a> {
             &wgpu::TextureDescriptor {
                 label: Some(label),
                 size: wgpu::Extent3d {
-                    width: self.workspace.get_image_width() as u32,
-                    height: self.workspace.get_image_height() as u32,
+                    width: self.image_width as u32,
+                    height: self.image_height as u32,
                     depth_or_array_layers: 1
                 },
                 mip_level_count: 1,

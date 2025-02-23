@@ -1,5 +1,4 @@
 use cgmath::{self, Matrix};
-use iced::widget::shader;
 
 use crate::album::Crop;
 use crate::pipeline::transform::{transform, Rectangle};
@@ -17,7 +16,7 @@ pub struct CameraUniform {
 
 pub fn point_to_image_position(
         point: &iced::Point,
-        bounds: &iced::Rectangle,
+        bounds: &Rectangle,
         crop: &Crop) -> iced::Point {
     let crop_area: Rectangle = create_crop_area(crop);
     let viewport_area: Rectangle = create_viewport_area(bounds, crop);
@@ -42,26 +41,14 @@ fn create_render_area() -> Rectangle {
     }
 }
 
-fn create_window_area(viewport: &shader::Viewport) -> Rectangle {
-    Rectangle {
-        center_x: (viewport.physical_width() as f32) / 2.0,
-        center_y: (viewport.physical_height() as f32) / 2.0,
-        width: viewport.physical_width() as f32,
-        height: viewport.physical_height() as f32,
-        angle_degrees: 0.0
-    }
-}
-
-fn create_viewport_area(bounds: &iced::Rectangle, crop: &Crop) -> Rectangle {
-    let bounds_center_x: f32 = bounds.x + bounds.width / 2.0;
-    let bounds_center_y: f32 = bounds.y + bounds.height / 2.0;
+fn create_viewport_area(bounds: &Rectangle, crop: &Crop) -> Rectangle {
     let crop_aspect_ratio: f32 = (crop.width as f32) / (crop.height as f32);
     let bounds_aspect_ratio: f32 = bounds.width / bounds.height;
     let width: f32 = bounds.width * (crop_aspect_ratio / bounds_aspect_ratio).min(1.0);
     let height: f32 = bounds.height * (bounds_aspect_ratio / crop_aspect_ratio).min(1.0);
     Rectangle {
-        center_x: bounds_center_x,
-        center_y: bounds_center_y,
+        center_x: bounds.center_x,
+        center_y: bounds.center_y,
         width,
         height,
         angle_degrees: 0.0
@@ -139,14 +126,13 @@ fn create_uv_area() -> Rectangle {
 
 impl CameraUniform {
     pub fn new(
-            bounds: &iced::Rectangle,
-            viewport: &shader::Viewport,
+            bounds: &Rectangle,
+            window_area: &Rectangle,
             view: &Crop,
             crop: &Crop,
             image_width: usize,
             image_height: usize) -> Self {
         let render_area: Rectangle = create_render_area();
-        let window_area: Rectangle = create_window_area(viewport);
         let viewport_area: Rectangle = create_viewport_area(bounds, view);
         let view_area: Rectangle = create_crop_relative_area(view, image_width, image_height);
         let crop_area: Rectangle = create_crop_relative_area(crop, image_width, image_height);
