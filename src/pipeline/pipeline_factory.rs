@@ -35,7 +35,7 @@ impl<'a> PipelineFactory<'a> {
         let parameter_buffer = self.create_uniform_buffer(size_of::<ParameterUniform>(), "parameter_buffer");
         let crop_buffer = self.create_uniform_buffer(size_of::<CropUniform>(), "crop_buffer");
         let radial_parameters_buffer = self.create_uniform_buffer(size_of::<RadialParameters>(), "radial_parameters_buffer");
-        let output_texture_buffer = self.create_storage_buffer(4 * 256 * 256 as usize, "output_texture_buffer");
+        let output_texture_buffer = self.create_storage_buffer(4 * 2048 * 2048 as usize, "output_texture_buffer");
 
         let buffers = &[
             &camera_buffer,
@@ -101,8 +101,8 @@ impl<'a> PipelineFactory<'a> {
             &wgpu::TextureDescriptor {
                 label: Some(label),
                 size: wgpu::Extent3d {
-                    width: 256,
-                    height: 256,
+                    width: 2048,
+                    height: 2048,
                     depth_or_array_layers: 1
                 },
                 mip_level_count: 1,

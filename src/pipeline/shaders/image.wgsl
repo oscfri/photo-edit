@@ -4,6 +4,7 @@ struct CameraUniform {
     base_to_cropped_base: mat4x4<f32>,
     base_to_cropped_base2: mat4x4<f32>,
     base_to_image_area: mat4x4<f32>,
+    base_to_export_area: mat4x4<f32>,
 };
 @group(0) @binding(0)
 var<uniform> camera: CameraUniform;
@@ -47,6 +48,7 @@ struct VertexOutput {
     @location(0) view_coords: vec2<f32>,
     @location(1) crop_coords: vec2<f32>,
     @location(2) image_coords: vec2<f32>,
+    @location(3) export_coords: vec2<f32>,
 };
 
 @vertex
@@ -57,11 +59,13 @@ fn vs_main(vertex: Vertex) -> VertexOutput {
     let view_coords = base * camera.base_to_cropped_base;
     let crop_coords = view_coords * camera.base_to_cropped_base2;
     let image_coords = base * camera.base_to_image_area;
+    let export_coords = base * camera.base_to_export_area;
 
     out.render_position = render_position;
     out.view_coords = view_coords.xy / view_coords.w;
     out.crop_coords = crop_coords.xy / crop_coords.w;
     out.image_coords = image_coords.xy / image_coords.w;
+    out.export_coords = export_coords.xy / export_coords.w;
     return out;
 }
 
@@ -81,7 +85,8 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
     let rgb_applied: vec3<f32> = lab_to_rgb(lab_applied);
     let rgb_final: vec3<f32> = draw_crop_area(in, rgb_applied);
 
-    textureStore(t_output, vec2<i32>(0, 0), vec4<f32>(1.0, 1.0, 1.0, 1.0));
+    let gamma_corrected: vec3<f32> = pow(rgb_applied, vec3(1.0/2.2));
+    textureStore(t_output, vec2<i32>(in.export_coords.xy), vec4<f32>(gamma_corrected, 1.0));
 
     return vec4<f32>(rgb_final, 1.0);
 }

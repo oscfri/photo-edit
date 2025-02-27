@@ -8,7 +8,7 @@ mod workspace;
 mod ui;
 
 use iced;
-use pipeline::viewport::{self, ViewportWorkspace};
+use pipeline::viewport;
 use view_mode::ViewMode;
 use workspace::workspace::Workspace;
 use workspace::workspace_factory::WorkspaceFactory;
@@ -16,8 +16,6 @@ use repository::repository_factory;
 use ui::message::{Message, MouseMessage, MouseState};
 use ui::window::Window;
 use viewport::Viewport;
-use iced::widget::shader::wgpu;
-use pipeline::pipeline_factory::PipelineFactory;
 
 pub fn main() -> iced::Result {
     iced::application("A cool image editor", Main::update, Main::view)

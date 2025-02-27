@@ -12,6 +12,7 @@ pub struct CameraUniform {
     base_to_cropped_base: [[f32; 4]; 4],
     base_to_cropped_base2: [[f32; 4]; 4], // TODO: Come up with good name
     base_to_image_area: [[f32; 4]; 4],
+    base_to_export_area: [[f32; 4]; 4],
 }
 
 pub fn point_to_image_position(
@@ -124,6 +125,16 @@ fn create_uv_area() -> Rectangle {
     }
 }
 
+fn create_export_area() -> Rectangle {
+    Rectangle {
+        center_x: 1024.0,
+        center_y: 1024.0,
+        width: 2048.0,
+        height: 2048.0,
+        angle_degrees: 0.0
+    }
+}
+
 impl CameraUniform {
     pub fn new(
             bounds: &Rectangle,
@@ -138,6 +149,7 @@ impl CameraUniform {
         let crop_area: Rectangle = create_crop_relative_area(crop, image_width, image_height);
         let image_area: Rectangle = create_crop_image_area(view);
         let aspect_area: Rectangle = create_aspect_area(image_width, image_height);
+        let export_area: Rectangle = create_export_area();
         let uv_area: Rectangle = create_uv_area();
 
         let base_to_aspect = transform(&uv_area, &aspect_area);
@@ -150,7 +162,8 @@ impl CameraUniform {
             base_to_viewport_window: transform(&uv_area, &viewport_area).into(),
             base_to_cropped_base: (base_to_aspect * uv_to_view * aspect_to_base).into(),
             base_to_cropped_base2: (base_to_aspect * crop_to_uv * aspect_to_base).into(),
-            base_to_image_area: transform(&uv_area, &image_area).into()
+            base_to_image_area: transform(&uv_area, &image_area).into(),
+            base_to_export_area: transform(&uv_area, &export_area).into(),
         }
     }
 }
