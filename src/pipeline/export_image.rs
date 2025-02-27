@@ -3,6 +3,7 @@ use std::path::PathBuf;
 use iced::widget::shader::wgpu;
 
 use crate::view_mode::ViewMode;
+use crate::workspace::workspace::Workspace;
 
 use super::pipeline::Pipeline;
 use super::viewport::ViewportWorkspace;
@@ -10,7 +11,8 @@ use super::transform::Rectangle;
 use super::pipeline_factory::PipelineFactory;
 
 // TODO: This should be done in a separate thread...
-pub async fn export_image(workspace: &ViewportWorkspace) {
+pub async fn export_image(workspace: &Workspace) {
+    let viewport_workspace = ViewportWorkspace::new(&workspace);
     let (device, queue) = request_device().await.unwrap();
     
     // TODO: Figure out a way to bring image size...
@@ -23,17 +25,17 @@ pub async fn export_image(workspace: &ViewportWorkspace) {
     };
 
     let pipline_factory = PipelineFactory::new(
-        workspace.get_image_width(),
-        workspace.get_image_height(),
+        viewport_workspace.get_image_width(),
+        viewport_workspace.get_image_height(),
         &device,
         wgpu::TextureFormat::Rgba8UnormSrgb);
 
     let pipeline = pipline_factory.create();
-    pipeline.update(&queue, workspace, &ViewMode::Normal, &bounds, &bounds);
+    pipeline.update(&queue, &viewport_workspace, &ViewMode::Normal, &bounds, &bounds);
 
     let mut encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
 
-    render(&mut encoder, &device, &pipeline, workspace);
+    render(&mut encoder, &device, &pipeline);
 
     encoder.copy_texture_to_buffer(
         wgpu::ImageCopyTexture {
@@ -101,13 +103,13 @@ async fn request_device() -> Result<(wgpu::Device, wgpu::Queue), wgpu::RequestDe
         .await
 }
 
-fn render(encoder: &mut wgpu::CommandEncoder, device: &wgpu::Device, pipeline: &Pipeline, workspace: &ViewportWorkspace) {
+fn render(encoder: &mut wgpu::CommandEncoder, device: &wgpu::Device, pipeline: &Pipeline) {
     let target = device.create_texture(
         &wgpu::TextureDescriptor {
             label: Some("target"),
             size: wgpu::Extent3d {
-                width: 2048 as u32,
-                height: 2048 as u32,
+                width: 4096 as u32, // TODO: Not sure what good values are here. This needs to be large to prevent artifacts
+                height: 4096 as u32, // Is there a way to guarantee no artifacts?
                 depth_or_array_layers: 1
             },
             mip_level_count: 1,

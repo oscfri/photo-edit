@@ -4,7 +4,7 @@
 
 This is what's left for a feature complete MVP. 
 
-- [ ] Export image
+- [X] Export image
 - [ ] Save album/project
 - [ ] Import images
 - [ ] Linear mask
@@ -16,3 +16,4 @@ This is what's left for a feature complete MVP.
 - [ ] Radial mask width and height
 - [ ] Radial mask rotation
 - [ ] Radial mask feathering
+- [ ] Prevent artifacts during exports (lines when exporting weird aspect ratios)

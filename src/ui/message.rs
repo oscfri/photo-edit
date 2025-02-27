@@ -16,6 +16,7 @@ pub enum MouseMessage {
 #[derive(Debug, Clone)]
 pub enum Message {
     LoadAlbum,
+    ExportImage,
     NextImage,
     SetImage(usize),
     ToggleCropMode,

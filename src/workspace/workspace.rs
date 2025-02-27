@@ -1,4 +1,5 @@
 use crate::album::{self, AlbumImage};
+use crate::pipeline::export_image::export_image;
 use crate::view_mode::ViewMode;
 use crate::{types, view_mode};
 
@@ -95,6 +96,10 @@ impl Workspace {
 
     pub fn get_view_mode(&self) -> ViewMode {
         self.view_mode
+    }
+
+    pub fn export_image(&self) {
+        futures_executor::block_on(export_image(&self));
     }
 
     pub fn toggle_view_mode(&mut self, view_mode: ViewMode) {

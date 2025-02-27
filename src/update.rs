@@ -26,6 +26,9 @@ impl Main {
             Message::LoadAlbum => {
                 // self.open_file_dialog()
             },
+            Message::ExportImage => {
+                self.workspace.export_image();
+            },
             Message::NextImage => {
                 self.workspace.next_image_index();
             },

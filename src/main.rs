@@ -50,9 +50,6 @@ impl<'a> Main {
         let mouse_position: Point = Point::default();
         let mouse_state: MouseState = MouseState::Up;
 
-        let viewport_workspace = viewport::ViewportWorkspace::new(&workspace);
-        futures_executor::block_on(pipeline::export_image::export_image(&viewport_workspace));
-
         Self {
             workspace,
             viewport,
