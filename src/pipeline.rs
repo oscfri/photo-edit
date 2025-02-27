@@ -4,6 +4,7 @@ mod camera_uniform;
 mod parameter_uniform;
 mod crop_uniform;
 mod radial_parameter;
+pub mod export_image;
 pub mod transform;
 pub mod pipeline_factory;
 pub mod viewport;
