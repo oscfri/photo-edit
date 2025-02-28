@@ -3,4 +3,5 @@ Cargo.lock
 *.jpg
 *.png
 *.svg
+*.sqlite
 .vscode/

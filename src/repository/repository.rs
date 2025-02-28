@@ -10,11 +10,12 @@ struct Album {
     name: String
 }
 
+// TODO: Need to come up with a good naming convention for this...
 #[derive(Debug)]
 pub struct AlbumPhoto {
-    id: i32,
-    album_id: i32,
-    pub file_name: String
+    pub id: i32,
+    pub file_name: String,
+    pub parameters: String
 }
 
 impl Repository {
@@ -24,7 +25,7 @@ impl Repository {
         }
     }
 
-    pub fn print_albums(&mut self) -> Result<()> {
+    pub fn print_albums(&self) -> Result<()> {
         let mut statement = self.connection.prepare("SELECT id, name FROM album")?;
         let albums = statement.query_map([], |row| {
             Ok(Album {
@@ -40,21 +41,32 @@ impl Repository {
         Ok(())
     }
 
-    pub fn get_album_photos(&mut self, album_id: i32) -> Result<Vec<AlbumPhoto>> {
+    pub fn get_album_photos(&self, album_id: i32) -> Result<Vec<AlbumPhoto>> {
         let mut statement = self.connection.prepare(
-            "SELECT id, album_id, file_name
-                FROM album_photo
+            "SELECT id, file_name, parameters
+                FROM photo
                 WHERE album_id = ?1"
         )?;
 
         let rows = statement.query_map([album_id], |row| {
             Ok(AlbumPhoto {
                 id: row.get(0)?,
-                album_id: row.get(1)?,
-                file_name: row.get(2)?
+                file_name: row.get(1)?,
+                parameters: row.get(2)?,
             })
         })?;
         
         Ok(rows.map(|row| row.unwrap()).collect())
+    }
+
+    pub fn save_photo_parameters(&self, photo_id: i32, parameters: String) -> Result<()> {
+        self.connection.execute(
+            "UPDATE photo
+                SET parameters = ?2
+                WHERE id = ?1",
+            (photo_id, &parameters)
+        )?;
+
+        Ok(())
     }
 }

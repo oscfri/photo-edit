@@ -26,6 +26,9 @@ impl Main {
             Message::LoadAlbum => {
                 // self.open_file_dialog()
             },
+            Message::SaveAlbum => {
+                self.workspace.save_album(&self.repository);
+            },
             Message::ExportImage => {
                 self.workspace.export_image();
             },

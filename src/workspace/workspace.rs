@@ -1,7 +1,8 @@
 use crate::album::{self, AlbumImage};
 use crate::pipeline::export_image::export_image;
+use crate::repository::repository::Repository;
 use crate::view_mode::ViewMode;
-use crate::{types, view_mode};
+use crate::{repository, types, view_mode};
 
 pub struct Workspace {
     album: album::Album,
@@ -21,7 +22,8 @@ fn calculate_distance(x1: i32, y1: i32, x2: i32, y2: i32) -> f32 {
 }
 
 impl Workspace {
-    pub fn new(album: album::Album, image_index: usize) -> Self {
+    pub fn new(album: album::Album) -> Self {
+        let image_index = 0;
         Self {
             album,
             image_index,
@@ -96,6 +98,14 @@ impl Workspace {
 
     pub fn get_view_mode(&self) -> ViewMode {
         self.view_mode
+    }
+
+    pub fn save_album(&self, repository: &Repository) {
+        for album_image in &self.album.images {
+            let photo_id = album_image.photo_id;
+            let parameters_str: String = serde_json::to_string(&album_image.parameters).ok().unwrap_or("{}".into());
+            repository.save_photo_parameters(photo_id, parameters_str).ok();
+        }
     }
 
     pub fn export_image(&self) {

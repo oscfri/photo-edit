@@ -79,6 +79,7 @@ impl <'a> ToolboxPane<'a> {
         iced::widget::column![
                 iced::widget::button("Next").on_press(Message::NextImage),
                 iced::widget::button("Crop").on_press(Message::ToggleCropMode),
+                iced::widget::button("Save").on_press(Message::SaveAlbum),
                 iced::widget::button("Export").on_press(Message::ExportImage),
                 iced::widget::text("Angle"),
                 iced::widget::slider(-180.0..=180.0, self.angle_degrees, Message::AngleChanged)
