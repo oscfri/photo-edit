@@ -68,6 +68,9 @@ impl Main {
             Message::MaskBrightnessChanged(index, brightness) => {
                 self.workspace.set_mask_brightness(index, brightness);
             },
+            Message::MaskAngleChanged(index, angle) => {
+                self.workspace.set_mask_angle(index, angle);
+            },
             Message::AngleChanged(angle_degrees) => {
                 self.workspace.set_crop_angle(angle_degrees);
             },

@@ -69,6 +69,8 @@ impl <'a> ToolboxPane<'a> {
         iced::widget::column![
                 iced::widget::text("Brightness"),
                 iced::widget::slider(-100.0..=100.0, radial_mask.brightness, move |brightness| Message::MaskBrightnessChanged(mask_index, brightness)),
+                iced::widget::text("Angle"),
+                iced::widget::slider(-180.0..=180.0, radial_mask.angle, move |angle| Message::MaskAngleChanged(mask_index, angle)),
                 buttons,
             ]
             .into()

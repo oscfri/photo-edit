@@ -1,3 +1,5 @@
+use core::f32;
+
 use crate::pipeline::export_image::export_image;
 use crate::repository::repository::Repository;
 use crate::view_mode::ViewMode;
@@ -156,7 +158,8 @@ impl Workspace {
         let radial_mask: &mut RadialMask = &mut parameters.radial_masks[mask_index];
         radial_mask.center_x = x;
         radial_mask.center_y = y;
-        radial_mask.radius = 0.0;
+        radial_mask.width = 0;
+        radial_mask.height = 0;
     }
 
     pub fn update_mask_radius(&mut self, mask_index: usize, x: i32, y: i32) {
@@ -164,11 +167,18 @@ impl Workspace {
         let radial_mask: &mut RadialMask = &mut parameters.radial_masks[mask_index];
         let center_x = radial_mask.center_x;
         let center_y = radial_mask.center_y;
-        radial_mask.radius = calculate_distance(center_x, center_y, x, y);
+        radial_mask.width = (center_x - x).abs();
+        radial_mask.height = (center_y - y).abs();
     }
 
     pub fn set_mask_brightness(&mut self, mask_index: usize, brightness: f32) {
         self.current_parameters_mut().radial_masks[mask_index].brightness = brightness;
+    }
+
+    pub fn set_mask_angle(&mut self, mask_index: usize, angle: f32) {
+        let parameters: &mut Parameters = self.current_parameters_mut();
+        let radial_mask: &mut RadialMask = &mut parameters.radial_masks[mask_index];
+        radial_mask.angle = angle;
     }
 
     pub fn set_crop_angle(&mut self, angle_degrees: f32) {

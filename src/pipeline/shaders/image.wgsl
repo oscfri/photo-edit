@@ -28,8 +28,12 @@ var<uniform> crop: CropUniform;
 struct RadialParameter {
     center_x: f32,
     center_y: f32,
-    radius: f32,
-    brightness: f32
+    width: f32,
+    height: f32,
+    angle: f32,
+    feather: f32,
+    brightness: f32,
+    _1: f32,
 }
 struct RadialParameters {
     entries: array<RadialParameter, 128>,
@@ -104,16 +108,28 @@ fn apply_global_parameters(lab: vec3<f32>) -> vec3<f32> {
     applied += vec3<f32>(0.0, parameters.tint, parameters.temperature);
     applied *= vec3<f32>(1.0, parameters.saturation, parameters.saturation);
 
-    applied *= vec3<f32>(1.0, 1.0 / (applied.x + 0.1), 1.0 / (applied.x + 0.1));
+    applied = to_lightness_adjustment_space(applied);
 
     // Lightness adjustment
-    applied *= vec3<f32>((parameters.brightness * 0.01) + 1.0, 1.0, 1.0);
+    applied = apply_brightness(applied, parameters.brightness);
     applied -= vec3<f32>(0.5, 0.0, 0.0);
     applied *= vec3<f32>(parameters.contrast, 1.0, 1.0);
     applied += vec3<f32>(0.5, 0.0, 0.0);
 
-    applied *= vec3<f32>(1.0, applied.x + 0.1, applied.x + 0.1);
+    applied = from_lightness_adjustment_space(applied);
     return applied;
+}
+
+fn to_lightness_adjustment_space(lab: vec3<f32>) -> vec3<f32> {
+    return lab * vec3<f32>(1.0, 1.0 / (lab.x + 0.1), 1.0 / (lab.x + 0.1));
+}
+
+fn from_lightness_adjustment_space(lab: vec3<f32>) -> vec3<f32> {
+    return lab * vec3<f32>(1.0, lab.x + 0.1, lab.x + 0.1);
+}
+
+fn apply_brightness(lab: vec3<f32>, brightness: f32) -> vec3<f32> {
+    return lab * vec3<f32>((brightness * 0.01) + 1.0, 1.0, 1.0);
 }
 
 fn apply_all_radial_parameters(lab: vec3<f32>, position: vec2<f32>) -> vec3<f32> {
@@ -128,34 +144,41 @@ fn apply_all_radial_parameters(lab: vec3<f32>, position: vec2<f32>) -> vec3<f32>
 
 fn apply_radial_parameters(index: u32, lab: vec3<f32>, position: vec2<f32>) -> vec3<f32> {
     let radial_parameter = radial_parameters.entries[index];
-    let distance = distance(position, vec2<f32>(radial_parameter.center_x, radial_parameter.center_y));
-    let radius = radial_parameter.radius;
-    let alpha = clamp((radius - distance) / radius, 0.0, 1.0);
+    
+    let angle_matrix = mat2x2<f32>(
+        cos(radial_parameter.angle), -sin(radial_parameter.angle),
+        sin(radial_parameter.angle), cos(radial_parameter.angle)
+    );
+    let scale_matrix = mat2x2<f32>(
+        1.0 / (radial_parameter.width * radial_parameter.width), 0.0,
+        0.0, 1.0 / (radial_parameter.height * radial_parameter.height)
+    );
+    
+    let difference = (vec2<f32>(radial_parameter.center_x, radial_parameter.center_y) - position) * angle_matrix;
+    let mahalanobis_matrix = scale_matrix;
+    let distance = sqrt(dot(difference, mahalanobis_matrix * difference));
+    let alpha = cubic_hermite(distance);
 
     if (alpha > 0.0) {
-        let matrix: mat4x4<f32> = mat4x4<f32>(
-            vec4<f32>(1.0, 0.0, 0.0, radial_parameter.brightness),
-            vec4<f32>(0.0, 1.0, 0.0, 0.0),
-            vec4<f32>(0.0, 0.0, 1.0, 0.0),
-            vec4<f32>(0.0, 0.0, 0.0, 1.0)
-        );
+        var applied: vec3<f32> = lab;
+        applied = to_lightness_adjustment_space(applied);
+        applied = apply_brightness(applied, radial_parameter.brightness);
+        applied = from_lightness_adjustment_space(applied);
 
-        return lab * (1.0 - alpha) + apply_matrix_parameters(lab, matrix) * alpha;
+        return lab * (1.0 - alpha) + applied * alpha;
     } else {
         return lab;
     }
 }
 
-fn apply_matrix_parameters(
-        lab: vec3<f32>,
-        matrix: mat4x4<f32>) -> vec3<f32> {
-    var applied: vec4<f32> = vec4<f32>(lab, 1.0);
-    
-    applied -= vec4<f32>(50.0, 0.0, 0.0, 0.0); // Center brightness value
-    applied = applied * matrix;
-    applied += vec4<f32>(50.0, 0.0, 0.0, 0.0); // Revert brightness value
-
-    return applied.xyz / applied.w;
+fn cubic_hermite(x: f32) -> f32 {
+    if (x > 1.0) {
+        return 0.0;
+    } else if (x < 0.0) {
+        return 1.0;
+    } else {
+        return 2.0 * x * x * x - 3.0 * x * x + 1.0;
+    }
 }
 
 fn draw_crop_area(vertex: VertexOutput, rgb: vec3<f32>) -> vec3<f32> {
@@ -194,7 +217,6 @@ fn in_crop_border(vertex: VertexOutput) -> bool {
  * Using Oklab color space
  * Conversions based on: https://bottosson.github.io/posts/oklab/
  */
-
 fn rgb_to_lab(rgb: vec3<f32>) -> vec3<f32> {
     let lms: vec3<f32> = vec3<f32>(
         0.4122214708 * rgb.x + 0.5363325363 * rgb.y + 0.0514459929 * rgb.z,

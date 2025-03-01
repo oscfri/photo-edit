@@ -15,7 +15,9 @@ pub struct Parameters {
 pub struct RadialMask {
     pub center_x: i32,
     pub center_y: i32,
-    pub radius: f32,
+    pub width: i32,
+    pub height: i32,
+    pub angle: f32,
     pub brightness: f32,
 }
 

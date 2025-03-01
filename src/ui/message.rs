@@ -30,6 +30,7 @@ pub enum Message {
     AddMask,
     DeleteMask(usize),
     MaskBrightnessChanged(usize, f32),
+    MaskAngleChanged(usize, f32),
     AngleChanged(f32),
     ImageMouseMessage(MouseMessage),
 }

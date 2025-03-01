@@ -5,8 +5,12 @@ use crate::workspace::parameters::Parameters;
 pub struct RadialParameter {
     center_x: f32,
     center_y: f32,
-    radius: f32,
-    brightness: f32
+    width: f32,
+    height: f32,
+    angle: f32,
+    feather: f32,
+    brightness: f32,
+    _1: f32,
 }
 
 #[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
@@ -22,7 +26,9 @@ impl RadialParameters {
         for (index, radial_mask) in parameters.radial_masks.iter().take(entries.len()).enumerate() {
             entries[index].center_x = radial_mask.center_x as f32;
             entries[index].center_y = radial_mask.center_y as f32;
-            entries[index].radius = radial_mask.radius;
+            entries[index].width = radial_mask.width as f32;
+            entries[index].height = radial_mask.height as f32;
+            entries[index].angle = radial_mask.angle / 180.0 * std::f32::consts::PI;
             entries[index].brightness = radial_mask.brightness;
         }
         RadialParameters {
