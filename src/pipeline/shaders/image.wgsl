@@ -144,20 +144,8 @@ fn apply_all_radial_parameters(lab: vec3<f32>, position: vec2<f32>) -> vec3<f32>
 
 fn apply_radial_parameters(index: u32, lab: vec3<f32>, position: vec2<f32>) -> vec3<f32> {
     let radial_parameter = radial_parameters.entries[index];
-    
-    let angle_matrix = mat2x2<f32>(
-        cos(radial_parameter.angle), -sin(radial_parameter.angle),
-        sin(radial_parameter.angle), cos(radial_parameter.angle)
-    );
-    let scale_matrix = mat2x2<f32>(
-        1.0 / (radial_parameter.width * radial_parameter.width), 0.0,
-        0.0, 1.0 / (radial_parameter.height * radial_parameter.height)
-    );
-    
-    let difference = (vec2<f32>(radial_parameter.center_x, radial_parameter.center_y) - position) * angle_matrix;
-    let mahalanobis_matrix = scale_matrix;
-    let distance = sqrt(dot(difference, mahalanobis_matrix * difference));
-    let alpha = cubic_hermite(distance);
+
+    let alpha = calculate_alpha(position, radial_parameter);
 
     if (alpha > 0.0) {
         var applied: vec3<f32> = lab;
@@ -169,6 +157,27 @@ fn apply_radial_parameters(index: u32, lab: vec3<f32>, position: vec2<f32>) -> v
     } else {
         return lab;
     }
+}
+
+fn calculate_alpha(position: vec2<f32>, radial_parameter: RadialParameter) -> f32 {
+    let angle_matrix = mat2x2<f32>(
+        cos(radial_parameter.angle), -sin(radial_parameter.angle),
+        sin(radial_parameter.angle), cos(radial_parameter.angle)
+    );
+    let scale_matrix = mat2x2<f32>(
+        1.0 / (radial_parameter.width * radial_parameter.width), 0.0,
+        0.0, 1.0 / (radial_parameter.height * radial_parameter.height)
+    );
+
+    let difference = (vec2<f32>(radial_parameter.center_x, radial_parameter.center_y) - position) * angle_matrix;
+
+    if (difference.x < 0.0 && 1.0 / radial_parameter.height == 0.0) {
+        return 1.0;
+    }
+
+    let mahalanobis_matrix = scale_matrix;
+    let distance = sqrt(dot(difference, mahalanobis_matrix * difference));
+    return cubic_hermite(distance);
 }
 
 fn cubic_hermite(x: f32) -> f32 {

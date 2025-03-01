@@ -7,7 +7,7 @@ This is what's left for a feature complete MVP.
 - [X] Export image
 - [X] Save album/project
 - [ ] Import images
-- [ ] Linear mask
+- [X] Linear mask
 
 ## Refinement
 
@@ -23,3 +23,7 @@ This is what's left for a feature complete MVP.
 - [ ] Undo/redo
 - [ ] Auto save
 - [ ] General UI improvements
+
+## Bugs
+
+- [ ] When switching image while having a radial mask active, there's risk of index out of bounds

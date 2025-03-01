@@ -21,10 +21,6 @@ pub struct Workspace {
     offset_origin_y: i32,
 }
 
-fn calculate_distance(x1: i32, y1: i32, x2: i32, y2: i32) -> f32 {
-    (((x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2)) as f32).sqrt()
-}
-
 impl Workspace {
     pub fn new(album: Album) -> Self {
         let image_index = 0;
@@ -169,6 +165,10 @@ impl Workspace {
         let center_y = radial_mask.center_y;
         radial_mask.width = (center_x - x).abs();
         radial_mask.height = (center_y - y).abs();
+    }
+
+    pub fn set_mask_is_linear(&mut self, mask_index: usize, is_linear: bool) {
+        self.current_parameters_mut().radial_masks[mask_index].is_linear = is_linear;
     }
 
     pub fn set_mask_brightness(&mut self, mask_index: usize, brightness: f32) {

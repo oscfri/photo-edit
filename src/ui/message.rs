@@ -29,6 +29,7 @@ pub enum Message {
     SaturationChanged(f32),
     AddMask,
     DeleteMask(usize),
+    MaskToggleLinear(usize, bool),
     MaskBrightnessChanged(usize, f32),
     MaskAngleChanged(usize, f32),
     AngleChanged(f32),

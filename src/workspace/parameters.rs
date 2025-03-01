@@ -19,6 +19,7 @@ pub struct RadialMask {
     pub height: i32,
     pub angle: f32,
     pub brightness: f32,
+    pub is_linear: bool
 }
 
 #[derive(Debug, Default, Clone, serde::Serialize, serde::Deserialize)]

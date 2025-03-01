@@ -27,7 +27,11 @@ impl RadialParameters {
             entries[index].center_x = radial_mask.center_x as f32;
             entries[index].center_y = radial_mask.center_y as f32;
             entries[index].width = radial_mask.width as f32;
-            entries[index].height = radial_mask.height as f32;
+            if radial_mask.is_linear {
+                entries[index].height = f32::INFINITY;
+            } else {
+                entries[index].height = radial_mask.height as f32;
+            }
             entries[index].angle = radial_mask.angle / 180.0 * std::f32::consts::PI;
             entries[index].brightness = radial_mask.brightness;
         }

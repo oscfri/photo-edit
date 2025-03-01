@@ -62,8 +62,11 @@ impl Main {
             Message::AddMask => {
                 self.workspace.add_mask();
             },
-            Message::DeleteMask(mask_index) => {
-                self.workspace.delete_mask(mask_index);
+            Message::DeleteMask(index) => {
+                self.workspace.delete_mask(index);
+            },
+            Message::MaskToggleLinear(index, is_linear) => {
+                self.workspace.set_mask_is_linear(index, is_linear);
             },
             Message::MaskBrightnessChanged(index, brightness) => {
                 self.workspace.set_mask_brightness(index, brightness);

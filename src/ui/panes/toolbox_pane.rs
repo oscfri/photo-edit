@@ -67,6 +67,7 @@ impl <'a> ToolboxPane<'a> {
             ]
             .spacing(10);
         iced::widget::column![
+                iced::widget::checkbox("Linear", radial_mask.is_linear).on_toggle(move |is_checked| Message::MaskToggleLinear(mask_index, is_checked)),
                 iced::widget::text("Brightness"),
                 iced::widget::slider(-100.0..=100.0, radial_mask.brightness, move |brightness| Message::MaskBrightnessChanged(mask_index, brightness)),
                 iced::widget::text("Angle"),
