@@ -1,5 +1,7 @@
 use crate::types::*;
 
+use super::parameters::Parameters;
+
 pub struct Album {
     pub images: Vec<AlbumImage>
 }
@@ -9,7 +11,6 @@ pub struct AlbumImage {
     pub source_image: RawImage,
     pub parameters: Parameters,
     pub image_view: ImageView,
-    pub crop: Crop,
     pub thumbnail: RawImage
 }
 
@@ -30,33 +31,6 @@ impl AlbumImage {
     pub fn lab_pixel_at(&self, x: usize, y: usize) -> Option<LabPixel> {
         self.rgb_pixel_at(x, y).map(rgb_pixel_to_lab)
     }
-}
-
-#[derive(Debug, Default, Clone, serde::Serialize, serde::Deserialize)]
-pub struct Parameters {
-    pub brightness: f32,
-    pub contrast: f32,
-    pub tint: f32,
-    pub temperature: f32,
-    pub saturation: f32,
-    pub radial_masks: Vec<RadialMask>
-}
-
-#[derive(Debug, Default, Clone, serde::Serialize, serde::Deserialize)]
-pub struct RadialMask {
-    pub center_x: i32,
-    pub center_y: i32,
-    pub radius: f32,
-    pub brightness: f32,
-}
-
-#[derive(Debug, Default, Clone)]
-pub struct Crop {
-    pub center_x: i32,
-    pub center_y: i32,
-    pub width: i32,
-    pub height: i32,
-    pub angle_degrees: f32,
 }
 
 #[derive(Debug, Default, Clone)]

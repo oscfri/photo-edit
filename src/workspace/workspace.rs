@@ -1,11 +1,13 @@
-use crate::album::{self, AlbumImage};
 use crate::pipeline::export_image::export_image;
 use crate::repository::repository::Repository;
 use crate::view_mode::ViewMode;
-use crate::{repository, types, view_mode};
+use crate::{types, view_mode};
+
+use super::album::{Album, AlbumImage, ImageView};
+use super::parameters::{Crop, Parameters, RadialMask};
 
 pub struct Workspace {
-    album: album::Album,
+    album: Album,
     image_index: usize,
     view_mode: ViewMode,
     has_updated: bool,
@@ -22,7 +24,7 @@ fn calculate_distance(x1: i32, y1: i32, x2: i32, y2: i32) -> f32 {
 }
 
 impl Workspace {
-    pub fn new(album: album::Album) -> Self {
+    pub fn new(album: Album) -> Self {
         let image_index = 0;
         Self {
             album,
@@ -52,7 +54,7 @@ impl Workspace {
         self.image_index
     }
 
-    pub fn album_images(&self) -> &Vec<album::AlbumImage> {
+    pub fn album_images(&self) -> &Vec<AlbumImage> {
         &self.album.images
     }
 
@@ -69,31 +71,31 @@ impl Workspace {
         &self.current_image().source_image
     }
 
-    pub fn current_parameters(&self) -> &album::Parameters {
+    pub fn current_parameters(&self) -> &Parameters {
         &self.current_image().parameters
     }
 
-    fn current_parameters_mut(&mut self) -> &mut album::Parameters {
+    fn current_parameters_mut(&mut self) -> &mut Parameters {
         self.mark_has_updated(); // If this has been called, then an update is probably needed
         &mut self.current_image_mut().parameters
     }
 
-    pub fn current_image_view(&self) -> &album::ImageView {
+    pub fn current_image_view(&self) -> &ImageView {
         &self.current_image().image_view
     }
 
-    fn current_image_view_mut(&mut self) -> &mut album::ImageView {
+    fn current_image_view_mut(&mut self) -> &mut ImageView {
         self.mark_has_updated(); // If this has been called, then an update is probably needed
         &mut self.current_image_mut().image_view
     }
 
-    pub fn current_crop(&self) -> &album::Crop {
-        &self.current_image().crop
+    pub fn current_crop(&self) -> &Crop {
+        &self.current_parameters().crop
     }
 
-    fn current_crop_mut(&mut self) -> &mut album::Crop {
+    fn current_crop_mut(&mut self) -> &mut Crop {
         self.mark_has_updated(); // If this has been called, then an update is probably needed
-        &mut self.current_image_mut().crop
+        &mut self.current_parameters_mut().crop
     }
 
     pub fn get_view_mode(&self) -> ViewMode {
@@ -140,7 +142,7 @@ impl Workspace {
     pub fn add_mask(&mut self) {
         let current_parameters = self.current_parameters_mut();
         let new_mask_index = current_parameters.radial_masks.len();
-        current_parameters.radial_masks.push(album::RadialMask::default());
+        current_parameters.radial_masks.push(RadialMask::default());
         self.view_mode = ViewMode::Mask(new_mask_index);
     }
 
@@ -150,16 +152,16 @@ impl Workspace {
     }
 
     pub fn update_mask_position(&mut self, mask_index: usize, x: i32, y: i32) {
-        let parameters: &mut album::Parameters = self.current_parameters_mut();
-        let radial_mask: &mut album::RadialMask = &mut parameters.radial_masks[mask_index];
+        let parameters: &mut Parameters = self.current_parameters_mut();
+        let radial_mask: &mut RadialMask = &mut parameters.radial_masks[mask_index];
         radial_mask.center_x = x;
         radial_mask.center_y = y;
         radial_mask.radius = 0.0;
     }
 
     pub fn update_mask_radius(&mut self, mask_index: usize, x: i32, y: i32) {
-        let parameters: &mut album::Parameters = self.current_parameters_mut();
-        let radial_mask: &mut album::RadialMask = &mut parameters.radial_masks[mask_index];
+        let parameters: &mut Parameters = self.current_parameters_mut();
+        let radial_mask: &mut RadialMask = &mut parameters.radial_masks[mask_index];
         let center_x = radial_mask.center_x;
         let center_y = radial_mask.center_y;
         radial_mask.radius = calculate_distance(center_x, center_y, x, y);
@@ -174,10 +176,10 @@ impl Workspace {
     }
 
     pub fn white_balance_at(&mut self, x: i32, y: i32) {
-        let current_image: &album::AlbumImage = self.current_image();
+        let current_image: &AlbumImage = self.current_image();
         match current_image.lab_pixel_at(x as usize, y as usize) {
             Some(pixel) => {
-                let parameters: &mut album::Parameters = self.current_parameters_mut();
+                let parameters: &mut Parameters = self.current_parameters_mut();
                 parameters.tint = -pixel.tint;
                 parameters.temperature = -pixel.temperature;
             },
@@ -186,7 +188,7 @@ impl Workspace {
     }
 
     pub fn update_crop(&mut self, x: i32, y: i32) {
-        let crop: &mut album::Crop = self.current_crop_mut();
+        let crop: &mut Crop = self.current_crop_mut();
         let width: f32 = (x - crop.center_x) as f32;
         let height: f32 = (y - crop.center_y) as f32;
         let angle: f32 = crop.angle_degrees / 180.0 * std::f32::consts::PI;
@@ -197,7 +199,7 @@ impl Workspace {
     }
 
     pub fn new_crop(&mut self, x: i32, y: i32) {
-        let crop: &mut album::Crop = self.current_crop_mut();
+        let crop: &mut Crop = self.current_crop_mut();
         crop.center_x = x;
         crop.center_y = y;
         crop.width = 0;
@@ -223,10 +225,10 @@ impl Workspace {
         self.current_image_view_mut().update_offset(offset_x, offset_y);
     }
 
-    pub fn current_view(&self) -> album::Crop {
+    pub fn current_view(&self) -> Crop {
         match self.view_mode {
             // Show full image in Crop mode
-            view_mode::ViewMode::Crop => album::Crop {
+            view_mode::ViewMode::Crop => Crop {
                 center_x: (self.current_source_image().width as i32) / 2,
                 center_y: (self.current_source_image().height as i32) / 2,
                 width: self.current_source_image().width as i32,
@@ -237,11 +239,11 @@ impl Workspace {
         }
     }
 
-    fn make_view(&self) -> album::Crop {
-        let current_crop: &album::Crop = self.current_crop();
-        let current_image_view: &album::ImageView = self.current_image_view();
+    fn make_view(&self) -> Crop {
+        let current_crop: &Crop = self.current_crop();
+        let current_image_view: &ImageView = self.current_image_view();
         let scale: f32 = 1.0 / (f32::powf(2.0, current_image_view.get_zoom()));
-        album::Crop {
+        Crop {
             center_x: current_crop.center_x + (current_image_view.get_offset_x() as i32),
             center_y: current_crop.center_y + (current_image_view.get_offset_y() as i32),
             width: ((current_crop.width as f32) * scale) as i32,

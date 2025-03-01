@@ -1,8 +1,12 @@
 use std::path::PathBuf;
 
-use crate::{album::{AlbumImage, Crop, ImageView, Parameters}, repository::repository::AlbumPhoto, types::{RawImage, RgbImage, RgbPixel}};
+use crate::{repository::repository::AlbumPhoto, types::{RawImage, RgbImage, RgbPixel}};
+use crate::workspace::album::{AlbumImage, ImageView};
 
+use iced::advanced::graphics::futures::backend::default;
 use rayon::prelude::*;
+
+use super::parameters::{Crop, Parameters};
 
 pub struct AlbumImageLoader {
 }
@@ -17,18 +21,11 @@ impl AlbumImageLoader {
         let path: PathBuf = PathBuf::from(&album_photo.file_name);
         let rgb_image: RgbImage = self.load_image(&path);
         let source_image: RawImage = convert_to_raw_image(&rgb_image);
-        let parameters: Parameters = self.parse_parameters(&album_photo.parameters);
+        let parameters: Parameters = self.parse_parameters(&album_photo.parameters, source_image.width, source_image.height);
         let image_view: ImageView = ImageView {
             offset_x: 0.0,
             offset_y: 0.0,
             zoom: 0.0
-        };
-        let crop: Crop = Crop {
-            center_x: (source_image.width as i32) / 2,
-            center_y: (source_image.height as i32) / 2,
-            width: source_image.width as i32,
-            height: source_image.height as i32,
-            angle_degrees: 0.0,
         };
         let thumbnail: RawImage = self.convert_to_thumbnail(&rgb_image);
         AlbumImage {
@@ -36,7 +33,6 @@ impl AlbumImageLoader {
             source_image,
             parameters,
             image_view,
-            crop,
             thumbnail,
         }
     }
@@ -91,8 +87,21 @@ impl AlbumImageLoader {
         }
     }
 
-    fn parse_parameters(&self, parameters: &String) -> Parameters {
-        serde_json::from_str(&parameters).ok().unwrap_or(Parameters::default())
+    fn parse_parameters(&self, parameters: &String, image_width: usize, image_height: usize) -> Parameters {
+        serde_json::from_str(&parameters).ok().unwrap_or(Parameters {
+            crop: self.create_default_crop(image_width, image_height),
+            ..Parameters::default()
+        })
+    }
+
+    fn create_default_crop(&self, image_width: usize, image_height: usize) -> Crop {
+        Crop {
+            center_x: (image_width as i32) / 2,
+            center_y: (image_height as i32) / 2,
+            width: image_width as i32,
+            height: image_height as i32,
+            angle_degrees: 0.0,
+        }
     }
 }
 

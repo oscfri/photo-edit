@@ -1,10 +1,9 @@
-use crate::album::Crop;
-use crate::album::Parameters;
 use crate::types::RawImage;
 use crate::view_mode::ViewMode;
 use crate::pipeline::pipeline;
 use crate::pipeline::camera_uniform;
-use crate::workspace;
+use crate::workspace::parameters::Crop;
+use crate::workspace::parameters::Parameters;
 use crate::workspace::workspace::Workspace;
 
 use iced::mouse;
@@ -75,7 +74,7 @@ impl ViewportWorkspace {
         let image_index = workspace.get_image_index();
         let parameters = workspace.current_parameters().clone();
         let crop = workspace.current_crop().clone();
-        let view: Crop = workspace.current_view();
+        let view = workspace.current_view();
         Self { image, image_index, parameters, crop, view }
     }
 

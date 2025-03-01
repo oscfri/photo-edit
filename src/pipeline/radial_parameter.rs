@@ -1,4 +1,4 @@
-use crate::album::Parameters;
+use crate::workspace::parameters::Parameters;
 
 #[derive(Default, Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
 #[repr(C)]

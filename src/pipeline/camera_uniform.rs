@@ -1,7 +1,6 @@
 use cgmath::{self, Matrix};
 
-use crate::album::Crop;
-use crate::pipeline::transform::{transform, Rectangle};
+use crate::{pipeline::transform::{transform, Rectangle}, workspace::parameters::Crop};
 
 // It's important we're working with 4x4 matrixes. Otherwise we'll run into annoying memory alignment issues.
 #[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]

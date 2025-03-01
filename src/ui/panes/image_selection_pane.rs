@@ -1,12 +1,11 @@
-use crate::album;
-use crate::ui::message::Message;
+use crate::{ui::message::Message, workspace::album::AlbumImage};
 
 pub struct ImageSelectionPane<'a> {
-    album_images: &'a Vec<album::AlbumImage>,
+    album_images: &'a Vec<AlbumImage>,
 }
 
 impl <'a> ImageSelectionPane<'a> {
-    pub fn new(album_images: &'a Vec<album::AlbumImage>) -> Self {
+    pub fn new(album_images: &'a Vec<AlbumImage>) -> Self {
         Self { album_images }
     }
 
@@ -24,7 +23,7 @@ impl <'a> ImageSelectionPane<'a> {
             .into()
     }
 
-    fn view_thumbnail_image(&self, index: usize, album_image: &album::AlbumImage) -> iced::Element<'a, Message> {
+    fn view_thumbnail_image(&self, index: usize, album_image: &AlbumImage) -> iced::Element<'a, Message> {
         let image_handle = iced::widget::image::Handle::from_rgba(
             album_image.thumbnail.width as u32,
             album_image.thumbnail.height as u32,

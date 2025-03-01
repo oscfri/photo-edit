@@ -1,7 +1,6 @@
-use crate::album::{Album, AlbumImage};
 use crate::repository::repository::Repository;
 
-use super::album_image_loader::AlbumImageLoader;
+use super::{album::{Album, AlbumImage}, album_image_loader::AlbumImageLoader};
 
 pub struct AlbumFactory<'a> {
     repository: &'a Repository,

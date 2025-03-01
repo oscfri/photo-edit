@@ -1,4 +1,3 @@
-mod album;
 mod types;
 mod pipeline;
 mod repository;
@@ -9,12 +8,12 @@ mod ui;
 
 use std::path::PathBuf;
 
-use album::Album;
 use iced;
 use pipeline::viewport;
 use repository::repository::Repository;
 use rusqlite::Connection;
 use view_mode::ViewMode;
+use workspace::album::Album;
 use workspace::album_image_loader::AlbumImageLoader;
 use workspace::workspace::Workspace;
 use workspace::album_factory::AlbumFactory;

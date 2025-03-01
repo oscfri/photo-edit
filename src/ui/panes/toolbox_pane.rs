@@ -1,5 +1,4 @@
-use crate::ui::message::Message;
-use crate::album::{RadialMask, Parameters};
+use crate::{ui::message::Message, workspace::parameters::{Parameters, RadialMask}};
 
 pub struct ToolboxPane<'a> {
     parameters: &'a Parameters,

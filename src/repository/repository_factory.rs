@@ -17,14 +17,19 @@ impl<'a> RepositoryFactory {
         
         // self.connection.execute("INSERT INTO album (id, name) VALUES (?1, ?2)", (0, &"First album"))?;
         // self.connection.execute(
-        //     "INSERT INTO photo (id, album_id, file_name, parameters)
-        //         VALUES (?1, ?2, ?3, ?4)",
-        //     (0, 0, &"example.png", &"{}")
+        //     "INSERT INTO photo (album_id, file_name, parameters)
+        //         VALUES (?1, ?2, ?3)",
+        //     (0, &"test.png", &"{}")
         // )?;
         // self.connection.execute(
-        //     "INSERT INTO photo (id, album_id, file_name, parameters)
-        //         VALUES (?1, ?2, ?3, ?4)",
-        //     (1, 0, &"example2.jpg", &"{}")
+        //     "INSERT INTO photo (album_id, file_name, parameters)
+        //         VALUES (?1, ?2, ?3)",
+        //     (0, &"example.png", &"{}")
+        // )?;
+        // self.connection.execute(
+        //     "INSERT INTO photo (album_id, file_name, parameters)
+        //         VALUES (?1, ?2, ?3)",
+        //     (0, &"example2.jpg", &"{}")
         // )?;
 
         Ok(Repository::new(self.connection))
