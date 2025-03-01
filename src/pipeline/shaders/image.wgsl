@@ -98,19 +98,18 @@ fn apply_parameters(lab: vec3<f32>, position: vec2<f32>) -> vec3<f32> {
 }
 
 fn apply_global_parameters(lab: vec3<f32>) -> vec3<f32> {
-    var applied: vec4<f32> = vec4<f32>(lab, 1.0);
+    var applied: vec3<f32> = lab;
+    applied *= vec3<f32>(1.0, 1.0 / (applied.x + 1.0), 1.0 / (applied.x + 1.0));
 
-    let contrast: f32 = parameters.contrast + (parameters.brightness / 50.0);
-    let saturation: f32 = parameters.saturation + (parameters.brightness / 50.0);
+    applied += vec3<f32>(0.0, parameters.tint, parameters.temperature);
+    applied *= vec3<f32>((parameters.brightness * 0.1) + 1.0, 1.0, 1.0);
+    applied *= vec3<f32>(1.0, parameters.saturation, parameters.saturation);
+    applied -= vec3<f32>(50.0, 0.0, 0.0);
+    applied *= vec3<f32>(parameters.contrast, 1.0, 1.0);
+    applied += vec3<f32>(50.0, 0.0, 0.0);
 
-    let matrix: mat4x4<f32> = mat4x4<f32>(
-        vec4<f32>(contrast, 0.0, 0.0, parameters.brightness),
-        vec4<f32>(0.0, saturation, 0.0, parameters.tint),
-        vec4<f32>(0.0, 0.0, saturation, parameters.temperature),
-        vec4<f32>(0.0, 0.0, 0.0, 1.0)
-    );
-
-    return apply_matrix_parameters(lab, matrix);
+    applied *= vec3<f32>(1.0, applied.x + 1.0, applied.x + 1.0);
+    return applied;
 }
 
 fn apply_all_radial_parameters(lab: vec3<f32>, position: vec2<f32>) -> vec3<f32> {
@@ -130,13 +129,10 @@ fn apply_radial_parameters(index: u32, lab: vec3<f32>, position: vec2<f32>) -> v
     let alpha = clamp((radius - distance) / radius, 0.0, 1.0);
 
     if (alpha > 0.0) {
-        let contrast: f32 = 1.0 + (radial_parameter.brightness / 50.0);
-        let saturation: f32 = 1.0 + (radial_parameter.brightness / 50.0);
-
         let matrix: mat4x4<f32> = mat4x4<f32>(
-            vec4<f32>(contrast, 0.0, 0.0, radial_parameter.brightness),
-            vec4<f32>(0.0, saturation, 0.0, 0.0),
-            vec4<f32>(0.0, 0.0, saturation, 0.0),
+            vec4<f32>(1.0, 0.0, 0.0, radial_parameter.brightness),
+            vec4<f32>(0.0, 1.0, 0.0, 0.0),
+            vec4<f32>(0.0, 0.0, 1.0, 0.0),
             vec4<f32>(0.0, 0.0, 0.0, 1.0)
         );
 
@@ -191,12 +187,12 @@ fn in_crop_border(vertex: VertexOutput) -> bool {
 }
 
 /**
- * Conversions based on: https://www.easyrgb.com/en/math.php
+ * RGB -> XYZ conversions based on: https://www.easyrgb.com/en/math.php
+ * XYZ -> Oklab conversions based on: https://bottosson.github.io/posts/oklab/
+ *
+ * Tried CIELab, but didn't like the feeling of it.
+ * Oklab is an improvement, but not perfect.
  */
-
-const REFERENCE_X: f32 = 95.047;
-const REFERENCE_Y: f32 = 100.0;
-const REFERENCE_Z: f32 = 108.883;
 
 // Conversions RGB -> LAB
 
@@ -224,22 +220,18 @@ fn rgb_to_xyz(rgb: vec3<f32>) -> vec3<f32> {
     );
 }
 
-fn scale_xyz_to_lab(value: f32) -> f32 {
-    if value > 0.008856 {
-        return pow(value, 1.0 / 3.0);
-    } else {
-        return (7.787 * value) + (16.0 / 116.0);
-    }
-}
-
+// Oklab
 fn xyz_to_lab(xyz: vec3<f32>) -> vec3<f32> {
-    let var_x: f32 = scale_xyz_to_lab(xyz.x / REFERENCE_X);
-    let var_y: f32 = scale_xyz_to_lab(xyz.y / REFERENCE_Y);
-    let var_z: f32 = scale_xyz_to_lab(xyz.z / REFERENCE_Z);
+    let lms: vec3<f32> = vec3<f32>(
+        0.4122214708 * xyz.x + 0.5363325363 * xyz.y + 0.0514459929 * xyz.z,
+        0.2119034982 * xyz.x + 0.6806995451 * xyz.y + 0.1073969566 * xyz.z,
+        0.0883024619 * xyz.x + 0.2817188376 * xyz.y + 0.6299787005 * xyz.z
+    );
+    let lms_root: vec3<f32> = pow(lms, vec3(1.0 / 3.0));
     return vec3<f32>(
-        (116.0 * var_y) - 16.0,
-        500.0 * (var_x - var_y),
-        200.0 * (var_y - var_z)
+        0.2104542553 * lms_root.x + 0.7936177850 * lms_root.y - 0.0040720468 * lms_root.z,
+        1.9779984951 * lms_root.x - 2.4285922050 * lms_root.y + 0.4505937099 * lms_root.z,
+        0.0259040371 * lms_root.x + 0.7827717662 * lms_root.y - 0.8086757660 * lms_root.z,
     );
 }
 
@@ -250,23 +242,18 @@ fn lab_to_rgb(lab: vec3<f32>) -> vec3<f32> {
     return xyz_to_rgb(xyz);
 }
 
-fn scale_lab_to_xyz(value: f32) -> f32 {
-    if value > pow(0.008856, 1.0 / 3.0) {
-        return pow(value, 3.0);
-    } else {
-        return (value - 16.0 / 116.0) / 7.787;
-    }
-}
-
+// Oklab
 fn lab_to_xyz(lab: vec3<f32>) -> vec3<f32> {
-    let var_y: f32 = (lab.x + 16.0) / 116.0;
-    let var_x: f32 = (lab.y / 500.0) + var_y;
-    let var_z: f32 = var_y - (lab.z / 200.0);
-
+    let lms_root: vec3<f32> = vec3<f32>(
+        lab.x + 0.3963377774 * lab.y + 0.2158037573 * lab.z,
+        lab.x - 0.1055613458 * lab.y - 0.0638541728 * lab.z,
+        lab.x - 0.0894841775 * lab.y - 1.2914855480 * lab.z
+    );
+    let lms: vec3<f32> = pow(lms_root, vec3(3.0));
     return vec3<f32>(
-        scale_lab_to_xyz(var_x) * REFERENCE_X,
-        scale_lab_to_xyz(var_y) * REFERENCE_Y,
-        scale_lab_to_xyz(var_z) * REFERENCE_Z
+         4.0767416621 * lms.x - 3.3077115913 * lms.y + 0.2309699292 * lms.z,
+        -1.2684380046 * lms.x + 2.6097574011 * lms.y - 0.3413193965 * lms.z,
+        -0.0041960863 * lms.x - 0.7034186147 * lms.y + 1.7076147010 * lms.z,
     );
 }
 

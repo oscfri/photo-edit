@@ -35,11 +35,8 @@ pub struct LabPixel {
 
 /**
  * Conversions based on: https://www.easyrgb.com/en/math.php
+ * XYZ -> Oklab conversions based on: https://bottosson.github.io/posts/oklab/
  */
-
-const REFERENCE_X: f32 = 95.047;
-const REFERENCE_Y: f32 = 100.0;
-const REFERENCE_Z: f32 = 108.883;
 
 pub fn rgb_pixel_to_lab(rgb_pixel: RgbPixel) -> LabPixel {
     let xyz_pixel: XyzPixel = rgb_pixel_to_xyz(&rgb_pixel);
@@ -67,22 +64,18 @@ fn rgb_pixel_to_xyz(rgb_pixel: &RgbPixel) -> XyzPixel {
     }
 }
 
-fn scale_xyz_to_lab(value: f32) -> f32 {
-    if value > 0.008856 {
-        value.powf(1.0 / 3.0)
-    } else {
-        (7.787 * value) + (16.0 / 116.0)
-    }
-}
-
 fn xyz_pixel_to_lab(xyz_pixel: &XyzPixel) -> LabPixel {
-    let var_x: f32 = scale_xyz_to_lab(xyz_pixel.x / REFERENCE_X);
-    let var_y: f32 = scale_xyz_to_lab(xyz_pixel.y / REFERENCE_Y);
-    let var_z: f32 = scale_xyz_to_lab(xyz_pixel.z / REFERENCE_Z);
-
+    let mut l: f32 = 0.4122214708 * xyz_pixel.x + 0.5363325363 * xyz_pixel.y + 0.0514459929 * xyz_pixel.z;
+    let mut m: f32 = 0.2119034982 * xyz_pixel.x + 0.6806995451 * xyz_pixel.y + 0.1073969566 * xyz_pixel.z;
+    let mut s: f32 = 0.0883024619 * xyz_pixel.x + 0.2817188376 * xyz_pixel.y + 0.6299787005 * xyz_pixel.z;
+    
+    l = l.powf(1.0 / 3.0);
+    m = m.powf(1.0 / 3.0);
+    s = s.powf(1.0 / 3.0);
+    
     LabPixel {
-        lightness: (116.0 * var_y) - 16.0,
-        tint: 500.0 * (var_x - var_y),
-        temperature: 200.0 * (var_y - var_z)
+        lightness:   0.2104542553 * l + 0.7936177850 * m - 0.0040720468 * s,
+        tint:        1.9779984951 * l - 2.4285922050 * m + 0.4505937099 * s,
+        temperature: 0.0259040371 * l + 0.7827717662 * m - 0.8086757660 * s,
     }
 }
