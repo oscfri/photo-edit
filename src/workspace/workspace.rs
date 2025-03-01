@@ -180,8 +180,8 @@ impl Workspace {
         match current_image.lab_pixel_at(x as usize, y as usize) {
             Some(pixel) => {
                 let parameters: &mut Parameters = self.current_parameters_mut();
-                parameters.tint = -pixel.tint * 100.0;
-                parameters.temperature = -pixel.temperature * 100.0;
+                parameters.tint = -pixel.tint * 1000.0;
+                parameters.temperature = -pixel.temperature * 1000.0;
             },
             None => {}
         }

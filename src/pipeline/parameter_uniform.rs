@@ -14,7 +14,7 @@ impl ParameterUniform {
     pub fn new(parameters: &Parameters) -> Self {
         Self {
             brightness: parameters.brightness,
-            contrast: (parameters.contrast * 0.01 + 100.0) / 100.0,
+            contrast: (parameters.contrast * 0.5 + 100.0) / 100.0,
             tint: parameters.tint * 0.001,
             temperature: parameters.temperature * 0.001,
             saturation: (parameters.saturation + 100.0) / 100.0

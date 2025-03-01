@@ -2,7 +2,7 @@
 
 #[derive(Debug, Default, Clone, serde::Serialize, serde::Deserialize)]
 pub struct Parameters {
-    pub brightness: f32,
+    pub brightness: f32, // TODO: Rename to exposure
     pub contrast: f32,
     pub tint: f32,
     pub temperature: f32,

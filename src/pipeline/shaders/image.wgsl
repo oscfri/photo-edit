@@ -99,16 +99,20 @@ fn apply_parameters(lab: vec3<f32>, position: vec2<f32>) -> vec3<f32> {
 
 fn apply_global_parameters(lab: vec3<f32>) -> vec3<f32> {
     var applied: vec3<f32> = lab;
-    applied *= vec3<f32>(1.0, 1.0 / (applied.x + 1.0), 1.0 / (applied.x + 1.0));
 
+    // Color adjustment
     applied += vec3<f32>(0.0, parameters.tint, parameters.temperature);
-    applied *= vec3<f32>((parameters.brightness * 0.1) + 1.0, 1.0, 1.0);
     applied *= vec3<f32>(1.0, parameters.saturation, parameters.saturation);
-    applied -= vec3<f32>(50.0, 0.0, 0.0);
-    applied *= vec3<f32>(parameters.contrast, 1.0, 1.0);
-    applied += vec3<f32>(50.0, 0.0, 0.0);
 
-    applied *= vec3<f32>(1.0, applied.x + 1.0, applied.x + 1.0);
+    applied *= vec3<f32>(1.0, 1.0 / (applied.x + 0.1), 1.0 / (applied.x + 0.1));
+
+    // Lightness adjustment
+    applied *= vec3<f32>((parameters.brightness * 0.01) + 1.0, 1.0, 1.0);
+    applied -= vec3<f32>(0.5, 0.0, 0.0);
+    applied *= vec3<f32>(parameters.contrast, 1.0, 1.0);
+    applied += vec3<f32>(0.5, 0.0, 0.0);
+
+    applied *= vec3<f32>(1.0, applied.x + 0.1, applied.x + 0.1);
     return applied;
 }
 
@@ -187,45 +191,15 @@ fn in_crop_border(vertex: VertexOutput) -> bool {
 }
 
 /**
- * RGB -> XYZ conversions based on: https://www.easyrgb.com/en/math.php
- * XYZ -> Oklab conversions based on: https://bottosson.github.io/posts/oklab/
- *
- * Tried CIELab, but didn't like the feeling of it.
- * Oklab is an improvement, but not perfect.
+ * Using Oklab color space
+ * Conversions based on: https://bottosson.github.io/posts/oklab/
  */
 
-// Conversions RGB -> LAB
-
 fn rgb_to_lab(rgb: vec3<f32>) -> vec3<f32> {
-    let xyz: vec3<f32> = rgb_to_xyz(rgb);
-    return xyz_to_lab(xyz);
-}
-
-fn scale_rgb_to_xyz(value: f32) -> f32 {
-    if value > 0.04045 {
-        return 100.0 * pow((value + 0.055) / 1.055, 2.4);
-    } else {
-        return 100.0 * value / 12.92;
-    }
-}
-
-fn rgb_to_xyz(rgb: vec3<f32>) -> vec3<f32> {
-    let scaled_red: f32 = scale_rgb_to_xyz(rgb.x);
-    let scaled_green: f32 = scale_rgb_to_xyz(rgb.y);
-    let scaled_blue: f32 = scale_rgb_to_xyz(rgb.z);
-    return vec3<f32>(
-        scaled_red * 0.4124 + scaled_green * 0.3576 + scaled_blue * 0.1805,
-        scaled_red * 0.2126 + scaled_green * 0.7152 + scaled_blue * 0.0722,
-        scaled_red * 0.0193 + scaled_green * 0.1192 + scaled_blue * 0.9505
-    );
-}
-
-// Oklab
-fn xyz_to_lab(xyz: vec3<f32>) -> vec3<f32> {
     let lms: vec3<f32> = vec3<f32>(
-        0.4122214708 * xyz.x + 0.5363325363 * xyz.y + 0.0514459929 * xyz.z,
-        0.2119034982 * xyz.x + 0.6806995451 * xyz.y + 0.1073969566 * xyz.z,
-        0.0883024619 * xyz.x + 0.2817188376 * xyz.y + 0.6299787005 * xyz.z
+        0.4122214708 * rgb.x + 0.5363325363 * rgb.y + 0.0514459929 * rgb.z,
+        0.2119034982 * rgb.x + 0.6806995451 * rgb.y + 0.1073969566 * rgb.z,
+        0.0883024619 * rgb.x + 0.2817188376 * rgb.y + 0.6299787005 * rgb.z
     );
     let lms_root: vec3<f32> = pow(lms, vec3(1.0 / 3.0));
     return vec3<f32>(
@@ -235,15 +209,7 @@ fn xyz_to_lab(xyz: vec3<f32>) -> vec3<f32> {
     );
 }
 
-// Conversions LAB -> RGB
-
 fn lab_to_rgb(lab: vec3<f32>) -> vec3<f32> {
-    var xyz: vec3<f32> = lab_to_xyz(lab);
-    return xyz_to_rgb(xyz);
-}
-
-// Oklab
-fn lab_to_xyz(lab: vec3<f32>) -> vec3<f32> {
     let lms_root: vec3<f32> = vec3<f32>(
         lab.x + 0.3963377774 * lab.y + 0.2158037573 * lab.z,
         lab.x - 0.1055613458 * lab.y - 0.0638541728 * lab.z,
@@ -254,22 +220,5 @@ fn lab_to_xyz(lab: vec3<f32>) -> vec3<f32> {
          4.0767416621 * lms.x - 3.3077115913 * lms.y + 0.2309699292 * lms.z,
         -1.2684380046 * lms.x + 2.6097574011 * lms.y - 0.3413193965 * lms.z,
         -0.0041960863 * lms.x - 0.7034186147 * lms.y + 1.7076147010 * lms.z,
-    );
-}
-
-fn scale_xyz_to_rgb(value: f32) -> f32 {
-    let scaled_value: f32 = value / 100.0;
-    if scaled_value > 0.0031308 {
-        return 1.055 * pow(scaled_value, 1.0 / 2.4) - 0.055;
-    } else {
-        return scaled_value * 12.92;
-    }
-}
-
-fn xyz_to_rgb(xyz: vec3<f32>) -> vec3<f32> {
-    return vec3<f32>(
-        scale_xyz_to_rgb( xyz.x * 3.2406 - xyz.y * 1.5372 - xyz.z * 0.4986),
-        scale_xyz_to_rgb(-xyz.x * 0.9689 + xyz.y * 1.8758 + xyz.z * 0.0415),
-        scale_xyz_to_rgb( xyz.x * 0.0557 - xyz.y * 0.2040 + xyz.z * 1.0570)
     );
 }

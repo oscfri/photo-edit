@@ -31,6 +31,16 @@ impl<'a> RepositoryFactory {
         //         VALUES (?1, ?2, ?3)",
         //     (0, &"example2.jpg", &"{}")
         // )?;
+        // self.connection.execute(
+        //     "INSERT INTO photo (album_id, file_name, parameters)
+        //         VALUES (?1, ?2, ?3)",
+        //     (0, &"hue_hsv.png", &"{}")
+        // )?;
+        // self.connection.execute(
+        //     "INSERT INTO photo (album_id, file_name, parameters)
+        //         VALUES (?1, ?2, ?3)",
+        //     (0, &"hue_oklab.png", &"{}")
+        // )?;
 
         Ok(Repository::new(self.connection))
     }
