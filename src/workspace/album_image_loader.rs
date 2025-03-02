@@ -3,7 +3,6 @@ use std::path::PathBuf;
 use crate::{repository::repository::AlbumPhoto, types::{RawImage, RgbImage, RgbPixel}};
 use crate::workspace::album::{AlbumImage, ImageView};
 
-use iced::advanced::graphics::futures::backend::default;
 use rayon::prelude::*;
 
 use super::parameters::{Crop, Parameters};

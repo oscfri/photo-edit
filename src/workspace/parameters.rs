@@ -1,4 +1,4 @@
-
+use serde;
 
 #[derive(Debug, Default, Clone, serde::Serialize, serde::Deserialize)]
 pub struct Parameters {
