@@ -1,6 +1,6 @@
 use crate::{pipeline::viewport::{self, Viewport}, Main, Message, MouseMessage, MouseState, Point, ViewMode};
 
-use std::usize;
+use std::{path::PathBuf, usize};
 
 #[derive(Clone, Copy)]
 struct MousePosition {
@@ -24,7 +24,7 @@ impl Main {
     pub fn update(&mut self, message: Message) -> iced::Task<Message> {
         match message {
             Message::LoadAlbum => {
-                // self.open_file_dialog()
+                self.open_file_dialog()
             },
             Message::SaveAlbum => {
                 self.workspace.save_album(&self.repository);
@@ -90,25 +90,22 @@ impl Main {
         iced::Task::none()
     }
 
-    // TODO: Figure out what to do with this
-    // fn open_file_dialog(&mut self) -> bool {
-    //     let path: PathBuf = std::env::current_dir().unwrap();
+    fn open_file_dialog(&mut self) {
+        let path: PathBuf = std::env::current_dir().unwrap();
 
-    //     let result = native_dialog::FileDialog::new()
-    //         .set_location(&path)
-    //         .add_filter("image", &["png", "jpg"])
-    //         .show_open_multiple_file();
+        let result = native_dialog::FileDialog::new()
+            .set_location(&path)
+            .add_filter("image", &["png", "jpg"])
+            .show_open_multiple_file();
 
-    //     match result {
-    //         Ok(file_paths) => {
-    //             self.workspace = workspace::load_workspace(&file_paths);
-    //             true
-    //         },
-    //         _ => {
-    //             false
-    //         }
-    //     }
-    // }
+        if let Ok(file_paths) = result {
+            for file_path in file_paths {
+                self.repository.add_photo(&file_path).ok();
+            }
+            // TODO: A bit excessive to reload entire album
+            self.workspace = self.workspace_factory.create();
+        }
+    }
 
     fn update_mouse_on_image(&mut self, image_mouse_message: MouseMessage) {
         let mouse_event: MouseEvent = self.to_mouse_event(image_mouse_message);

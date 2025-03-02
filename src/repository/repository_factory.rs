@@ -11,9 +11,9 @@ impl<'a> RepositoryFactory {
         Self { connection }
     }
 
-    pub fn create(self) -> Result<Repository> {
-        self.create_album_table()?;
-        self.create_photo_table()?;
+    pub fn create(self) -> Repository {
+        self.create_album_table().unwrap();
+        self.create_photo_table().unwrap();
         
         // self.connection.execute("INSERT INTO album (id, name) VALUES (?1, ?2)", (0, &"First album"))?;
         // self.connection.execute(
@@ -42,7 +42,7 @@ impl<'a> RepositoryFactory {
         //     (0, &"hue_oklab.png", &"{}")
         // )?;
 
-        Ok(Repository::new(self.connection))
+        Repository::new(self.connection)
     }
 
     fn create_album_table(&self) -> Result<()> {

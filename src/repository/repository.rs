@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 use rusqlite::{Connection, Result};
 
 pub struct Repository {
@@ -65,6 +67,16 @@ impl Repository {
                 SET parameters = ?2
                 WHERE id = ?1",
             (photo_id, &parameters)
+        )?;
+
+        Ok(())
+    }
+
+    pub fn add_photo(&self, path: &PathBuf) -> Result<()> {
+        self.connection.execute(
+            "INSERT INTO photo (album_id, file_name, parameters)
+                VALUES (?1, ?2, ?3)",
+            (0, &path.to_str(), &"{}")
         )?;
 
         Ok(())

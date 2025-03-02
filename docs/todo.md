@@ -2,11 +2,13 @@
 
 ## Base Functionality
 
+DONE!
+
 This is what's left for a feature complete MVP. 
 
 - [X] Export image
 - [X] Save album/project
-- [ ] Import images
+- [X] Import images
 - [X] Linear mask
 
 ## Refinement
@@ -27,3 +29,7 @@ This is what's left for a feature complete MVP.
 ## Bugs
 
 - [ ] When switching image while having a radial mask active, there's risk of index out of bounds
+
+## Performance
+
+- [ ] Don't reload entire album when import new image
