@@ -1,4 +1,4 @@
-use crate::{pipeline::viewport::{self, Viewport}, ui::message::{AlbumMessage, WorkspaceMessage}, workspace::{self, workspace::Workspace}, Main, Message, MouseMessage, MouseState, Point, ViewMode};
+use crate::{pipeline::viewport::{self, Viewport}, ui::message::{AlbumMessage, WorkspaceMessage}, workspace::workspace::Workspace, Main, Message, MouseMessage, MouseState, ViewMode};
 
 use std::{path::PathBuf, usize};
 

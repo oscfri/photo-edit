@@ -74,7 +74,6 @@ impl Main {
 
     pub fn view(&self) -> iced::Element<Message> {
         if let Some(workspace) = &self.workspace {
-            // TODO: Figure out how to do with viewport here
             let window: MainWindow<'_> = MainWindow::new(
                 &self.album,
                 &workspace,

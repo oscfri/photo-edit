@@ -29,6 +29,7 @@ impl Album {
             Some(Workspace::new(
                 image.source_image.clone(),
                 self.image_index,
+                image.photo_id,
                 image.parameters.clone(),
                 image.image_view.clone()))
         }

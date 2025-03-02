@@ -64,7 +64,7 @@ fn update_relative_mouse(mouse_x: i32, mouse_y: i32) {
 #[derive(Debug, Clone)]
 pub struct ViewportWorkspace {
     pub image: Arc<RawImage>,
-    pub image_index: usize,
+    pub photo_id: i32,
     pub parameters: Parameters,
     pub crop: Crop,
     pub view: Crop
@@ -73,11 +73,11 @@ pub struct ViewportWorkspace {
 impl ViewportWorkspace {
     pub fn new(workspace: &Workspace) -> Self {
         let image = workspace.current_source_image();
-        let image_index = workspace.get_image_index();
+        let photo_id = workspace.get_photo_id();
         let parameters = workspace.current_parameters().clone();
         let crop = workspace.current_crop().clone();
         let view = workspace.current_view();
-        Self { image, image_index, parameters, crop, view }
+        Self { image, photo_id, parameters, crop, view }
     }
 
     pub fn get_image_width(&self) -> usize {
@@ -134,7 +134,7 @@ impl Viewport {
     fn needs_update(&self, storage: &shader::Storage) -> bool {
         if storage.has::<ImageIndex>() {
             let image_index: &ImageIndex = storage.get::<ImageIndex>().unwrap();
-            image_index.index != self.workspace.image_index
+            image_index.photo_id != self.workspace.photo_id
         } else {
             !storage.has::<pipeline::Pipeline>()
         }
@@ -170,7 +170,7 @@ impl Viewport {
 }
 
 struct ImageIndex {
-    index: usize
+    photo_id: i32
 }
 
 impl<Message> shader::Program<Message> for Viewport {
@@ -200,7 +200,7 @@ impl shader::Primitive for Viewport {
 
         if needs_update {
             storage.store(self.create_pipeline(device, format));
-            storage.store(ImageIndex { index: self.workspace.image_index });
+            storage.store(ImageIndex { photo_id: self.workspace.photo_id });
         }
 
         self.update_mouse(&bounds);
