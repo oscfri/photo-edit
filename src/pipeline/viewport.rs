@@ -159,10 +159,10 @@ impl Viewport {
 
     fn viewport_to_rectangle(viewport: &shader::Viewport) -> Rectangle {
         Rectangle {
-            center_x: (viewport.physical_width() as f32) / 2.0,
-            center_y: (viewport.physical_height() as f32) / 2.0,
-            width: viewport.physical_width() as f32,
-            height: viewport.physical_height() as f32,
+            center_x: viewport.logical_size().width / 2.0,
+            center_y: viewport.logical_size().height / 2.0,
+            width: viewport.logical_size().width,
+            height: viewport.logical_size().height,
             angle_degrees: 0.0
         }
     }
