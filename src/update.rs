@@ -1,4 +1,4 @@
-use crate::{pipeline::viewport::{self, Viewport}, Main, Message, MouseMessage, MouseState, Point, ViewMode};
+use crate::{pipeline::viewport::{self, Viewport}, ui::message::{AlbumMessage, WorkspaceMessage}, workspace::{self, workspace::Workspace}, Main, Message, MouseMessage, MouseState, Point, ViewMode};
 
 use std::{path::PathBuf, usize};
 
@@ -23,74 +23,92 @@ enum MouseEvent {
 impl Main {
     pub fn update(&mut self, message: Message) -> iced::Task<Message> {
         match message {
-            Message::LoadAlbum => {
-                self.open_file_dialog()
+            Message::AlbumMessage(album_message) => {
+                self.update_album(album_message);
             },
-            Message::SaveAlbum => {
-                self.workspace.save_album(&self.repository);
-            },
-            Message::ExportImage => {
-                self.workspace.export_image();
-            },
-            Message::NextImage => {
-                self.workspace.next_image_index();
-            },
-            Message::DeleteImage => {
-                self.delete_current_image();
-            },
-            Message::SetImage(index) => {
-                self.workspace.set_image_index(index);
-            },
-            Message::ToggleCropMode => {
-                self.workspace.toggle_view_mode(ViewMode::Crop);
-            },
-            Message::ToggleMaskMode(mask_index) => {
-                self.workspace.toggle_view_mode(ViewMode::Mask(mask_index));
-            },
-            Message::BrightnessChanged(brightness) => {
-                self.workspace.set_brightness(brightness);
-            },
-            Message::ContrastChanged(contrast) => {
-                self.workspace.set_contrast(contrast);
-            },
-            Message::TintChanged(tint) => {
-                self.workspace.set_tint(tint);
-            },
-            Message::TemperatureChanged(temperature) => {
-                self.workspace.set_temperature(temperature);
-            },
-            Message::SaturationChanged(saturation) => {
-                self.workspace.set_saturation(saturation);
-            },
-            Message::AddMask => {
-                self.workspace.add_mask();
-            },
-            Message::DeleteMask(index) => {
-                self.workspace.delete_mask(index);
-            },
-            Message::MaskToggleLinear(index, is_linear) => {
-                self.workspace.set_mask_is_linear(index, is_linear);
-            },
-            Message::MaskBrightnessChanged(index, brightness) => {
-                self.workspace.set_mask_brightness(index, brightness);
-            },
-            Message::MaskAngleChanged(index, angle) => {
-                self.workspace.set_mask_angle(index, angle);
-            },
-            Message::AngleChanged(angle_degrees) => {
-                self.workspace.set_crop_angle(angle_degrees);
-            },
-            Message::ImageMouseMessage(image_mouse_message) => {
-                self.update_mouse_on_image(image_mouse_message);
+            Message::WorkspaceMessage(workspace_message) => {
+                self.update_workspace(workspace_message);
             }
         };
 
-        if self.workspace.get_has_updated() {
-            self.viewport = Viewport::try_from(&self.workspace);
-            self.workspace.reset_has_updated();
-        }
-
         iced::Task::none()
+    }
+
+    fn update_album(&mut self, album_message: AlbumMessage) {
+        self.album.update_workspace(&self.workspace);
+        match album_message {
+            AlbumMessage::LoadAlbum => {
+                self.open_file_dialog()
+            },
+            AlbumMessage::SaveAlbum => {
+                self.album.save();
+            },
+            AlbumMessage::NextImage => {
+                self.album.next_image();
+            },
+            AlbumMessage::SetImage(index) => {
+                self.album.set_image(index);
+            }
+            AlbumMessage::DeleteImage => {
+                self.album.delete_image();
+            },
+        }
+        self.workspace = self.album.make_workspace();
+        self.viewport = self.workspace.as_ref().map(Viewport::new);
+    }
+
+    fn update_workspace(&mut self, workspace_message: WorkspaceMessage) {
+        if let Some(workspace) = &mut self.workspace {
+            match workspace_message {
+                WorkspaceMessage::ToggleCropMode => {
+                    workspace.toggle_view_mode(ViewMode::Crop);
+                },
+                WorkspaceMessage::ToggleMaskMode(mask_index) => {
+                    workspace.toggle_view_mode(ViewMode::Mask(mask_index));
+                },
+                WorkspaceMessage::BrightnessChanged(brightness) => {
+                    workspace.set_brightness(brightness);
+                },
+                WorkspaceMessage::ContrastChanged(contrast) => {
+                    workspace.set_contrast(contrast);
+                },
+                WorkspaceMessage::TintChanged(tint) => {
+                    workspace.set_tint(tint);
+                },
+                WorkspaceMessage::TemperatureChanged(temperature) => {
+                    workspace.set_temperature(temperature);
+                },
+                WorkspaceMessage::SaturationChanged(saturation) => {
+                    workspace.set_saturation(saturation);
+                },
+                WorkspaceMessage::AddMask => {
+                    workspace.add_mask();
+                },
+                WorkspaceMessage::DeleteMask(index) => {
+                    workspace.delete_mask(index);
+                },
+                WorkspaceMessage::MaskToggleLinear(index, is_linear) => {
+                    workspace.set_mask_is_linear(index, is_linear);
+                },
+                WorkspaceMessage::MaskBrightnessChanged(index, brightness) => {
+                    workspace.set_mask_brightness(index, brightness);
+                },
+                WorkspaceMessage::MaskAngleChanged(index, angle) => {
+                    workspace.set_mask_angle(index, angle);
+                },
+                WorkspaceMessage::AngleChanged(angle_degrees) => {
+                    workspace.set_crop_angle(angle_degrees);
+                },
+                WorkspaceMessage::ExportImage => {
+                    workspace.export_image();
+                },
+                WorkspaceMessage::ImageMouseMessage(image_mouse_message) => {
+                    Self::update_mouse_on_image(workspace, image_mouse_message);
+                }
+            }
+
+            self.viewport = Some(Viewport::new(workspace));
+        }
     }
 
     fn open_file_dialog(&mut self) {
@@ -105,80 +123,73 @@ impl Main {
             for file_path in file_paths {
                 self.repository.add_photo(&file_path).ok();
             }
-            // TODO: A bit excessive to reload entire album
-            self.workspace = self.workspace_factory.create();
+
+            self.album = self.album_factory.create()
         }
     }
 
-    fn delete_current_image(&mut self) {
-        let photo_id = self.workspace.current_image().photo_id;
-        self.repository.delete_photo(photo_id).ok();
-        // TODO: A bit excessive to reload entire album
-        self.workspace = self.workspace_factory.create();
-    }
-
-    fn update_mouse_on_image(&mut self, image_mouse_message: MouseMessage) {
-        let mouse_event: MouseEvent = self.to_mouse_event(image_mouse_message);
+    fn update_mouse_on_image(workspace: &mut Workspace, image_mouse_message: MouseMessage) {
+        let mouse_event: MouseEvent = Self::to_mouse_event(workspace, image_mouse_message);
         
-        match self.workspace.get_view_mode() {
+        match workspace.get_view_mode() {
             ViewMode::Normal => {
-                self.update_mouse_normal_mode(mouse_event);
+                Self::update_mouse_normal_mode(workspace, mouse_event);
             },
             ViewMode::Crop => {
-                self.update_mouse_crop_mode(mouse_event);
+                Self::update_mouse_crop_mode(workspace, mouse_event);
             },
             ViewMode::Mask(mask_index) => {
-                self.update_mouse_mask_mode(mouse_event, mask_index);
+                Self::update_mouse_mask_mode(workspace, mouse_event, mask_index);
             }
         }
     }
 
-    fn update_mouse_normal_mode(&mut self, mouse_event: MouseEvent) {
+    fn update_mouse_normal_mode(workspace: &mut Workspace, mouse_event: MouseEvent) {
         match mouse_event {
             MouseEvent::RightPress(mouse_position) => {
-                self.workspace.white_balance_at(mouse_position.image_x, mouse_position.image_y);
+                workspace.white_balance_at(mouse_position.image_x, mouse_position.image_y);
             },
             MouseEvent::Scroll(scroll_delta) => {
-                self.workspace.update_view_zoom(scroll_delta);
+                workspace.update_view_zoom(scroll_delta);
             },
             MouseEvent::Down(mouse_position) => {
-                self.workspace.update_view_offset(mouse_position.relative_x, mouse_position.relative_y);
+                workspace.update_view_offset(mouse_position.relative_x, mouse_position.relative_y);
             },
             MouseEvent::Press(mouse_position) => {
-                self.workspace.new_view_offset_origin(mouse_position.relative_x, mouse_position.relative_y);
+                workspace.new_view_offset_origin(mouse_position.relative_x, mouse_position.relative_y);
             },
             _ => {}
         }
     }
 
-    fn update_mouse_crop_mode(&mut self, mouse_event: MouseEvent) {
+    fn update_mouse_crop_mode(workspace: &mut Workspace, mouse_event: MouseEvent) {
         match mouse_event {
             MouseEvent::Down(mouse_position) => {
-                self.workspace.update_crop(mouse_position.image_x, mouse_position.image_y);
+                workspace.update_crop(mouse_position.image_x, mouse_position.image_y);
             },
             MouseEvent::Press(mouse_position) => {
-                self.workspace.new_crop(mouse_position.image_x, mouse_position.image_y);
+                workspace.new_crop(mouse_position.image_x, mouse_position.image_y);
             },
             _ => {}
         }
     }
 
-    fn update_mouse_mask_mode(&mut self, mouse_event: MouseEvent, mask_index: usize) {
+    fn update_mouse_mask_mode(workspace: &mut Workspace, mouse_event: MouseEvent, mask_index: usize) {
         match mouse_event {
             MouseEvent::Down(mouse_position) => {
-                self.workspace.update_mask_radius(mask_index, mouse_position.image_x, mouse_position.image_y);
+                workspace.update_mask_radius(mask_index, mouse_position.image_x, mouse_position.image_y);
             },
             MouseEvent::Press(mouse_position) => {
-                self.workspace.update_mask_position(mask_index, mouse_position.image_x, mouse_position.image_y);
+                workspace.update_mask_position(mask_index, mouse_position.image_x, mouse_position.image_y);
             },
             MouseEvent::Scroll(scroll_delta) => {
-                self.workspace.update_view_zoom(scroll_delta);
+                workspace.update_view_zoom(scroll_delta);
             },
             _ => {}
         }
     }
 
-    fn to_mouse_event(&mut self, image_mouse_message: MouseMessage) -> MouseEvent {
+    fn to_mouse_event(workspace: &mut Workspace, image_mouse_message: MouseMessage) -> MouseEvent {
         let image_mouse_x: i32 = viewport::get_image_mouse_x();
         let image_mouse_y: i32 = viewport::get_image_mouse_y();
         let relative_mouse_x: i32 = viewport::get_relative_mouse_x();
@@ -189,20 +200,20 @@ impl Main {
             relative_x: relative_mouse_x,
             relative_y: relative_mouse_y
         };
+        // TODO: Move this to workspace
         match image_mouse_message {
             MouseMessage::Over => {
-                self.mouse_position = Point { x: mouse_position.image_x, y: mouse_position.image_y };
-                match self.mouse_state {
+                match workspace.get_mouse_state() {
                     MouseState::Down => MouseEvent::Down(mouse_position),
                     MouseState::Up => MouseEvent::Over(mouse_position),
                 }
             },
             MouseMessage::Press => {
-                self.mouse_state = MouseState::Down;
+                workspace.set_mouse_state(MouseState::Down);
                 MouseEvent::Press(mouse_position)
             },
             MouseMessage::Release => {
-                self.mouse_state = MouseState::Up;
+                workspace.set_mouse_state(MouseState::Up);
                 MouseEvent::Release(mouse_position)
             },
             MouseMessage::RightPress => {

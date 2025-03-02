@@ -1,4 +1,4 @@
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy)]
 pub enum MouseState {
     Up,
     Down
@@ -13,14 +13,14 @@ pub enum MouseMessage {
     Scroll(f32),
 }
 
+impl Into<Message> for MouseMessage {
+    fn into(self) -> Message {
+        Message::WorkspaceMessage(WorkspaceMessage::ImageMouseMessage(self))
+    }
+}
+
 #[derive(Debug, Clone)]
-pub enum Message {
-    LoadAlbum,
-    SaveAlbum,
-    ExportImage,
-    NextImage,
-    DeleteImage,
-    SetImage(usize),
+pub enum WorkspaceMessage {
     ToggleCropMode,
     ToggleMaskMode(usize),
     BrightnessChanged(f32),
@@ -34,5 +34,33 @@ pub enum Message {
     MaskBrightnessChanged(usize, f32),
     MaskAngleChanged(usize, f32),
     AngleChanged(f32),
+    ExportImage,
     ImageMouseMessage(MouseMessage),
+}
+
+impl Into<Message> for WorkspaceMessage {
+    fn into(self) -> Message {
+        Message::WorkspaceMessage(self)
+    }
+}
+
+#[derive(Debug, Clone)]
+pub enum AlbumMessage {
+    LoadAlbum,
+    SaveAlbum,
+    NextImage,
+    DeleteImage,
+    SetImage(usize),
+}
+
+impl Into<Message> for AlbumMessage {
+    fn into(self) -> Message {
+        Message::AlbumMessage(self)
+    }
+}
+
+#[derive(Debug, Clone)]
+pub enum Message {
+    AlbumMessage(AlbumMessage),
+    WorkspaceMessage(WorkspaceMessage)
 }

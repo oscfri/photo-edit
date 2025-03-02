@@ -1,3 +1,4 @@
+use crate::workspace::album::{self, Album};
 use crate::workspace::workspace::Workspace;
 use crate::Point;
 use crate::viewport::Viewport;
@@ -15,10 +16,11 @@ pub struct MainWindow<'a> {
 
 impl<'a> MainWindow<'a> {
     pub fn new(
+            album: &'a Album,
             workspace: &'a Workspace,
             viewport: &'a Viewport,
             mouse_position: &'a Point) -> MainWindow<'a> {
-        let album_images = workspace.album_images();
+        let album_images = &album.images;
         let view_mode = workspace.get_view_mode();
         let parameters = workspace.current_parameters();
         let angle_degrees = workspace.current_crop().angle_degrees;

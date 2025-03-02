@@ -1,4 +1,4 @@
-use crate::ui::message::Message;
+use crate::ui::message::{AlbumMessage, Message};
 
 use iced;
 
@@ -12,7 +12,7 @@ impl<'a> WelcomePane {
     pub fn view(&self) -> iced::Element<'a, Message> {
         let column = iced::widget::column![
                     iced::widget::text("Get started by loading an image"),
-                    iced::widget::button("Load").on_press(Message::LoadAlbum)
+                    iced::widget::button("Load").on_press(AlbumMessage::LoadAlbum.into())
                 ]
                 .spacing(30);
 

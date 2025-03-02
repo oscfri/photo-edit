@@ -18,7 +18,7 @@ fn on_scroll(scroll_delta: iced::mouse::ScrollDelta) -> Message {
             MouseMessage::Scroll(y)
         },
     };
-    Message::ImageMouseMessage(mouse_message)
+    mouse_message.into()
 }
 
 impl <'a> RenderPane<'a> {
@@ -42,10 +42,10 @@ impl <'a> RenderPane<'a> {
             .width(iced::Fill)
             .height(iced::Fill);
         let image_mouse_area = iced::widget::mouse_area(image_area)
-            .on_move(|_point| Message::ImageMouseMessage(MouseMessage::Over))
-            .on_press(Message::ImageMouseMessage(MouseMessage::Press))
-            .on_right_press(Message::ImageMouseMessage(MouseMessage::RightPress))
-            .on_release(Message::ImageMouseMessage(MouseMessage::Release))
+            .on_move(|_point| MouseMessage::Over.into())
+            .on_press(MouseMessage::Press.into())
+            .on_right_press(MouseMessage::RightPress.into())
+            .on_release(MouseMessage::Release.into())
             .on_scroll(on_scroll);
         image_mouse_area.into()
     }

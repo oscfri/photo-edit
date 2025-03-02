@@ -26,6 +26,25 @@ pub struct LabPixel {
     pub temperature: f32 // b*
 }
 
+impl RawImage {
+    fn rgb_pixel_at(&self, x: usize, y: usize) -> Option<RgbPixel> {
+
+        if x < self.width && y < self.height {
+            let pixel_index: usize = (y * self.width + x) * 4; // Times 4 due to unused alpha channel
+            let red: f32 = self.pixels[pixel_index + 0] as f32 / 255.0;
+            let green: f32 = self.pixels[pixel_index + 1] as f32 / 255.0;
+            let blue: f32 = self.pixels[pixel_index + 2] as f32 / 255.0;
+            Some(RgbPixel { red, green, blue })
+        } else {
+            None
+        }
+    }
+
+    pub fn lab_pixel_at(&self, x: usize, y: usize) -> Option<LabPixel> {
+        self.rgb_pixel_at(x, y).map(rgb_pixel_to_lab)
+    }
+}
+
 /**
  * Conversion based on: https://bottosson.github.io/posts/oklab/
  */

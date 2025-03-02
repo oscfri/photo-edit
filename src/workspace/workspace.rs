@@ -2,20 +2,23 @@ use core::f32;
 use std::sync::Arc;
 
 use crate::pipeline::export_image::export_image;
-use crate::repository::repository::Repository;
+use crate::types::RawImage;
+use crate::ui::message::MouseState;
 use crate::view_mode::ViewMode;
 use crate::{types, view_mode};
 
-use super::album::{Album, AlbumImage, ImageView};
+use super::album::ImageView;
 use super::parameters::{Crop, Parameters, RadialMask};
 
 pub struct Workspace {
-    album: Album,
+    source_image: Arc<RawImage>,
     image_index: usize,
+    parameters: Parameters,
+    image_view: ImageView,
     view_mode: ViewMode,
-    has_updated: bool,
 
     // For view dragging (there's probably a better way to handle this)
+    mouse_state: MouseState,
     mouse_origin_x: i32,
     mouse_origin_y: i32,
     offset_origin_x: i32,
@@ -23,13 +26,18 @@ pub struct Workspace {
 }
 
 impl Workspace {
-    pub fn new(album: Album) -> Self {
-        let image_index = 0;
+    pub fn new(
+            source_image: Arc<RawImage>,
+            image_index: usize,
+            parameters: Parameters,
+            image_view: ImageView) -> Self {
         Self {
-            album,
+            source_image,
             image_index,
+            parameters,
+            image_view,
             view_mode: ViewMode::Normal,
-            has_updated: true,
+            mouse_state: MouseState::Up,
             mouse_origin_x: 0,
             mouse_origin_y: 0,
             offset_origin_x: 0,
@@ -37,55 +45,40 @@ impl Workspace {
         }
     }
 
-    pub fn get_has_updated(&self) -> bool {
-        self.has_updated
-    }
-
-    fn mark_has_updated(&mut self) {
-        self.has_updated = true;
-    }
-
-    pub fn reset_has_updated(&mut self) {
-        self.has_updated = false;
-    }
-
     pub fn get_image_index(&self) -> usize {
         self.image_index
     }
 
-    pub fn album_images(&self) -> &Vec<AlbumImage> {
-        &self.album.images
+    pub fn get_parameters(&self) -> &Parameters {
+        &self.parameters
     }
 
-    pub fn current_image(&self) -> &AlbumImage {
-        &self.album.images[self.image_index]
+    pub fn get_mouse_state(&self) -> MouseState {
+        self.mouse_state
     }
 
-    fn current_image_mut(&mut self) -> &mut AlbumImage {
-        self.mark_has_updated(); // If this has been called, then an update is probably needed
-        &mut self.album.images[self.image_index]
+    pub fn set_mouse_state(&mut self, mouse_state: MouseState) {
+        self.mouse_state = mouse_state
     }
 
     pub fn current_source_image(&self) -> Arc<types::RawImage> {
-        self.current_image().source_image.clone()
+        self.source_image.clone()
     }
 
     pub fn current_parameters(&self) -> &Parameters {
-        &self.current_image().parameters
+        &self.parameters
     }
 
     fn current_parameters_mut(&mut self) -> &mut Parameters {
-        self.mark_has_updated(); // If this has been called, then an update is probably needed
-        &mut self.current_image_mut().parameters
+        &mut self.parameters
     }
 
     pub fn current_image_view(&self) -> &ImageView {
-        &self.current_image().image_view
+        &self.image_view
     }
 
     fn current_image_view_mut(&mut self) -> &mut ImageView {
-        self.mark_has_updated(); // If this has been called, then an update is probably needed
-        &mut self.current_image_mut().image_view
+        &mut self.image_view
     }
 
     pub fn current_crop(&self) -> &Crop {
@@ -93,24 +86,11 @@ impl Workspace {
     }
 
     fn current_crop_mut(&mut self) -> &mut Crop {
-        self.mark_has_updated(); // If this has been called, then an update is probably needed
         &mut self.current_parameters_mut().crop
-    }
-
-    pub fn is_empty(&self) -> bool {
-        self.album_images().is_empty()
     }
 
     pub fn get_view_mode(&self) -> ViewMode {
         self.view_mode
-    }
-
-    pub fn save_album(&self, repository: &Repository) {
-        for album_image in &self.album.images {
-            let photo_id = album_image.photo_id;
-            let parameters_str: String = serde_json::to_string(&album_image.parameters).ok().unwrap_or("{}".into());
-            repository.save_photo_parameters(photo_id, parameters_str).ok();
-        }
     }
 
     pub fn export_image(&self) {
@@ -118,7 +98,6 @@ impl Workspace {
     }
 
     pub fn toggle_view_mode(&mut self, view_mode: ViewMode) {
-        self.mark_has_updated();
         self.view_mode = self.view_mode.toggle_view_mode(view_mode);
     }
 
@@ -191,8 +170,7 @@ impl Workspace {
     }
 
     pub fn white_balance_at(&mut self, x: i32, y: i32) {
-        let current_image: &AlbumImage = self.current_image();
-        match current_image.lab_pixel_at(x as usize, y as usize) {
+        match self.source_image.lab_pixel_at(x as usize, y as usize) {
             Some(pixel) => {
                 let parameters: &mut Parameters = self.current_parameters_mut();
                 parameters.tint = -pixel.tint * 1000.0;
@@ -264,20 +242,6 @@ impl Workspace {
             width: ((current_crop.width as f32) * scale) as i32,
             height: ((current_crop.height as f32) * scale) as i32,
             ..current_crop.clone()
-        }
-    }
-
-    pub fn next_image_index(&mut self) {
-        self.mark_has_updated();
-
-        self.image_index = (self.image_index + 1) % self.album.images.len();
-    }
-
-    pub fn set_image_index(&mut self, index: usize) {
-        self.mark_has_updated();
-        
-        if index < self.album.images.len() {
-            self.image_index = index;
         }
     }
 }

@@ -19,8 +19,6 @@ impl AlbumFactory {
             .map(|album_photo| self.album_image_loader.load(album_photo))
             .collect();
         
-        Album {
-            images: images
-        }
+        Album::new(self.repository.clone(), images)
     }
 }

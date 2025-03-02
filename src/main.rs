@@ -15,6 +15,7 @@ use repository::repository::Repository;
 use rusqlite::Connection;
 use ui::welcome_window::WelcomeWindow;
 use view_mode::ViewMode;
+use workspace::album::Album;
 use workspace::album_image_loader::AlbumImageLoader;
 use workspace::workspace::Workspace;
 use workspace::album_factory::AlbumFactory;
@@ -22,7 +23,6 @@ use repository::repository_factory;
 use ui::message::{Message, MouseMessage, MouseState};
 use ui::main_window::MainWindow;
 use viewport::Viewport;
-use workspace::workspace_factory::WorkspaceFactory;
 
 pub fn main() -> iced::Result {
     iced::application("A cool image editor", Main::update, Main::view)
@@ -38,14 +38,14 @@ struct Point {
 }
 
 struct Main {
-    workspace: Workspace,
+    album: Album,
+    workspace: Option<Workspace>,
 
     repository: Arc<Repository>,
-    workspace_factory: Arc<WorkspaceFactory>,
+    album_factory: Arc<AlbumFactory>,
 
     viewport: Option<Viewport>,
     mouse_position: Point,
-    mouse_state: MouseState
 }
 
 impl Main {
@@ -56,26 +56,30 @@ impl Main {
         let repository = Arc::new(repository_factory::RepositoryFactory::new(connection).create());
         let album_image_loader = Arc::new(AlbumImageLoader::new());
         let album_factory = Arc::new(AlbumFactory::new(repository.clone(), album_image_loader.clone()));
-        let workspace_factory = Arc::new(WorkspaceFactory::new(album_factory.clone()));
-        let workspace: Workspace = workspace_factory.create();
+        let album = album_factory.create();
+        let workspace = album.make_workspace();
         
-        let viewport: Option<Viewport> = Viewport::try_from(&workspace);
+        let viewport = workspace.as_ref().map(Viewport::new);
         let mouse_position: Point = Point::default();
-        let mouse_state: MouseState = MouseState::Up;
 
         Self {
+            album,
             workspace,
             repository,
-            workspace_factory,
+            album_factory,
             viewport,
             mouse_position,
-            mouse_state
         }
     }
 
     pub fn view(&self) -> iced::Element<Message> {
-        if let Some(viewport) = &self.viewport {
-            let window: MainWindow<'_> = MainWindow::new(&self.workspace, &viewport, &self.mouse_position);
+        if let Some(workspace) = &self.workspace {
+            // TODO: Figure out how to do with viewport here
+            let window: MainWindow<'_> = MainWindow::new(
+                &self.album,
+                &workspace,
+                self.viewport.as_ref().unwrap(),
+                &self.mouse_position);
             window.view()
         } else {
             let window: WelcomeWindow = WelcomeWindow::new();

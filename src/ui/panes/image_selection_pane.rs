@@ -1,4 +1,4 @@
-use crate::{ui::message::Message, workspace::album::AlbumImage};
+use crate::{ui::message::{AlbumMessage, Message}, workspace::album::AlbumImage};
 
 pub struct ImageSelectionPane<'a> {
     album_images: &'a Vec<AlbumImage>,
@@ -29,7 +29,7 @@ impl <'a> ImageSelectionPane<'a> {
             album_image.thumbnail.height as u32,
             album_image.thumbnail.pixels.clone());
         iced::widget::mouse_area(iced::widget::image(image_handle))
-            .on_press(Message::SetImage(index))
+            .on_press(AlbumMessage::SetImage(index).into())
             .into()
     }
 }
