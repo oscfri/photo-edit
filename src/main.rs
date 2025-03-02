@@ -13,13 +13,14 @@ use iced;
 use pipeline::viewport;
 use repository::repository::Repository;
 use rusqlite::Connection;
+use ui::welcome_window::WelcomeWindow;
 use view_mode::ViewMode;
 use workspace::album_image_loader::AlbumImageLoader;
 use workspace::workspace::Workspace;
 use workspace::album_factory::AlbumFactory;
 use repository::repository_factory;
 use ui::message::{Message, MouseMessage, MouseState};
-use ui::window::Window;
+use ui::main_window::MainWindow;
 use viewport::Viewport;
 use workspace::workspace_factory::WorkspaceFactory;
 
@@ -42,7 +43,7 @@ struct Main {
     repository: Arc<Repository>,
     workspace_factory: Arc<WorkspaceFactory>,
 
-    viewport: Viewport,
+    viewport: Option<Viewport>,
     mouse_position: Point,
     mouse_state: MouseState
 }
@@ -58,7 +59,7 @@ impl Main {
         let workspace_factory = Arc::new(WorkspaceFactory::new(album_factory.clone()));
         let workspace: Workspace = workspace_factory.create();
         
-        let viewport: Viewport = Viewport::new(&workspace);
+        let viewport: Option<Viewport> = Viewport::try_from(&workspace);
         let mouse_position: Point = Point::default();
         let mouse_state: MouseState = MouseState::Up;
 
@@ -73,8 +74,13 @@ impl Main {
     }
 
     pub fn view(&self) -> iced::Element<Message> {
-        let window: Window<'_> = Window::new(&self.workspace, &self.viewport, &self.mouse_position);
-        window.view()
+        if let Some(viewport) = &self.viewport {
+            let window: MainWindow<'_> = MainWindow::new(&self.workspace, &viewport, &self.mouse_position);
+            window.view()
+        } else {
+            let window: WelcomeWindow = WelcomeWindow::new();
+            window.view()
+        }
     }
 }
 

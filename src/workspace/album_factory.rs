@@ -15,7 +15,7 @@ impl AlbumFactory {
     }
 
     pub fn create(&self) -> Album {
-        let images: Vec<AlbumImage> = self.repository.get_album_photos(0).unwrap().iter()
+        let images: Vec<AlbumImage> = self.repository.get_album_photos().unwrap().iter()
             .map(|album_photo| self.album_image_loader.load(album_photo))
             .collect();
         

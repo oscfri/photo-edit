@@ -96,6 +96,10 @@ impl Workspace {
         &mut self.current_parameters_mut().crop
     }
 
+    pub fn is_empty(&self) -> bool {
+        self.album_images().is_empty()
+    }
+
     pub fn get_view_mode(&self) -> ViewMode {
         self.view_mode
     }

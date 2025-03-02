@@ -7,17 +7,17 @@ use crate::ui::panes::image_selection_pane::ImageSelectionPane;
 use crate::ui::panes::render_pane::RenderPane;
 use crate::ui::panes::toolbox_pane::ToolboxPane;
 
-pub struct Window<'a> {
+pub struct MainWindow<'a> {
     image_selection_pane: ImageSelectionPane<'a>,
     render_pane: RenderPane<'a>,
-    toolbox_pane: ToolboxPane<'a>,
+    toolbox_pane: ToolboxPane<'a>
 }
 
-impl<'a> Window<'a> {
+impl<'a> MainWindow<'a> {
     pub fn new(
             workspace: &'a Workspace,
             viewport: &'a Viewport,
-            mouse_position: &'a Point) -> Window<'a> {
+            mouse_position: &'a Point) -> MainWindow<'a> {
         let album_images = workspace.album_images();
         let view_mode = workspace.get_view_mode();
         let parameters = workspace.current_parameters();

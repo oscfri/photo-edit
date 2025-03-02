@@ -69,13 +69,17 @@ pub struct ViewportWorkspace {
 }
 
 impl ViewportWorkspace {
-    pub fn new(workspace: &Workspace) -> Self {
-        let image = workspace.current_source_image().clone();
-        let image_index = workspace.get_image_index();
-        let parameters = workspace.current_parameters().clone();
-        let crop = workspace.current_crop().clone();
-        let view = workspace.current_view();
-        Self { image, image_index, parameters, crop, view }
+    pub fn try_from(workspace: &Workspace) -> Option<Self> {
+        if workspace.is_empty() {
+            None
+        } else {
+            let image = workspace.current_source_image().clone();
+            let image_index = workspace.get_image_index();
+            let parameters = workspace.current_parameters().clone();
+            let crop = workspace.current_crop().clone();
+            let view = workspace.current_view();
+            Some(Self { image, image_index, parameters, crop, view })
+        }
     }
 
     pub fn get_image_width(&self) -> usize {
@@ -95,19 +99,21 @@ pub struct Viewport {
 }
 
 impl Viewport {
-    pub fn new(workspace: &Workspace) -> Self {
-        let viewport_workspace = ViewportWorkspace::new(workspace);
-        let view_mode: ViewMode = workspace.get_view_mode();
-        let cursor: mouse::Cursor = mouse::Cursor::Unavailable;
-        Self {
-            workspace: viewport_workspace,
-            view_mode,
-            cursor
+    pub fn try_from(workspace: &Workspace) -> Option<Self> {
+        if let Some(viewport_workspace) = ViewportWorkspace::try_from(workspace) {
+            let view_mode: ViewMode = workspace.get_view_mode();
+            let cursor: mouse::Cursor = mouse::Cursor::Unavailable;
+            Some(Self {
+                workspace: viewport_workspace,
+                view_mode,
+                cursor
+            })
+        } else {
+            None
         }
     }
 
     fn update_mouse(&self, bounds: &iced::Rectangle) {
-        let bounds_rectangle = Self::bounds_to_rectangle(bounds);
         match self.cursor {
             mouse::Cursor::Available(point) => {
                 let bounds_rectangle = Self::bounds_to_rectangle(bounds);

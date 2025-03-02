@@ -12,7 +12,12 @@ use super::pipeline_factory::PipelineFactory;
 
 // TODO: This should be done in a separate thread...
 pub async fn export_image(workspace: &Workspace) {
-    let viewport_workspace = ViewportWorkspace::new(&workspace);
+    if let Some(viewport_workspace) = ViewportWorkspace::try_from(&workspace) {
+        export_image_from_viewport(viewport_workspace).await
+    }
+}
+
+async fn export_image_from_viewport(viewport_workspace: ViewportWorkspace) {
     let (device, queue) = request_device().await.unwrap();
     
     // TODO: Figure out a way to bring image size...

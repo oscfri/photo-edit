@@ -83,7 +83,7 @@ impl Main {
         };
 
         if self.workspace.get_has_updated() {
-            self.viewport = Viewport::new(&self.workspace);
+            self.viewport = Viewport::try_from(&self.workspace);
             self.workspace.reset_has_updated();
         }
 
