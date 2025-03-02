@@ -35,6 +35,9 @@ impl Main {
             Message::NextImage => {
                 self.workspace.next_image_index();
             },
+            Message::DeleteImage => {
+                self.delete_current_image();
+            },
             Message::SetImage(index) => {
                 self.workspace.set_image_index(index);
             },
@@ -105,6 +108,13 @@ impl Main {
             // TODO: A bit excessive to reload entire album
             self.workspace = self.workspace_factory.create();
         }
+    }
+
+    fn delete_current_image(&mut self) {
+        let photo_id = self.workspace.current_image().photo_id;
+        self.repository.delete_photo(photo_id).ok();
+        // TODO: A bit excessive to reload entire album
+        self.workspace = self.workspace_factory.create();
     }
 
     fn update_mouse_on_image(&mut self, image_mouse_message: MouseMessage) {

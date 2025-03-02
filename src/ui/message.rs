@@ -19,6 +19,7 @@ pub enum Message {
     SaveAlbum,
     ExportImage,
     NextImage,
+    DeleteImage,
     SetImage(usize),
     ToggleCropMode,
     ToggleMaskMode(usize),

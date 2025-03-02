@@ -56,4 +56,14 @@ impl Repository {
 
         Ok(())
     }
+
+    pub fn delete_photo(&self, photo_id: i32) -> Result<()> {
+        self.connection.execute(
+            "DELETE FROM photo
+            WHERE id = ?1",
+            [photo_id]
+        )?;
+
+        Ok(())
+    }
 }
