@@ -1,4 +1,5 @@
 use core::f32;
+use std::sync::Arc;
 
 use crate::pipeline::export_image::export_image;
 use crate::repository::repository::Repository;
@@ -65,8 +66,8 @@ impl Workspace {
         &mut self.album.images[self.image_index]
     }
 
-    pub fn current_source_image(&self) -> &types::RawImage {
-        &self.current_image().source_image
+    pub fn current_source_image(&self) -> Arc<types::RawImage> {
+        self.current_image().source_image.clone()
     }
 
     pub fn current_parameters(&self) -> &Parameters {

@@ -1,4 +1,4 @@
-use std::path::PathBuf;
+use std::{path::PathBuf, sync::Arc};
 
 use crate::{repository::repository::AlbumPhoto, types::{RawImage, RgbImage, RgbPixel}};
 use crate::workspace::album::{AlbumImage, ImageView};
@@ -19,7 +19,7 @@ impl AlbumImageLoader {
         let photo_id = album_photo.id;
         let path: PathBuf = PathBuf::from(&album_photo.file_name);
         let rgb_image: RgbImage = self.load_image(&path);
-        let source_image: RawImage = convert_to_raw_image(&rgb_image);
+        let source_image: Arc<RawImage> = Arc::new(convert_to_raw_image(&rgb_image));
         let parameters: Parameters = self.parse_parameters(&album_photo.parameters, source_image.width, source_image.height);
         let image_view: ImageView = ImageView {
             offset_x: 0.0,

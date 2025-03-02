@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use crate::types::RawImage;
 use crate::view_mode::ViewMode;
 use crate::pipeline::pipeline;
@@ -61,7 +63,7 @@ fn update_relative_mouse(mouse_x: i32, mouse_y: i32) {
 
 #[derive(Debug, Clone)]
 pub struct ViewportWorkspace {
-    pub image: RawImage,
+    pub image: Arc<RawImage>,
     pub image_index: usize,
     pub parameters: Parameters,
     pub crop: Crop,
@@ -73,7 +75,7 @@ impl ViewportWorkspace {
         if workspace.is_empty() {
             None
         } else {
-            let image = workspace.current_source_image().clone();
+            let image = workspace.current_source_image();
             let image_index = workspace.get_image_index();
             let parameters = workspace.current_parameters().clone();
             let crop = workspace.current_crop().clone();

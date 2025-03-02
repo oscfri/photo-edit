@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use crate::types::*;
 
 use super::parameters::Parameters;
@@ -8,7 +10,7 @@ pub struct Album {
 
 pub struct AlbumImage {
     pub photo_id: i32,
-    pub source_image: RawImage,
+    pub source_image: Arc<RawImage>,
     pub parameters: Parameters,
     pub image_view: ImageView,
     pub thumbnail: RawImage
