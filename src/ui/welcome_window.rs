@@ -11,6 +11,8 @@ impl<'a> WelcomeWindow {
     }
 
     pub fn view(&self) -> iced::Element<'a, Message> {
-        self.welcome_pane.view().into()
+        self.welcome_pane.view()
+            .map(Message::WelcomeMessage)
+            .into()
     }
 }

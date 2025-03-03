@@ -2,6 +2,7 @@ mod types;
 mod pipeline;
 mod repository;
 mod update;
+mod update_event;
 mod view_mode;
 mod workspace;
 mod ui;
@@ -20,7 +21,7 @@ use workspace::album_image_loader::AlbumImageLoader;
 use workspace::workspace::Workspace;
 use workspace::album_factory::AlbumFactory;
 use repository::repository_factory;
-use ui::message::{Message, MouseMessage, MouseState};
+use ui::message::{Message, MouseState};
 use ui::main_window::MainWindow;
 use viewport::Viewport;
 
@@ -31,12 +32,6 @@ pub fn main() -> iced::Result {
         .run()
 }
 
-#[derive(Debug, Clone, Copy, Default)]
-struct Point {
-    x: i32,
-    y: i32
-}
-
 struct Main {
     album: Album,
     workspace: Option<Workspace>,
@@ -44,8 +39,7 @@ struct Main {
     repository: Arc<Repository>,
     album_factory: Arc<AlbumFactory>,
 
-    viewport: Option<Viewport>,
-    mouse_position: Point,
+    viewport: Option<Viewport>
 }
 
 impl Main {
@@ -60,7 +54,6 @@ impl Main {
         let workspace = album.make_workspace();
         
         let viewport = workspace.as_ref().map(Viewport::new);
-        let mouse_position: Point = Point::default();
 
         Self {
             album,
@@ -68,7 +61,6 @@ impl Main {
             repository,
             album_factory,
             viewport,
-            mouse_position,
         }
     }
 
@@ -77,8 +69,7 @@ impl Main {
             let window: MainWindow<'_> = MainWindow::new(
                 &self.album,
                 &workspace,
-                self.viewport.as_ref().unwrap(),
-                &self.mouse_position);
+                self.viewport.as_ref().unwrap());
             window.view()
         } else {
             let window: WelcomeWindow = WelcomeWindow::new();

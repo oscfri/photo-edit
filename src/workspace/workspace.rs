@@ -12,7 +12,6 @@ use super::parameters::{Crop, Parameters, RadialMask};
 
 pub struct Workspace {
     source_image: Arc<RawImage>,
-    image_index: usize,
     photo_id: i32,
     parameters: Parameters,
     image_view: ImageView,
@@ -29,13 +28,11 @@ pub struct Workspace {
 impl Workspace {
     pub fn new(
             source_image: Arc<RawImage>,
-            image_index: usize,
             photo_id: i32,
             parameters: Parameters,
             image_view: ImageView) -> Self {
         Self {
             source_image,
-            image_index,
             photo_id,
             parameters,
             image_view,
@@ -46,10 +43,6 @@ impl Workspace {
             offset_origin_x: 0,
             offset_origin_y: 0,
         }
-    }
-
-    pub fn get_image_index(&self) -> usize {
-        self.image_index
     }
 
     pub fn get_photo_id(&self) -> i32 {

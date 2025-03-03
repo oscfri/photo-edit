@@ -28,7 +28,7 @@ This is what's left for a feature complete MVP.
 
 ## Bugs
 
-- [ ] When switching image while having a radial mask active, there's risk of index out of bounds
+- [X] When switching image while having a radial mask active, there's risk of index out of bounds
 
 ## Performance
 

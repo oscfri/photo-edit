@@ -1,6 +1,5 @@
-use crate::workspace::album::{self, Album};
+use crate::workspace::album::Album;
 use crate::workspace::workspace::Workspace;
-use crate::Point;
 use crate::viewport::Viewport;
 
 use crate::ui::message::Message;
@@ -18,15 +17,14 @@ impl<'a> MainWindow<'a> {
     pub fn new(
             album: &'a Album,
             workspace: &'a Workspace,
-            viewport: &'a Viewport,
-            mouse_position: &'a Point) -> MainWindow<'a> {
+            viewport: &'a Viewport) -> MainWindow<'a> {
         let album_images = &album.images;
         let view_mode = workspace.get_view_mode();
         let parameters = workspace.current_parameters();
         let angle_degrees = workspace.current_crop().angle_degrees;
 
         let image_selection_pane: ImageSelectionPane<'a> = ImageSelectionPane::new(album_images);
-        let render_pane: RenderPane<'a> = RenderPane::new(&viewport, mouse_position, view_mode);
+        let render_pane: RenderPane<'a> = RenderPane::new(&viewport, view_mode);
         let toolbox_pane: ToolboxPane<'a> = ToolboxPane::new(parameters, angle_degrees);
 
         Self { image_selection_pane, render_pane, toolbox_pane }
@@ -35,7 +33,7 @@ impl<'a> MainWindow<'a> {
     pub fn view(&self) -> iced::Element<'a, Message> {
         iced::widget::row![
                 self.view_main_area(),
-                self.toolbox_pane.view()
+                self.toolbox_pane.view().map(Message::ToolboxMessage)
             ]
             .width(iced::Fill)
             .height(iced::Fill)
@@ -44,8 +42,8 @@ impl<'a> MainWindow<'a> {
 
     fn view_main_area(&self) -> iced::Element<'a, Message> {
         iced::widget::column![
-                self.render_pane.view(),
-                self.image_selection_pane.view()
+                self.render_pane.view().map(Message::RenderMessage),
+                self.image_selection_pane.view().map(Message::ImageSelectionMessage)
             ]
             .into()
     }

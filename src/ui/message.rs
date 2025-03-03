@@ -13,54 +13,68 @@ pub enum MouseMessage {
     Scroll(f32),
 }
 
-impl Into<Message> for MouseMessage {
-    fn into(self) -> Message {
-        Message::WorkspaceMessage(WorkspaceMessage::ImageMouseMessage(self))
-    }
-}
-
 #[derive(Debug, Clone)]
-pub enum WorkspaceMessage {
-    ToggleCropMode,
-    ToggleMaskMode(usize),
+pub enum MainParameterMessage {
     BrightnessChanged(f32),
     ContrastChanged(f32),
-    TintChanged(f32),
-    TemperatureChanged(f32),
     SaturationChanged(f32),
-    AddMask,
-    DeleteMask(usize),
-    MaskToggleLinear(usize, bool),
-    MaskBrightnessChanged(usize, f32),
-    MaskAngleChanged(usize, f32),
-    AngleChanged(f32),
-    ExportImage,
-    ImageMouseMessage(MouseMessage),
-}
-
-impl Into<Message> for WorkspaceMessage {
-    fn into(self) -> Message {
-        Message::WorkspaceMessage(self)
-    }
+    TemperatureChanged(f32),
+    TintChanged(f32),
 }
 
 #[derive(Debug, Clone)]
-pub enum AlbumMessage {
-    LoadAlbum,
-    SaveAlbum,
-    NextImage,
-    DeleteImage,
-    SetImage(usize),
+pub enum MaskChangeMessage {
+    DeleteMask,
+    ToggleMaskMode,
+    MaskToggleLinear(bool),
+    BrightnessChanged(f32),
+    MaskAngleChanged(f32)
 }
 
-impl Into<Message> for AlbumMessage {
-    fn into(self) -> Message {
-        Message::AlbumMessage(self)
-    }
+#[derive(Debug, Clone)]
+pub enum MaskMessage {
+    AddMask,
+    MaskChanged(usize, MaskChangeMessage)
+}
+
+#[derive(Debug, Clone)]
+pub enum MiscMessage {
+    AngleChanged(f32),
+    DeleteImage,
+    ExportImage,
+    LoadAlbum,
+    NextImage,
+    SaveAlbum,
+    ToggleCropMode,
+}
+
+#[derive(Debug, Clone)]
+pub enum ToolboxMessage {
+    MainParameterMessage(MainParameterMessage),
+    MaskMessage(MaskMessage),
+    MiscMessage(MiscMessage)
+}
+
+#[derive(Debug, Clone)]
+pub enum RenderMessage {
+    MouseMessage(MouseMessage)
+}
+
+
+#[derive(Debug, Clone)]
+pub enum ImageSelectionMessage {
+    SelectImage(usize)
+}
+
+#[derive(Debug, Clone)]
+pub enum WelcomeMessage {
+    LoadAlbum
 }
 
 #[derive(Debug, Clone)]
 pub enum Message {
-    AlbumMessage(AlbumMessage),
-    WorkspaceMessage(WorkspaceMessage)
+    ToolboxMessage(ToolboxMessage),
+    RenderMessage(RenderMessage),
+    WelcomeMessage(WelcomeMessage),
+    ImageSelectionMessage(ImageSelectionMessage)
 }
