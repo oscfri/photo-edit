@@ -82,17 +82,25 @@ var t_output: texture_storage_2d<rgba8unorm, write>;
 
 @fragment
 fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
-    let texture_sample: vec4<f32> = textureSample(t_diffuse, s_diffuse, in.view_coords);
-    let rgb: vec3<f32> = texture_sample.xyz;
-    let lab: vec3<f32> = rgb_to_lab(rgb);
-    let lab_applied: vec3<f32> = apply_parameters(lab, in.image_coords);
-    let rgb_applied: vec3<f32> = lab_to_rgb(lab_applied);
-    let rgb_final: vec3<f32> = draw_crop_area(in, rgb_applied);
+    let rgb: vec3<f32> = get_pixel_color(in.view_coords, in.image_coords);
+    let rgb_final: vec3<f32> = draw_crop_area(in, rgb);
 
-    let gamma_corrected: vec3<f32> = pow(rgb_applied, vec3(1.0/2.2));
+    let gamma_corrected: vec3<f32> = pow(rgb, vec3(1.0/2.2));
     textureStore(t_output, vec2<i32>(in.export_coords.xy), vec4<f32>(gamma_corrected, 1.0));
 
     return vec4<f32>(rgb_final, 1.0);
+}
+
+fn get_pixel_color(view_coords: vec2<f32>, image_coords: vec2<f32>) -> vec3<f32> {
+    if (all(view_coords >= vec2(0.0) && view_coords <= vec2(1.0))) {
+        let texture_sample: vec4<f32> = textureSample(t_diffuse, s_diffuse, view_coords);
+        let rgb: vec3<f32> = texture_sample.xyz;
+        let lab: vec3<f32> = rgb_to_lab(rgb);
+        let lab_applied: vec3<f32> = apply_parameters(lab, image_coords);
+        return lab_to_rgb(lab_applied);
+    } else {
+        return vec3(1.0);
+    }
 }
 
 fn apply_parameters(lab: vec3<f32>, position: vec2<f32>) -> vec3<f32> {
@@ -191,9 +199,7 @@ fn cubic_hermite(x: f32) -> f32 {
 }
 
 fn draw_crop_area(vertex: VertexOutput, rgb: vec3<f32>) -> vec3<f32> {
-    if (crop.visible == 0) {
-        return rgb;
-    } else if (in_crop_area(vertex)) {
+    if (in_crop_area(vertex)) {
         return rgb;
     } else if (in_crop_border(vertex)) {
         return vec3<f32>(1.0, 1.0, 1.0);
