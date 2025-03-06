@@ -24,3 +24,6 @@ serde = { version = "1.0.218", features = ["derive"] }
 
 [dev-dependencies]
 rstest = "0.24"
+
+[profile.dev.package."*"]
+opt-level = 3

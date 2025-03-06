@@ -57,7 +57,7 @@ impl Album {
             let photo_id = self.images[self.image_index].photo_id;
             self.repository.delete_photo(photo_id).ok();
             self.images.remove(self.image_index);
-            self.image_index = self.image_index.min(self.images.len());
+            self.image_index = self.image_index.min((self.images.len() as i32 - 1).max(0) as usize);
         }
     }
 }
