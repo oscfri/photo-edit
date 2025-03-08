@@ -7,11 +7,10 @@ impl Main {
         let update_event = UpdateEvent::from(message);
         match update_event {
             UpdateEvent::OnStart => {
-                self.update_on_start()
+                self.batch_image_load()
             },
             UpdateEvent::AlbumEvent(album_event) => {
-                self.update_album(album_event);
-                iced::Task::none()
+                self.update_album(album_event)
             },
             UpdateEvent::WorkspaceEvent(workspace_event) => {
                 self.update_workspace(workspace_event);
@@ -20,42 +19,37 @@ impl Main {
         }
     }
 
-    fn update_on_start(&mut self) -> iced::Task<Message> {
-        iced::Task::batch(self.album.iter_images()
-            .map(|image| {
-                let photo_id = image.photo_id;
-                let path = image.path.clone();
-                iced::Task::perform(
-                    image_loader::load_image(photo_id, path),
-                    TaskMessage::NewImage)
-            }))
-            .map(Message::TaskMessage)
-    }
-
-    fn update_album(&mut self, album_event: AlbumEvent) {
+    fn update_album(&mut self, album_event: AlbumEvent) -> iced::Task<Message> {
         self.album.update_workspace(&self.workspace);
-        match album_event {
+        let tasks = match album_event {
             AlbumEvent::LoadAlbum => {
-                self.open_file_dialog()
+                self.open_file_dialog();
+                self.batch_image_load()
             },
             AlbumEvent::SaveAlbum => {
                 self.album.save();
+                iced::Task::none()
             },
             AlbumEvent::NextImage => {
                 self.album.next_image();
+                iced::Task::none()
             },
             AlbumEvent::SetImage(index) => {
                 self.album.set_image_index(index);
+                iced::Task::none()
             }
             AlbumEvent::DeleteImage => {
                 self.album.delete_image();
+                iced::Task::none()
             },
             AlbumEvent::LoadImage(photo_id, image) => {
                 self.album.set_image(photo_id, image);
+                iced::Task::none()
             }
-        }
+        };
         self.workspace = self.album.make_workspace();
         self.viewport = self.workspace.as_ref().and_then(Viewport::try_new);
+        tasks
     }
 
     fn update_workspace(&mut self, workspace_event: WorkspaceEvent) {
@@ -198,5 +192,17 @@ impl Main {
             },
             _ => {}
         }
+    }
+
+    fn batch_image_load(&self) -> iced::Task<Message> {
+        iced::Task::batch(self.album.iter_images()
+            .map(|image| {
+                let photo_id = image.photo_id;
+                let path = image.path.clone();
+                iced::Task::perform(
+                    image_loader::load_image(photo_id, path),
+                    TaskMessage::NewImage)
+            }))
+            .map(Message::TaskMessage)
     }
 }
