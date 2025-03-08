@@ -1,10 +1,8 @@
 use crate::ui::message::{MouseMessage, RenderMessage};
 use crate::viewport::Viewport;
-use crate::view_mode::ViewMode;
 
 pub struct RenderPane<'a> {
-    viewport: &'a Option<Viewport>,
-    view_mode: ViewMode
+    viewport: &'a Option<Viewport>
 }
 
 fn on_scroll(scroll_delta: iced::mouse::ScrollDelta) -> MouseMessage {
@@ -19,18 +17,12 @@ fn on_scroll(scroll_delta: iced::mouse::ScrollDelta) -> MouseMessage {
 }
 
 impl <'a> RenderPane<'a> {
-    pub fn new(
-            viewport: &'a Option<Viewport>,
-            view_mode: ViewMode) -> Self {
-        Self { viewport, view_mode }
+    pub fn new(viewport: &'a Option<Viewport>) -> Self {
+        Self { viewport }
     }
 
     pub fn view(&self) -> iced::Element<'a, RenderMessage> {
-        iced::widget::column![
-                self.view_viewport().map(RenderMessage::MouseMessage),
-                self.view_debugger()
-            ]
-            .into()
+        self.view_viewport().map(RenderMessage::MouseMessage).into()
     }
 
     fn view_viewport(&self) -> iced::Element<'a, MouseMessage> {
@@ -51,13 +43,5 @@ impl <'a> RenderPane<'a> {
                 .height(iced::Fill)
                 .into()
         }
-    }
-
-    fn view_debugger(&self) -> iced::Element<'a, RenderMessage> {
-        let debug_str: String = format!("{:?}", self.view_mode);
-        iced::widget::container(iced::widget::text(debug_str))
-            .style(iced::widget::container::dark)
-            .width(iced::Fill)
-            .into()
     }
 }

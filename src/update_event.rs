@@ -1,4 +1,4 @@
-use crate::{pipeline::viewport, types::RawImage, ui::message::{ImageSelectionMessage, MainParameterMessage, MaskChangeMessage, MaskMessage, Message, MiscMessage, MouseMessage, RenderMessage, TaskMessage, ToolboxMessage, WelcomeMessage}};
+use crate::{pipeline::viewport, types::RawImage, ui::message::{BottomPaneMessage, ImageSelectionMessage, MainParameterMessage, MaskChangeMessage, MaskMessage, Message, MiscMessage, MouseMessage, RenderMessage, TaskMessage, ToolboxMessage, TopPaneMessage, WelcomeMessage}};
 
 #[derive(Debug, Clone, Copy)]
 pub struct MousePosition {
@@ -53,6 +53,7 @@ pub enum AlbumEvent {
     LoadAlbum,
     SaveAlbum,
     NextImage,
+    PreviousImage,
     DeleteImage,
     SetImage(usize),
     LoadImage(i32, RawImage, RawImage)
@@ -68,6 +69,15 @@ pub enum UpdateEvent {
     OnStart,
     WorkspaceEvent(WorkspaceEvent),
     AlbumEvent(AlbumEvent)
+}
+
+impl From<BottomPaneMessage> for UpdateEvent {
+    fn from(message: BottomPaneMessage) -> Self {
+        match message {
+            BottomPaneMessage::NextImage => AlbumEvent::NextImage.into(),
+            BottomPaneMessage::PreviousImage => AlbumEvent::PreviousImage.into(),
+        }
+    }
 }
 
 impl From<MainParameterMessage> for UpdateEvent {
@@ -104,9 +114,6 @@ impl From<MiscMessage> for UpdateEvent {
         match message {
             MiscMessage::AngleChanged(angle) => WorkspaceEvent::AngleChanged(angle).into(),
             MiscMessage::DeleteImage => AlbumEvent::DeleteImage.into(),
-            MiscMessage::ExportImage => WorkspaceEvent::ExportImage.into(),
-            MiscMessage::LoadAlbum => AlbumEvent::LoadAlbum.into(),
-            MiscMessage::NextImage => AlbumEvent::NextImage.into(),
             MiscMessage::SaveAlbum => AlbumEvent::SaveAlbum.into(),
             MiscMessage::ToggleCropMode => WorkspaceEvent::ToggleCropMode.into()
         }
@@ -119,6 +126,15 @@ impl From<ToolboxMessage> for UpdateEvent {
             ToolboxMessage::MainParameterMessage(message) => UpdateEvent::from(message),
             ToolboxMessage::MaskMessage(message) => UpdateEvent::from(message),
             ToolboxMessage::MiscMessage(message) => UpdateEvent::from(message),
+        }
+    }
+}
+
+impl From<TopPaneMessage> for UpdateEvent {
+    fn from(message: TopPaneMessage) -> Self {
+        match message {
+            TopPaneMessage::LoadAlbum => AlbumEvent::LoadAlbum.into(),
+            TopPaneMessage::Export => WorkspaceEvent::ExportImage.into()
         }
     }
 }
@@ -186,9 +202,11 @@ impl From<Message> for UpdateEvent {
     fn from(message: Message) -> Self {
         match message {
             Message::OnStartMessage => UpdateEvent::OnStart,
-            Message::ToolboxMessage(message) => UpdateEvent::from(message),
-            Message::RenderMessage(message) => UpdateEvent::from(message),
+            Message::BottomPaneMessage(message) => UpdateEvent::from(message),
             Message::ImageSelectionMessage(message) => UpdateEvent::from(message),
+            Message::RenderMessage(message) => UpdateEvent::from(message),
+            Message::ToolboxMessage(message) => UpdateEvent::from(message),
+            Message::TopPaneMessage(message) => UpdateEvent::from(message),
             Message::WelcomeMessage(message) => UpdateEvent::from(message),
             Message::TaskMessage(message) => UpdateEvent::from(message)
         }

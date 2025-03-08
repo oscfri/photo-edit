@@ -6,13 +6,21 @@ use super::{parameters::{Crop, Parameters}, workspace::Workspace};
 
 pub struct Album {
     repository: Arc<Repository>,
-    pub images: Vec<AlbumImage>, // TODO: Avoid making this pub
+    images: Vec<AlbumImage>,
     image_index: usize,
 }
 
 impl Album {
     pub fn new(repository: Arc<Repository>, images: Vec<AlbumImage>) -> Self {
         Self { repository, images, image_index: 0 }
+    }
+
+    pub fn get_images(&self) -> &Vec<AlbumImage> {
+        &self.images
+    }
+
+    pub fn get_image_index(&self) -> usize {
+        self.image_index
     }
 
     pub fn iter_images(&self) -> Iter<AlbumImage> {
@@ -48,6 +56,10 @@ impl Album {
 
     pub fn next_image(&mut self) {
         self.image_index = (self.image_index + 1) % self.images.len();
+    }
+
+    pub fn previous_image(&mut self) {
+        self.image_index = (self.images.len() + self.image_index - 1) % self.images.len();
     }
 
     pub fn set_image_index(&mut self, index: usize) {

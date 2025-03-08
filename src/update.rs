@@ -34,6 +34,10 @@ impl Main {
                 self.album.next_image();
                 iced::Task::none()
             },
+            AlbumEvent::PreviousImage => {
+                self.album.previous_image();
+                iced::Task::none()
+            },
             AlbumEvent::SetImage(index) => {
                 self.album.set_image_index(index);
                 iced::Task::none()

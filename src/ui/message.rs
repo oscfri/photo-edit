@@ -7,6 +7,12 @@ pub enum MouseState {
 }
 
 #[derive(Debug, Clone)]
+pub enum BottomPaneMessage {
+    NextImage,
+    PreviousImage
+}
+
+#[derive(Debug, Clone)]
 pub enum MouseMessage {
     Over,
     Press,
@@ -43,9 +49,6 @@ pub enum MaskMessage {
 pub enum MiscMessage {
     AngleChanged(f32),
     DeleteImage,
-    ExportImage,
-    LoadAlbum,
-    NextImage,
     SaveAlbum,
     ToggleCropMode,
 }
@@ -58,10 +61,15 @@ pub enum ToolboxMessage {
 }
 
 #[derive(Debug, Clone)]
+pub enum TopPaneMessage {
+    LoadAlbum,
+    Export
+}
+
+#[derive(Debug, Clone)]
 pub enum RenderMessage {
     MouseMessage(MouseMessage)
 }
-
 
 #[derive(Debug, Clone)]
 pub enum ImageSelectionMessage {
@@ -81,9 +89,13 @@ pub enum TaskMessage {
 #[derive(Debug, Clone)]
 pub enum Message {
     OnStartMessage,
-    ToolboxMessage(ToolboxMessage),
-    RenderMessage(RenderMessage),
-    WelcomeMessage(WelcomeMessage),
+
+    BottomPaneMessage(BottomPaneMessage),
     ImageSelectionMessage(ImageSelectionMessage),
+    RenderMessage(RenderMessage),
+    ToolboxMessage(ToolboxMessage),
+    TopPaneMessage(TopPaneMessage),
+    WelcomeMessage(WelcomeMessage),
+
     TaskMessage(TaskMessage)
 }

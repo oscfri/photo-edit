@@ -21,7 +21,7 @@ impl <'a> ToolboxPane<'a> {
             .spacing(30);
         iced::widget::container(column)
             .padding(10)
-            .width(300) // TODO: It should be responsibility of Window to know this
+            .width(iced::Fill)
             .height(iced::Fill)
             .style(iced::widget::container::bordered_box)
             .into()
@@ -88,11 +88,8 @@ impl <'a> ToolboxPane<'a> {
 
     fn view_misc_buttons(&self) -> iced::Element<'a, MiscMessage> {
         iced::widget::column![
-                iced::widget::button("Next").on_press(MiscMessage::NextImage),
                 iced::widget::button("Crop").on_press(MiscMessage::ToggleCropMode),
                 iced::widget::button("Save").on_press(MiscMessage::SaveAlbum),
-                iced::widget::button("Load").on_press(MiscMessage::LoadAlbum),
-                iced::widget::button("Export").on_press(MiscMessage::ExportImage),
                 iced::widget::button("Delete").on_press(MiscMessage::DeleteImage),
                 iced::widget::text("Angle"),
                 iced::widget::slider(-180.0..=180.0, self.angle_degrees, MiscMessage::AngleChanged)

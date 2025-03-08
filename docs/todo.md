@@ -26,6 +26,8 @@ This is what's left for a feature complete MVP.
 - [ ] Undo/redo
 - [ ] Auto save
 - [ ] General UI improvements
+- [ ] Batch export
+- [ ] Flag/filter photos
 
 ## Bugs
 
@@ -33,5 +35,5 @@ This is what's left for a feature complete MVP.
 
 ## Performance
 
-- [ ] Load photos in background thread so it doesn't hog the entire application
+- [X] Load photos in background thread so it doesn't hog the entire application
 - [ ] Don't reload entire album when import new image
