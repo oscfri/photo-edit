@@ -22,7 +22,7 @@ impl <'a> ImageSelectionPane<'a> {
 
         let row = iced::widget::Row::from_vec(thumbnails);
 
-        let container = iced::widget::container(row).padding(10);
+        let container = iced::widget::container(row);
         iced::widget::scrollable(container)
             .direction(Direction::Horizontal(Scrollbar::new()))
             .into()
@@ -41,7 +41,7 @@ impl <'a> ImageSelectionPane<'a> {
                     .into())
             },
             None => {
-                self.wrap_thumbnail_area(index, iced::widget::text("Loading...")
+                self.wrap_thumbnail_area(index, iced::widget::text("...").center()
                     .width(100)
                     .height(100)
                     .into())

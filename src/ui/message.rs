@@ -9,7 +9,8 @@ pub enum MouseState {
 #[derive(Debug, Clone)]
 pub enum BottomPaneMessage {
     NextImage,
-    PreviousImage
+    PreviousImage,
+    DeleteImage
 }
 
 #[derive(Debug, Clone)]
@@ -48,7 +49,6 @@ pub enum MaskMessage {
 #[derive(Debug, Clone)]
 pub enum MiscMessage {
     AngleChanged(f32),
-    DeleteImage,
     SaveAlbum,
     ToggleCropMode,
 }

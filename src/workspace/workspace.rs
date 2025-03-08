@@ -98,6 +98,14 @@ impl Workspace {
         self.view_mode
     }
 
+    pub fn get_mask_index(&self) -> Option<usize> {
+        if let ViewMode::Mask(index) = self.view_mode {
+            Some(index)
+        } else {
+            None
+        }
+    }
+
     pub fn export_image(&self) {
         futures_executor::block_on(export_image(&self));
     }

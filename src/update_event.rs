@@ -76,6 +76,7 @@ impl From<BottomPaneMessage> for UpdateEvent {
         match message {
             BottomPaneMessage::NextImage => AlbumEvent::NextImage.into(),
             BottomPaneMessage::PreviousImage => AlbumEvent::PreviousImage.into(),
+            BottomPaneMessage::DeleteImage => AlbumEvent::DeleteImage.into(),
         }
     }
 }
@@ -113,7 +114,6 @@ impl From<MiscMessage> for UpdateEvent {
     fn from(message: MiscMessage) -> Self {
         match message {
             MiscMessage::AngleChanged(angle) => WorkspaceEvent::AngleChanged(angle).into(),
-            MiscMessage::DeleteImage => AlbumEvent::DeleteImage.into(),
             MiscMessage::SaveAlbum => AlbumEvent::SaveAlbum.into(),
             MiscMessage::ToggleCropMode => WorkspaceEvent::ToggleCropMode.into()
         }

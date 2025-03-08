@@ -28,6 +28,7 @@ use viewport::Viewport;
 pub fn main() -> iced::Result {
     iced::application("A cool image editor", Main::update, Main::view)
         .theme(|_| iced::Theme::Nord)
+        .font(iced_fonts::BOOTSTRAP_FONT_BYTES)
         .resizable(true)
         .run_with(init)
 }

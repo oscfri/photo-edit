@@ -1,15 +1,17 @@
-use crate::{ui::message::{MainParameterMessage, MaskChangeMessage, MaskMessage, MiscMessage, ToolboxMessage}, workspace::parameters::{Parameters, RadialMask}};
+use crate::{ui::{message::{MainParameterMessage, MaskChangeMessage, MaskMessage, MiscMessage, ToolboxMessage}, utils::icon_button}, workspace::parameters::{Parameters, RadialMask}};
 
 pub struct ToolboxPane<'a> {
     parameters: &'a Parameters,
     angle_degrees: f32,
+    mask_edit_index: Option<usize>
 }
 
 impl <'a> ToolboxPane<'a> {
     pub fn new(
             parameters: &'a Parameters,
-            angle_degrees: f32) -> Self {
-        Self { parameters, angle_degrees }
+            angle_degrees: f32,
+            mask_edit_index: Option<usize>) -> Self {
+        Self { parameters, angle_degrees, mask_edit_index }
     }
 
     pub fn view(&self) -> iced::Element<'a, ToolboxMessage> {
@@ -19,10 +21,12 @@ impl <'a> ToolboxPane<'a> {
                 self.view_misc_buttons().map(ToolboxMessage::MiscMessage)
             ]
             .spacing(30);
-        iced::widget::container(column)
-            .padding(10)
+        let container = iced::widget::container(column)
+            .padding(10);
+        let scrollable = iced::widget::scrollable(container)
             .width(iced::Fill)
-            .height(iced::Fill)
+            .height(iced::Fill);
+        iced::widget::container(scrollable)
             .style(iced::widget::container::bordered_box)
             .into()
     }
@@ -47,7 +51,7 @@ impl <'a> ToolboxPane<'a> {
         let mask_sliders = self.parameters.radial_masks.iter()
             .enumerate()
             .map(|(mask_index, radial_mask)| {
-                self.view_mask_parameter_sliders(radial_mask)
+                self.view_mask_parameter_sliders(mask_index, radial_mask)
                     .map(move |message| MaskMessage::MaskChanged(mask_index, message))
             });
         
@@ -55,22 +59,21 @@ impl <'a> ToolboxPane<'a> {
             .spacing(10);
 
         iced::widget::column![
+                iced::widget::text("Mask"),
                 mask_elements,
-                iced::widget::button("Add mask").on_press(MaskMessage::AddMask),
+                icon_button(iced_fonts::Bootstrap::PlusCircle).on_press(MaskMessage::AddMask),
             ]
-            .spacing(10)
             .into()
     }
 
-    fn view_mask_parameter_sliders(&self, radial_mask: &RadialMask) -> iced::Element<'a, MaskChangeMessage> {
+    fn view_mask_parameter_sliders(&self, mask_index: usize, radial_mask: &RadialMask) -> iced::Element<'a, MaskChangeMessage> {
         let buttons = iced::widget::row![
-                iced::widget::button("Edit").on_press(MaskChangeMessage::ToggleMaskMode),
-                iced::widget::button("Delete").on_press(MaskChangeMessage::DeleteMask),
-            ]
-            .spacing(10);
-        iced::widget::column![
+                icon_button(self.mask_edit_icon(mask_index)).on_press(MaskChangeMessage::ToggleMaskMode),
+                icon_button(iced_fonts::Bootstrap::Trashthree).on_press(MaskChangeMessage::DeleteMask),
                 iced::widget::checkbox("Linear", radial_mask.is_linear)
                     .on_toggle(MaskChangeMessage::MaskToggleLinear),
+            ];
+        iced::widget::column![
                 iced::widget::text("Brightness"),
                 iced::widget::slider(
                     -100.0..=100.0,
@@ -90,10 +93,17 @@ impl <'a> ToolboxPane<'a> {
         iced::widget::column![
                 iced::widget::button("Crop").on_press(MiscMessage::ToggleCropMode),
                 iced::widget::button("Save").on_press(MiscMessage::SaveAlbum),
-                iced::widget::button("Delete").on_press(MiscMessage::DeleteImage),
                 iced::widget::text("Angle"),
                 iced::widget::slider(-180.0..=180.0, self.angle_degrees, MiscMessage::AngleChanged)
             ]
             .into()
+    }
+
+    fn mask_edit_icon(&self, mask_index: usize) -> iced_fonts::Bootstrap {
+        if self.mask_edit_index == Some(mask_index) {
+            iced_fonts::Bootstrap::PencilFill
+        } else {
+            iced_fonts::Bootstrap::Pencil
+        }
     }
 }

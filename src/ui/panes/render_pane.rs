@@ -38,7 +38,8 @@ impl <'a> RenderPane<'a> {
                 .on_scroll(on_scroll);
             image_mouse_area.into()
         } else {
-            iced::widget::text("Loading...")
+            iced::widget::text("Please wait...")
+                .center()
                 .width(iced::Fill)
                 .height(iced::Fill)
                 .into()
