@@ -1,4 +1,4 @@
-use crate::{pipeline::viewport, ui::message::{ImageSelectionMessage, MainParameterMessage, MaskChangeMessage, MaskMessage, Message, MiscMessage, MouseMessage, RenderMessage, ToolboxMessage, WelcomeMessage}};
+use crate::{pipeline::viewport, types::RgbImage, ui::message::{ImageSelectionMessage, MainParameterMessage, MaskChangeMessage, MaskMessage, Message, MiscMessage, MouseMessage, RenderMessage, TaskMessage, ToolboxMessage, WelcomeMessage}};
 
 #[derive(Debug, Clone, Copy)]
 pub struct MousePosition {
@@ -17,9 +17,9 @@ pub enum MouseEvent {
     Scroll(f32)
 }
 
-impl Into<UpdatEvent> for MouseEvent {
-    fn into(self) -> UpdatEvent {
-        UpdatEvent::WorkspaceMessage(WorkspaceEvent::ImageMouseEvent(self))
+impl Into<UpdateEvent> for MouseEvent {
+    fn into(self) -> UpdateEvent {
+        UpdateEvent::WorkspaceEvent(WorkspaceEvent::ImageMouseEvent(self))
     }
 }
 
@@ -42,9 +42,9 @@ pub enum WorkspaceEvent {
     ImageMouseEvent(MouseEvent),
 }
 
-impl Into<UpdatEvent> for WorkspaceEvent {
-    fn into(self) -> UpdatEvent {
-        UpdatEvent::WorkspaceMessage(self)
+impl Into<UpdateEvent> for WorkspaceEvent {
+    fn into(self) -> UpdateEvent {
+        UpdateEvent::WorkspaceEvent(self)
     }
 }
 
@@ -55,20 +55,22 @@ pub enum AlbumEvent {
     NextImage,
     DeleteImage,
     SetImage(usize),
+    LoadImage(i32, RgbImage)
 }
 
-impl Into<UpdatEvent> for AlbumEvent {
-    fn into(self) -> UpdatEvent {
-        UpdatEvent::AlbumMessage(self)
+impl Into<UpdateEvent> for AlbumEvent {
+    fn into(self) -> UpdateEvent {
+        UpdateEvent::AlbumEvent(self)
     }
 }
 
-pub enum UpdatEvent {
-    WorkspaceMessage(WorkspaceEvent),
-    AlbumMessage(AlbumEvent)
+pub enum UpdateEvent {
+    OnStart,
+    WorkspaceEvent(WorkspaceEvent),
+    AlbumEvent(AlbumEvent)
 }
 
-impl From<MainParameterMessage> for UpdatEvent {
+impl From<MainParameterMessage> for UpdateEvent {
     fn from(message: MainParameterMessage) -> Self {
         match message {
             MainParameterMessage::BrightnessChanged(brightness) => WorkspaceEvent::BrightnessChanged(brightness).into(),
@@ -80,7 +82,7 @@ impl From<MainParameterMessage> for UpdatEvent {
     }
 }
 
-impl From<MaskMessage> for UpdatEvent {
+impl From<MaskMessage> for UpdateEvent {
     fn from(message: MaskMessage) -> Self {
         match message {
             MaskMessage::AddMask => WorkspaceEvent::AddMask.into(),
@@ -97,7 +99,7 @@ impl From<MaskMessage> for UpdatEvent {
     }
 }
 
-impl From<MiscMessage> for UpdatEvent {
+impl From<MiscMessage> for UpdateEvent {
     fn from(message: MiscMessage) -> Self {
         match message {
             MiscMessage::AngleChanged(angle) => WorkspaceEvent::AngleChanged(angle).into(),
@@ -111,17 +113,17 @@ impl From<MiscMessage> for UpdatEvent {
     }
 }
 
-impl From<ToolboxMessage> for UpdatEvent {
+impl From<ToolboxMessage> for UpdateEvent {
     fn from(message: ToolboxMessage) -> Self {
         match message {
-            ToolboxMessage::MainParameterMessage(message) => UpdatEvent::from(message),
-            ToolboxMessage::MaskMessage(message) => UpdatEvent::from(message),
-            ToolboxMessage::MiscMessage(message) => UpdatEvent::from(message),
+            ToolboxMessage::MainParameterMessage(message) => UpdateEvent::from(message),
+            ToolboxMessage::MaskMessage(message) => UpdateEvent::from(message),
+            ToolboxMessage::MiscMessage(message) => UpdateEvent::from(message),
         }
     }
 }
 
-impl From<MouseMessage> for UpdatEvent {
+impl From<MouseMessage> for UpdateEvent {
     fn from(message: MouseMessage) -> Self {
         let image_mouse_x: i32 = viewport::get_image_mouse_x();
         let image_mouse_y: i32 = viewport::get_image_mouse_y();
@@ -143,15 +145,15 @@ impl From<MouseMessage> for UpdatEvent {
     }
 }
 
-impl From<RenderMessage> for UpdatEvent {
+impl From<RenderMessage> for UpdateEvent {
     fn from(message: RenderMessage) -> Self {
         match message {
-            RenderMessage::MouseMessage(message) => UpdatEvent::from(message)
+            RenderMessage::MouseMessage(message) => UpdateEvent::from(message)
         }
     }
 }
 
-impl From<ImageSelectionMessage> for UpdatEvent {
+impl From<ImageSelectionMessage> for UpdateEvent {
     fn from(message: ImageSelectionMessage) -> Self {
         match message {
             ImageSelectionMessage::SelectImage(index) => AlbumEvent::SetImage(index).into()
@@ -159,7 +161,7 @@ impl From<ImageSelectionMessage> for UpdatEvent {
     }
 }
 
-impl From<WelcomeMessage> for UpdatEvent {
+impl From<WelcomeMessage> for UpdateEvent {
     fn from(message: WelcomeMessage) -> Self {
         match message {
             WelcomeMessage::LoadAlbum => AlbumEvent::LoadAlbum.into()
@@ -167,13 +169,23 @@ impl From<WelcomeMessage> for UpdatEvent {
     }
 }
 
-impl From<Message> for UpdatEvent {
+impl From<TaskMessage> for UpdateEvent {
+    fn from(message: TaskMessage) -> Self {
+        match message {
+            TaskMessage::NewImage(image_load_result) => AlbumEvent::LoadImage(image_load_result.photo_id, image_load_result.image).into()
+        }
+    }
+}
+
+impl From<Message> for UpdateEvent {
     fn from(message: Message) -> Self {
         match message {
-            Message::ToolboxMessage(message) => UpdatEvent::from(message),
-            Message::RenderMessage(message) => UpdatEvent::from(message),
-            Message::ImageSelectionMessage(message) => UpdatEvent::from(message),
-            Message::WelcomeMessage(message) => UpdatEvent::from(message)
+            Message::OnStartMessage => UpdateEvent::OnStart,
+            Message::ToolboxMessage(message) => UpdateEvent::from(message),
+            Message::RenderMessage(message) => UpdateEvent::from(message),
+            Message::ImageSelectionMessage(message) => UpdateEvent::from(message),
+            Message::WelcomeMessage(message) => UpdateEvent::from(message),
+            Message::TaskMessage(message) => UpdateEvent::from(message)
         }
     }
 }

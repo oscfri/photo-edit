@@ -24,12 +24,16 @@ impl <'a> ImageSelectionPane<'a> {
     }
 
     fn view_thumbnail_image(&self, index: usize, album_image: &AlbumImage) -> iced::Element<'a, ImageSelectionMessage> {
-        let image_handle = iced::widget::image::Handle::from_rgba(
-            album_image.thumbnail.width as u32,
-            album_image.thumbnail.height as u32,
-            album_image.thumbnail.pixels.clone());
-        iced::widget::mouse_area(iced::widget::image(image_handle))
-            .on_press(ImageSelectionMessage::SelectImage(index))
-            .into()
+        if let Some(thumbnail) = &album_image.thumbnail {
+            let image_handle = iced::widget::image::Handle::from_rgba(
+                thumbnail.width as u32,
+                thumbnail.height as u32,
+                thumbnail.pixels.clone());
+            iced::widget::mouse_area(iced::widget::image(image_handle))
+                .on_press(ImageSelectionMessage::SelectImage(index))
+                .into()
+        } else {
+            iced::widget::text("Loading...").into()
+        }
     }
 }

@@ -71,13 +71,16 @@ pub struct ViewportWorkspace {
 }
 
 impl ViewportWorkspace {
-    pub fn new(workspace: &Workspace) -> Self {
-        let image = workspace.current_source_image();
-        let photo_id = workspace.get_photo_id();
-        let parameters = workspace.current_parameters().clone();
-        let crop = workspace.current_crop().clone();
-        let view = workspace.current_view();
-        Self { image, photo_id, parameters, crop, view }
+    pub fn try_new(workspace: &Workspace) -> Option<Self> {
+        if let Some(image) = workspace.current_source_image() {
+            let photo_id = workspace.get_photo_id();
+            let parameters = workspace.current_parameters().clone();
+            let crop = workspace.current_crop().clone().unwrap();
+            let view = workspace.current_view();
+            Some(Self { image, photo_id, parameters, crop, view })
+        } else {
+            None
+        }
     }
 
     pub fn get_image_width(&self) -> usize {
@@ -97,14 +100,17 @@ pub struct Viewport {
 }
 
 impl Viewport {
-    pub fn new(workspace: &Workspace) -> Self {
-        let viewport_workspace = ViewportWorkspace::new(workspace);
-        let view_mode: ViewMode = workspace.get_view_mode();
-        let cursor: mouse::Cursor = mouse::Cursor::Unavailable;
-        Self {
-            workspace: viewport_workspace,
-            view_mode,
-            cursor
+    pub fn try_new(workspace: &Workspace) -> Option<Self> {
+        if let Some(viewport_workspace) = ViewportWorkspace::try_new(workspace) {
+            let view_mode: ViewMode = workspace.get_view_mode();
+            let cursor: mouse::Cursor = mouse::Cursor::Unavailable;
+            Some(Self {
+                workspace: viewport_workspace,
+                view_mode,
+                cursor
+            })
+        } else {
+            None
         }
     }
 

@@ -1,20 +1,35 @@
-use crate::{pipeline::viewport::Viewport, update_event::{AlbumEvent, MouseEvent, UpdatEvent, WorkspaceEvent}, workspace::workspace::Workspace, Main, Message, MouseState, ViewMode};
+use crate::{pipeline::viewport::Viewport, ui::message::TaskMessage, update_event::{AlbumEvent, MouseEvent, UpdateEvent, WorkspaceEvent}, workspace::{image_loader, workspace::Workspace}, Main, Message, MouseState, ViewMode};
 
 use std::{path::PathBuf, usize};
 
 impl Main {
     pub fn update(&mut self, message: Message) -> iced::Task<Message> {
-        let update_event = UpdatEvent::from(message);
+        let update_event = UpdateEvent::from(message);
         match update_event {
-            UpdatEvent::AlbumMessage(album_event) => {
-                self.update_album(album_event);
+            UpdateEvent::OnStart => {
+                self.update_on_start()
             },
-            UpdatEvent::WorkspaceMessage(workspace_event) => {
+            UpdateEvent::AlbumEvent(album_event) => {
+                self.update_album(album_event);
+                iced::Task::none()
+            },
+            UpdateEvent::WorkspaceEvent(workspace_event) => {
                 self.update_workspace(workspace_event);
+                iced::Task::none()
             }
-        };
+        }
+    }
 
-        iced::Task::none()
+    fn update_on_start(&mut self) -> iced::Task<Message> {
+        iced::Task::batch(self.album.iter_images()
+            .map(|image| {
+                let photo_id = image.photo_id;
+                let path = image.path.clone();
+                iced::Task::perform(
+                    image_loader::load_image(photo_id, path),
+                    TaskMessage::NewImage)
+            }))
+            .map(Message::TaskMessage)
     }
 
     fn update_album(&mut self, album_event: AlbumEvent) {
@@ -30,14 +45,17 @@ impl Main {
                 self.album.next_image();
             },
             AlbumEvent::SetImage(index) => {
-                self.album.set_image(index);
+                self.album.set_image_index(index);
             }
             AlbumEvent::DeleteImage => {
                 self.album.delete_image();
             },
+            AlbumEvent::LoadImage(photo_id, image) => {
+                self.album.set_image(photo_id, image);
+            }
         }
         self.workspace = self.album.make_workspace();
-        self.viewport = self.workspace.as_ref().map(Viewport::new);
+        self.viewport = self.workspace.as_ref().and_then(Viewport::try_new);
     }
 
     fn update_workspace(&mut self, workspace_event: WorkspaceEvent) {
@@ -90,7 +108,7 @@ impl Main {
                 }
             }
 
-            self.viewport = Some(Viewport::new(workspace));
+            self.viewport = Viewport::try_new(workspace);
         }
     }
 

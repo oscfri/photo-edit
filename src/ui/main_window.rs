@@ -17,11 +17,11 @@ impl<'a> MainWindow<'a> {
     pub fn new(
             album: &'a Album,
             workspace: &'a Workspace,
-            viewport: &'a Viewport) -> MainWindow<'a> {
+            viewport: &'a Option<Viewport>) -> MainWindow<'a> {
         let album_images = &album.images;
         let view_mode = workspace.get_view_mode();
         let parameters = workspace.current_parameters();
-        let angle_degrees = workspace.current_crop().angle_degrees;
+        let angle_degrees = workspace.current_angle_degrees();
 
         let image_selection_pane: ImageSelectionPane<'a> = ImageSelectionPane::new(album_images);
         let render_pane: RenderPane<'a> = RenderPane::new(&viewport, view_mode);

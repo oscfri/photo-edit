@@ -2,16 +2,16 @@ use core::f32;
 use std::sync::Arc;
 
 use crate::pipeline::export_image::export_image;
-use crate::types::RawImage;
+use crate::types::{LabPixel, RawImage};
 use crate::ui::message::MouseState;
 use crate::view_mode::ViewMode;
-use crate::{types, view_mode};
+use crate::view_mode;
 
 use super::album::ImageView;
 use super::parameters::{Crop, Parameters, RadialMask};
 
 pub struct Workspace {
-    source_image: Arc<RawImage>,
+    source_image: Option<Arc<RawImage>>,
     photo_id: i32,
     parameters: Parameters,
     image_view: ImageView,
@@ -27,7 +27,7 @@ pub struct Workspace {
 
 impl Workspace {
     pub fn new(
-            source_image: Arc<RawImage>,
+            source_image: Option<Arc<RawImage>>,
             photo_id: i32,
             parameters: Parameters,
             image_view: ImageView) -> Self {
@@ -61,7 +61,7 @@ impl Workspace {
         self.mouse_state = mouse_state
     }
 
-    pub fn current_source_image(&self) -> Arc<types::RawImage> {
+    pub fn current_source_image(&self) -> Option<Arc<RawImage>> {
         self.source_image.clone()
     }
 
@@ -81,12 +81,17 @@ impl Workspace {
         &mut self.image_view
     }
 
-    pub fn current_crop(&self) -> &Crop {
+    pub fn current_crop(&self) -> &Option<Crop> {
         &self.current_parameters().crop
     }
 
-    fn current_crop_mut(&mut self) -> &mut Crop {
+    fn current_crop_mut(&mut self) -> &mut Option<Crop> {
         &mut self.current_parameters_mut().crop
+    }
+
+    pub fn current_angle_degrees(&self) -> f32 {
+        self.current_parameters().crop.as_ref()
+            .map_or(0.0, |crop| crop.angle_degrees)
     }
 
     pub fn get_view_mode(&self) -> ViewMode {
@@ -166,11 +171,15 @@ impl Workspace {
     }
 
     pub fn set_crop_angle(&mut self, angle_degrees: f32) {
-        self.current_crop_mut().angle_degrees = angle_degrees;
+        if let Some(crop) = self.current_crop_mut() {
+            crop.angle_degrees = angle_degrees;
+        }
     }
 
     pub fn white_balance_at(&mut self, x: i32, y: i32) {
-        match self.source_image.lab_pixel_at(x as usize, y as usize) {
+        let lab_pixel: Option<LabPixel> = self.source_image.as_ref()
+            .and_then(|opt| opt.lab_pixel_at(x as usize, y as usize));
+        match lab_pixel {
             Some(pixel) => {
                 let parameters: &mut Parameters = self.current_parameters_mut();
                 parameters.tint = -pixel.tint * 1000.0;
@@ -181,22 +190,24 @@ impl Workspace {
     }
 
     pub fn update_crop(&mut self, x: i32, y: i32) {
-        let crop: &mut Crop = self.current_crop_mut();
-        let width: f32 = (x - crop.center_x) as f32;
-        let height: f32 = (y - crop.center_y) as f32;
-        let angle: f32 = crop.angle_degrees / 180.0 * std::f32::consts::PI;
-        let sin: f32 = f32::sin(angle);
-        let cos: f32 = f32::cos(angle);
-        crop.width = ((width * cos + height * sin).abs() * 2.0) as i32;
-        crop.height = ((-width * sin + height * cos).abs() * 2.0) as i32;
+        if let Some(crop) = self.current_crop_mut() {
+            let width: f32 = (x - crop.center_x) as f32;
+            let height: f32 = (y - crop.center_y) as f32;
+            let angle: f32 = crop.angle_degrees / 180.0 * std::f32::consts::PI;
+            let sin: f32 = f32::sin(angle);
+            let cos: f32 = f32::cos(angle);
+            crop.width = ((width * cos + height * sin).abs() * 2.0) as i32;
+            crop.height = ((-width * sin + height * cos).abs() * 2.0) as i32;
+        }
     }
 
     pub fn new_crop(&mut self, x: i32, y: i32) {
-        let crop: &mut Crop = self.current_crop_mut();
-        crop.center_x = x;
-        crop.center_y = y;
-        crop.width = 0;
-        crop.height = 0;
+        if let Some(crop) = self.current_crop_mut() {
+            crop.center_x = x;
+            crop.center_y = y;
+            crop.width = 0;
+            crop.height = 0;
+        }
     }
 
     pub fn update_view_zoom(&mut self, scroll_delta: f32) {
@@ -222,18 +233,18 @@ impl Workspace {
         match self.view_mode {
             // Show full image in Crop mode
             view_mode::ViewMode::Crop => Crop {
-                center_x: (self.current_source_image().width as i32) / 2,
-                center_y: (self.current_source_image().height as i32) / 2,
-                width: self.current_source_image().width as i32,
-                height: self.current_source_image().height as i32,
-                angle_degrees: self.current_crop().angle_degrees,
+                center_x: (self.current_source_image().unwrap().width as i32) / 2,
+                center_y: (self.current_source_image().unwrap().height as i32) / 2,
+                width: self.current_source_image().unwrap().width as i32,
+                height: self.current_source_image().unwrap().height as i32,
+                angle_degrees: self.current_angle_degrees(),
             },
             _ => self.make_view()
         }
     }
 
     fn make_view(&self) -> Crop {
-        let current_crop: &Crop = self.current_crop();
+        let current_crop: &Crop = self.current_crop().as_ref().unwrap();
         let current_image_view: &ImageView = self.current_image_view();
         let scale: f32 = 1.0 / (f32::powf(2.0, current_image_view.get_zoom()));
         Crop {

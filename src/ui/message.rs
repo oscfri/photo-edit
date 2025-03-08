@@ -1,3 +1,5 @@
+use crate::workspace::image_loader::ImageLoadResult;
+
 #[derive(Debug, Clone, Copy)]
 pub enum MouseState {
     Up,
@@ -72,9 +74,16 @@ pub enum WelcomeMessage {
 }
 
 #[derive(Debug, Clone)]
+pub enum TaskMessage {
+    NewImage(ImageLoadResult)
+}
+
+#[derive(Debug, Clone)]
 pub enum Message {
+    OnStartMessage,
     ToolboxMessage(ToolboxMessage),
     RenderMessage(RenderMessage),
     WelcomeMessage(WelcomeMessage),
-    ImageSelectionMessage(ImageSelectionMessage)
+    ImageSelectionMessage(ImageSelectionMessage),
+    TaskMessage(TaskMessage)
 }

@@ -8,7 +8,7 @@ pub struct Parameters {
     pub temperature: f32,
     pub saturation: f32,
     pub radial_masks: Vec<RadialMask>,
-    pub crop: Crop
+    pub crop: Option<Crop>
 }
 
 #[derive(Debug, Default, Clone, serde::Serialize, serde::Deserialize)]

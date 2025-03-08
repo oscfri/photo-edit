@@ -16,7 +16,7 @@ impl AlbumFactory {
 
     pub fn create(&self) -> Album {
         let images: Vec<AlbumImage> = self.repository.get_album_photos().unwrap().iter()
-            .map(|album_photo| self.album_image_loader.load(album_photo))
+            .map(|album_photo| self.album_image_loader.create_from(album_photo))
             .collect();
         
         Album::new(self.repository.clone(), images)

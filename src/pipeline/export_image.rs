@@ -12,7 +12,9 @@ use super::pipeline_factory::PipelineFactory;
 
 // TODO: This should be done in a separate thread...
 pub async fn export_image(workspace: &Workspace) {
-    export_image_from_viewport(ViewportWorkspace::new(&workspace)).await
+    if let Some(viewport_workspace) = ViewportWorkspace::try_new(&workspace) {
+        export_image_from_viewport(viewport_workspace).await
+    }
 }
 
 async fn export_image_from_viewport(viewport_workspace: ViewportWorkspace) {
