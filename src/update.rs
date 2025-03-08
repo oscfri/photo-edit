@@ -42,8 +42,8 @@ impl Main {
                 self.album.delete_image();
                 iced::Task::none()
             },
-            AlbumEvent::LoadImage(photo_id, image) => {
-                self.album.set_image(photo_id, image);
+            AlbumEvent::LoadImage(photo_id, image, thumbnail) => {
+                self.album.set_image(photo_id, image, thumbnail);
                 iced::Task::none()
             }
         };

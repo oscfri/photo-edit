@@ -1,4 +1,4 @@
-use crate::{pipeline::viewport, types::RgbImage, ui::message::{ImageSelectionMessage, MainParameterMessage, MaskChangeMessage, MaskMessage, Message, MiscMessage, MouseMessage, RenderMessage, TaskMessage, ToolboxMessage, WelcomeMessage}};
+use crate::{pipeline::viewport, types::RawImage, ui::message::{ImageSelectionMessage, MainParameterMessage, MaskChangeMessage, MaskMessage, Message, MiscMessage, MouseMessage, RenderMessage, TaskMessage, ToolboxMessage, WelcomeMessage}};
 
 #[derive(Debug, Clone, Copy)]
 pub struct MousePosition {
@@ -55,7 +55,7 @@ pub enum AlbumEvent {
     NextImage,
     DeleteImage,
     SetImage(usize),
-    LoadImage(i32, RgbImage)
+    LoadImage(i32, RawImage, RawImage)
 }
 
 impl Into<UpdateEvent> for AlbumEvent {
@@ -172,7 +172,12 @@ impl From<WelcomeMessage> for UpdateEvent {
 impl From<TaskMessage> for UpdateEvent {
     fn from(message: TaskMessage) -> Self {
         match message {
-            TaskMessage::NewImage(image_load_result) => AlbumEvent::LoadImage(image_load_result.photo_id, image_load_result.image).into()
+            TaskMessage::NewImage(image_load_result) => {
+                let photo_id = image_load_result.photo_id;
+                let image = image_load_result.image;
+                let thumbnail = image_load_result.thumbnail;
+                AlbumEvent::LoadImage(photo_id, image, thumbnail).into()
+            }
         }
     }
 }
