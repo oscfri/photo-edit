@@ -2,14 +2,14 @@ use std::{collections::BTreeMap, path::PathBuf, sync::{Arc, Mutex}};
 
 use crate::{repository::repository::{AlbumPhotoDto, Repository}, types::RawImage};
 
-use super::{album_image::AlbumImage, parameters::{Crop, Parameters}, workspace::{ImageView, WorkspaceImage}};
+use super::{album_image::AlbumImage, parameters::{Crop, ParameterHistory, Parameters}, workspace::{ImageView, WorkspaceImage}};
 
 #[derive(Clone)]
 struct SourceImage {
     path: PathBuf,
     image: Option<Arc<RawImage>>,
     thumbnail: Option<Arc<RawImage>>,
-    parameters: Arc<Mutex<Parameters>>,
+    parameter_history: Arc<Mutex<ParameterHistory>>,
     image_view: Arc<Mutex<ImageView>>,
 }
 
@@ -69,10 +69,12 @@ impl ImageManager {
             let image_height = image.height;
             source_image.image = Some(Arc::new(image));
             source_image.thumbnail = Some(Arc::new(thumbnail));
-            let mut parameters = source_image.parameters.lock().unwrap();
-            if parameters.crop.is_none() {
-                parameters.crop = Some(Self::create_default_crop(image_width, image_height));
-            }
+            source_image.parameter_history.lock().unwrap()
+                .update(|parameters| {
+                    if parameters.crop.is_none() {
+                        parameters.crop = Some(Self::create_default_crop(image_width, image_height));
+                    }
+                });
         }
     }
 
@@ -91,15 +93,15 @@ impl ImageManager {
                 WorkspaceImage::new(
                     photo_id,
                     image.image.clone(),
-                    image.parameters.clone(),
+                    image.parameter_history.clone(),
                     image.image_view.clone())
             })
     }
 
     pub fn save(&self) {
         for (photo_id, image) in &self.source_images {
-            let parameters = image.parameters.lock().unwrap();
-            let parameters_str: String = serde_json::to_string(&*parameters).ok().unwrap_or("{}".into());
+            let parameters = image.parameter_history.lock().unwrap().current();
+            let parameters_str: String = serde_json::to_string(&parameters).ok().unwrap_or("{}".into());
             self.repository.save_photo_parameters(*photo_id, parameters_str).ok();
         }
     }
@@ -113,13 +115,14 @@ impl ImageManager {
         let path = PathBuf::from(&album_photo.file_name);
         let image = None;
         let thumbnail = None;
-        let parameters = Arc::new(Mutex::new(Self::parse_parameters(&album_photo.parameters)));
+        let paramters_raw = Self::parse_parameters(&album_photo.parameters);
+        let parameter_history = Arc::new(Mutex::new(paramters_raw.into()));
         let image_view = Arc::new(Mutex::new(ImageView::default()));
         SourceImage {
             path,
             image,
             thumbnail,
-            parameters,
+            parameter_history,
             image_view
         }
     }

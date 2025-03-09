@@ -113,11 +113,16 @@ impl Main {
                 WorkspaceEvent::ExportImage => {
                     workspace.export_image();
                 },
+                WorkspaceEvent::Undo => {
+                    workspace.undo();
+                },
+                WorkspaceEvent::Redo => {
+                    workspace.redo();
+                },
                 WorkspaceEvent::ImageMouseEvent(mouse_event) => {
                     Self::update_mouse_on_image(workspace, mouse_event);
                 }
             }
-
             self.viewport = Viewport::try_new(workspace);
         };
         iced::Task::none()

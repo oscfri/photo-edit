@@ -1,6 +1,8 @@
+use std::time::SystemTime;
+
 use serde;
 
-#[derive(Debug, Default, Clone, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Default, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct Parameters {
     pub brightness: f32, // TODO: Rename to exposure
     pub contrast: f32,
@@ -11,7 +13,7 @@ pub struct Parameters {
     pub crop: Option<Crop>
 }
 
-#[derive(Debug, Default, Clone, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Default, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct RadialMask {
     pub center_x: i32,
     pub center_y: i32,
@@ -22,11 +24,78 @@ pub struct RadialMask {
     pub is_linear: bool
 }
 
-#[derive(Debug, Default, Clone, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Default, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct Crop {
     pub center_x: i32,
     pub center_y: i32,
     pub width: i32,
     pub height: i32,
     pub angle_degrees: f32,
+}
+
+pub struct ParameterHistory {
+    parameters: Parameters,
+    parameter_history: Vec<Parameters>,
+    parameter_history_index: usize,
+    last_updated: SystemTime,
+}
+
+impl From<Parameters> for ParameterHistory {
+    fn from(parameters: Parameters) -> Self {
+        let parameter_history = vec![parameters.clone()];
+        let parameter_history_index = 0;
+        let last_updated = SystemTime::now();
+        Self {
+            parameters,
+            parameter_history,
+            parameter_history_index,
+            last_updated
+        }
+    }
+}
+
+impl ParameterHistory {
+    pub fn update<F>(&mut self, function: F) where F: FnOnce(&mut Parameters) {
+        function(&mut self.parameters);
+
+        if self.has_changed() {
+            if self.needs_new() {
+                self.parameter_history.push(self.parameters.clone());
+                self.parameter_history_index += 1;
+                self.last_updated = SystemTime::now();
+            } else {
+                self.parameter_history[self.parameter_history_index] = self.parameters.clone();
+            }
+        }
+    }
+
+    pub fn current(&self) -> Parameters {
+        self.parameters.clone()
+    }
+
+    pub fn undo(&mut self) {
+        if self.parameter_history_index > 0 {
+            self.parameter_history_index -= 1;
+            self.parameters = self.parameter_history[self.parameter_history_index].clone()
+        }
+    }
+
+    pub fn redo(&mut self) {
+        if self.parameter_history_index < self.parameter_history.len() - 1 {
+            self.parameter_history_index += 1;
+            self.parameters = self.parameter_history[self.parameter_history_index].clone()
+        }
+    }
+
+    fn needs_new(&self) -> bool {
+        if let Ok(elapsed) = self.last_updated.elapsed() {
+            elapsed.as_secs() >= 1
+        } else {
+            false
+        }
+    }
+
+    fn has_changed(&self) -> bool {
+        !self.parameter_history[self.parameter_history_index].eq(&self.parameters)
+    }
 }

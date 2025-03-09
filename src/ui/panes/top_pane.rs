@@ -36,8 +36,10 @@ impl<'a> TopPane {
     }
 
     fn view_right(&self) -> iced::Element<'a, TopPaneMessage> {
-        // Nothing so far...
-        let row = iced::widget::row![];
+        let row = iced::widget::row![
+                icon_button(iced_fonts::Bootstrap::ArrowCounterclockwise).on_press(TopPaneMessage::Undo),
+                icon_button(iced_fonts::Bootstrap::ArrowClockwise).on_press(TopPaneMessage::Redo),
+            ];
         iced::widget::container(row)
             .align_right(iced::Fill)
             .into()

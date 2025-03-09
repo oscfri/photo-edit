@@ -39,6 +39,8 @@ pub enum WorkspaceEvent {
     MaskAngleChanged(usize, f32),
     AngleChanged(f32),
     ExportImage,
+    Undo,
+    Redo,
     ImageMouseEvent(MouseEvent),
 }
 
@@ -145,7 +147,9 @@ impl From<TopPaneMessage> for UpdateEvent {
     fn from(message: TopPaneMessage) -> Self {
         match message {
             TopPaneMessage::AddImages => ImageManagerEvent::AddImages.into(),
-            TopPaneMessage::Export => WorkspaceEvent::ExportImage.into()
+            TopPaneMessage::Export => WorkspaceEvent::ExportImage.into(),
+            TopPaneMessage::Undo => WorkspaceEvent::Undo.into(),
+            TopPaneMessage::Redo => WorkspaceEvent::Redo.into(),
         }
     }
 }

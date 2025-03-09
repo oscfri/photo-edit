@@ -23,7 +23,7 @@ This is what's left for a feature complete MVP.
 - [ ] Radial mask feathering
 - [X] Display of outside the image (texture artifacts)
 - [ ] Prevent artifacts during exports (lines when exporting weird aspect ratios)
-- [ ] Undo/redo
+- [X] Undo/redo
 - [ ] Auto save
 - [ ] General UI improvements
 - [ ] Batch export
