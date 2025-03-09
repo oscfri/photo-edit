@@ -1,6 +1,6 @@
 use iced::widget::{container::Style, scrollable::{Direction, Scrollbar}};
 
-use crate::{ui::message::ImageSelectionMessage, workspace::album::AlbumImage};
+use crate::{ui::message::ImageSelectionMessage, workspace::album_image::AlbumImage};
 
 pub struct ImageSelectionPane<'a> {
     album_images: &'a Vec<AlbumImage>,

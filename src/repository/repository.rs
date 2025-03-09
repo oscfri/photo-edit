@@ -8,7 +8,7 @@ pub struct Repository {
 
 // TODO: Need to come up with a good naming convention for this...
 #[derive(Debug)]
-pub struct AlbumPhoto {
+pub struct AlbumPhotoDto {
     pub id: i32,
     pub file_name: String,
     pub parameters: String
@@ -19,14 +19,14 @@ impl Repository {
         Self { connection }
     }
 
-    pub fn get_album_photos(&self) -> Result<Vec<AlbumPhoto>> {
+    pub fn get_album_photos(&self) -> Result<Vec<AlbumPhotoDto>> {
         let mut statement = self.connection.prepare(
             "SELECT id, file_name, parameters
                 FROM photo"
         )?;
 
         let rows = statement.query_map([], |row| {
-            Ok(AlbumPhoto {
+            Ok(AlbumPhotoDto {
                 id: row.get(0)?,
                 file_name: row.get(1)?,
                 parameters: row.get(2)?,

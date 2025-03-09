@@ -10,7 +10,7 @@ pub enum MouseState {
 pub enum BottomPaneMessage {
     NextImage,
     PreviousImage,
-    DeleteImage
+    DeleteImage(i32)
 }
 
 #[derive(Debug, Clone)]
@@ -62,7 +62,7 @@ pub enum ToolboxMessage {
 
 #[derive(Debug, Clone)]
 pub enum TopPaneMessage {
-    LoadAlbum,
+    AddImages,
     Export
 }
 
@@ -78,7 +78,7 @@ pub enum ImageSelectionMessage {
 
 #[derive(Debug, Clone)]
 pub enum WelcomeMessage {
-    LoadAlbum
+    AddImages
 }
 
 #[derive(Debug, Clone)]

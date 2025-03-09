@@ -17,9 +17,8 @@ use rusqlite::Connection;
 use ui::welcome_window::WelcomeWindow;
 use view_mode::ViewMode;
 use workspace::album::Album;
-use workspace::album_image_loader::AlbumImageLoader;
+use workspace::image_manager::ImageManager;
 use workspace::workspace::Workspace;
-use workspace::album_factory::AlbumFactory;
 use repository::repository_factory;
 use ui::message::{Message, MouseState};
 use ui::main_window::MainWindow;
@@ -38,7 +37,7 @@ struct Main {
     workspace: Option<Workspace>,
 
     repository: Arc<Repository>,
-    album_factory: Arc<AlbumFactory>,
+    image_manager: ImageManager,
 
     viewport: Option<Viewport>,
 }
@@ -46,10 +45,11 @@ struct Main {
 fn init() -> (Main, iced::Task<Message>) {
     let connection: Connection = Connection::open(PathBuf::from("album.sqlite")).unwrap();
     let repository = Arc::new(repository_factory::RepositoryFactory::new(connection).create());
-    let album_image_loader = Arc::new(AlbumImageLoader::new());
-    let album_factory = Arc::new(AlbumFactory::new(repository.clone(), album_image_loader.clone()));
-    let album = album_factory.create();
-    let workspace = album.make_workspace();
+    let image_manager = ImageManager::create_from(repository.clone());
+    let album = Album::new(image_manager.get_all_album_images());
+    let workspace = album.get_photo_id()
+        .and_then(|photo_id| image_manager.get_workspace_image(photo_id))
+        .map(Workspace::new);
     
     let viewport = workspace.as_ref().and_then(Viewport::try_new);
 
@@ -57,7 +57,7 @@ fn init() -> (Main, iced::Task<Message>) {
         album,
         workspace,
         repository,
-        album_factory,
+        image_manager,
         viewport,
     };
     (main, iced::Task::done(Message::OnStartMessage))

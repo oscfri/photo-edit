@@ -1,5 +1,5 @@
 use core::f32;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 
 use crate::pipeline::export_image::export_image;
 use crate::types::{LabPixel, RawImage};
@@ -7,14 +7,69 @@ use crate::ui::message::MouseState;
 use crate::view_mode::ViewMode;
 use crate::view_mode;
 
-use super::album::ImageView;
 use super::parameters::{Crop, Parameters, RadialMask};
 
-pub struct Workspace {
-    source_image: Option<Arc<RawImage>>,
+pub struct WorkspaceImage {
     photo_id: i32,
-    parameters: Parameters,
-    image_view: ImageView,
+    image: Option<Arc<RawImage>>,
+    parameters: Arc<Mutex<Parameters>>,
+    image_view: Arc<Mutex<ImageView>>,
+    // TODO: History
+}
+
+impl WorkspaceImage {
+    pub fn new(
+            photo_id: i32,
+            image: Option<Arc<RawImage>>,
+            parameters: Arc<Mutex<Parameters>>,
+            image_view: Arc<Mutex<ImageView>>) -> Self {
+        Self {
+            photo_id,
+            image,
+            parameters,
+            image_view
+        }
+    }
+}
+
+#[derive(Debug, Default, Clone)]
+pub struct ImageView {
+    pub offset_x: f32,
+    pub offset_y: f32,
+    pub zoom: f32,
+}
+
+impl ImageView {
+    pub fn get_offset_x(&self) -> f32 {
+        self.offset_x
+    }
+
+    pub fn get_offset_y(&self) -> f32 {
+        self.offset_y
+    }
+
+    pub fn update_offset(&mut self, x: f32, y: f32) {
+        self.offset_x = x;
+        self.offset_y = y;
+    }
+
+    pub fn get_zoom(&self) -> f32 {
+        self.zoom
+    }
+
+    pub fn update_zoom(&mut self, zoom_delta: f32) {
+        self.zoom += zoom_delta;
+
+        if self.zoom < -1.0 {
+            self.zoom = -1.0;
+        } else if self.zoom > 10.0 {
+            self.zoom = 10.0
+        }
+    }
+}
+
+pub struct Workspace {
+    image: WorkspaceImage,
     view_mode: ViewMode,
 
     // For view dragging (there's probably a better way to handle this)
@@ -26,16 +81,9 @@ pub struct Workspace {
 }
 
 impl Workspace {
-    pub fn new(
-            source_image: Option<Arc<RawImage>>,
-            photo_id: i32,
-            parameters: Parameters,
-            image_view: ImageView) -> Self {
+    pub fn new(image: WorkspaceImage) -> Self {
         Self {
-            source_image,
-            photo_id,
-            parameters,
-            image_view,
+            image,
             view_mode: ViewMode::Normal,
             mouse_state: MouseState::Up,
             mouse_origin_x: 0,
@@ -46,11 +94,7 @@ impl Workspace {
     }
 
     pub fn get_photo_id(&self) -> i32 {
-        self.photo_id
-    }
-
-    pub fn get_parameters(&self) -> &Parameters {
-        &self.parameters
+        self.image.photo_id
     }
 
     pub fn get_mouse_state(&self) -> MouseState {
@@ -62,31 +106,20 @@ impl Workspace {
     }
 
     pub fn current_source_image(&self) -> Option<Arc<RawImage>> {
-        self.source_image.clone()
+        self.image.image.clone()
     }
 
-    pub fn current_parameters(&self) -> &Parameters {
-        &self.parameters
+    // TODO: Check all uses of this one
+    pub fn current_parameters(&self) -> Parameters {
+        self.image.parameters.lock().unwrap().clone()
     }
 
-    fn current_parameters_mut(&mut self) -> &mut Parameters {
-        &mut self.parameters
+    pub fn current_image_view(&self) -> ImageView {
+        self.image.image_view.lock().unwrap().clone()
     }
 
-    pub fn current_image_view(&self) -> &ImageView {
-        &self.image_view
-    }
-
-    fn current_image_view_mut(&mut self) -> &mut ImageView {
-        &mut self.image_view
-    }
-
-    pub fn current_crop(&self) -> &Option<Crop> {
-        &self.current_parameters().crop
-    }
-
-    fn current_crop_mut(&mut self) -> &mut Option<Crop> {
-        &mut self.current_parameters_mut().crop
+    pub fn current_crop(&self) -> Option<Crop> {
+        self.image.parameters.lock().unwrap().crop.clone()
     }
 
     pub fn current_angle_degrees(&self) -> f32 {
@@ -115,40 +148,40 @@ impl Workspace {
     }
 
     pub fn set_brightness(&mut self, brightness: f32) {
-        self.current_parameters_mut().brightness = brightness
+        self.image.parameters.lock().unwrap().brightness = brightness
     }
 
     pub fn set_contrast(&mut self, contrast: f32) {
-        self.current_parameters_mut().contrast = contrast
+        self.image.parameters.lock().unwrap().contrast = contrast
     }
 
     pub fn set_tint(&mut self, tint: f32) {
-        self.current_parameters_mut().tint = tint;
+        self.image.parameters.lock().unwrap().tint = tint;
     }
     
     pub fn set_temperature(&mut self, temperature: f32) {
-        self.current_parameters_mut().temperature = temperature;
+        self.image.parameters.lock().unwrap().temperature = temperature;
     }
     
     pub fn set_saturation(&mut self, saturation: f32) {
-        self.current_parameters_mut().saturation = saturation;
+        self.image.parameters.lock().unwrap().saturation = saturation;
     }
 
     pub fn add_mask(&mut self) {
-        let current_parameters = self.current_parameters_mut();
+        let mut current_parameters = self.image.parameters.lock().unwrap();
         let new_mask_index = current_parameters.radial_masks.len();
         current_parameters.radial_masks.push(RadialMask::default());
         self.view_mode = ViewMode::Mask(new_mask_index);
     }
 
     pub fn delete_mask(&mut self, mask_index: usize) {
-        self.current_parameters_mut().radial_masks.remove(mask_index);
+        self.image.parameters.lock().unwrap().radial_masks.remove(mask_index);
         self.view_mode = ViewMode::Normal;
     }
 
     pub fn update_mask_position(&mut self, mask_index: usize, x: i32, y: i32) {
-        let parameters: &mut Parameters = self.current_parameters_mut();
-        let radial_mask: &mut RadialMask = &mut parameters.radial_masks[mask_index];
+        let mut parameters = self.image.parameters.lock().unwrap();
+        let radial_mask = &mut parameters.radial_masks[mask_index];
         radial_mask.center_x = x;
         radial_mask.center_y = y;
         radial_mask.width = 0;
@@ -156,8 +189,8 @@ impl Workspace {
     }
 
     pub fn update_mask_radius(&mut self, mask_index: usize, x: i32, y: i32) {
-        let parameters: &mut Parameters = self.current_parameters_mut();
-        let radial_mask: &mut RadialMask = &mut parameters.radial_masks[mask_index];
+        let mut parameters = self.image.parameters.lock().unwrap();
+        let radial_mask = &mut parameters.radial_masks[mask_index];
         let center_x = radial_mask.center_x;
         let center_y = radial_mask.center_y;
         radial_mask.width = (center_x - x).abs();
@@ -165,31 +198,31 @@ impl Workspace {
     }
 
     pub fn set_mask_is_linear(&mut self, mask_index: usize, is_linear: bool) {
-        self.current_parameters_mut().radial_masks[mask_index].is_linear = is_linear;
+        self.image.parameters.lock().unwrap().radial_masks[mask_index].is_linear = is_linear;
     }
 
     pub fn set_mask_brightness(&mut self, mask_index: usize, brightness: f32) {
-        self.current_parameters_mut().radial_masks[mask_index].brightness = brightness;
+        self.image.parameters.lock().unwrap().radial_masks[mask_index].brightness = brightness;
     }
 
     pub fn set_mask_angle(&mut self, mask_index: usize, angle: f32) {
-        let parameters: &mut Parameters = self.current_parameters_mut();
-        let radial_mask: &mut RadialMask = &mut parameters.radial_masks[mask_index];
+        let mut parameters = self.image.parameters.lock().unwrap();
+        let radial_mask = &mut parameters.radial_masks[mask_index];
         radial_mask.angle = angle;
     }
 
     pub fn set_crop_angle(&mut self, angle_degrees: f32) {
-        if let Some(crop) = self.current_crop_mut() {
+        if let Some(crop) = &mut self.image.parameters.lock().unwrap().crop {
             crop.angle_degrees = angle_degrees;
         }
     }
 
     pub fn white_balance_at(&mut self, x: i32, y: i32) {
-        let lab_pixel: Option<LabPixel> = self.source_image.as_ref()
+        let lab_pixel: Option<LabPixel> = self.image.image.as_ref()
             .and_then(|opt| opt.lab_pixel_at(x as usize, y as usize));
         match lab_pixel {
             Some(pixel) => {
-                let parameters: &mut Parameters = self.current_parameters_mut();
+                let mut parameters = self.image.parameters.lock().unwrap();
                 parameters.tint = -pixel.tint * 1000.0;
                 parameters.temperature = -pixel.temperature * 1000.0;
             },
@@ -198,7 +231,7 @@ impl Workspace {
     }
 
     pub fn update_crop(&mut self, x: i32, y: i32) {
-        if let Some(crop) = self.current_crop_mut() {
+        if let Some(crop) = &mut self.image.parameters.lock().unwrap().crop {
             let width: f32 = (x - crop.center_x) as f32;
             let height: f32 = (y - crop.center_y) as f32;
             let angle: f32 = crop.angle_degrees / 180.0 * std::f32::consts::PI;
@@ -210,7 +243,7 @@ impl Workspace {
     }
 
     pub fn new_crop(&mut self, x: i32, y: i32) {
-        if let Some(crop) = self.current_crop_mut() {
+        if let Some(crop) = &mut self.image.parameters.lock().unwrap().crop {
             crop.center_x = x;
             crop.center_y = y;
             crop.width = 0;
@@ -219,7 +252,7 @@ impl Workspace {
     }
 
     pub fn update_view_zoom(&mut self, scroll_delta: f32) {
-        self.current_image_view_mut().update_zoom(scroll_delta * 0.05);
+        self.image.image_view.lock().unwrap().update_zoom(scroll_delta * 0.05);
     }
 
     pub fn new_view_offset_origin(&mut self, x: i32, y: i32) {
@@ -234,7 +267,7 @@ impl Workspace {
         let delta_y: i32 = self.mouse_origin_y - y;
         let offset_x: f32 = (self.offset_origin_x + delta_x) as f32;
         let offset_y: f32 = (self.offset_origin_y + delta_y) as f32;
-        self.current_image_view_mut().update_offset(offset_x, offset_y);
+        self.image.image_view.lock().unwrap().update_offset(offset_x, offset_y);
     }
 
     pub fn current_view(&self) -> Crop {
@@ -252,15 +285,18 @@ impl Workspace {
     }
 
     fn make_view(&self) -> Crop {
-        let current_crop: &Crop = self.current_crop().as_ref().unwrap();
-        let current_image_view: &ImageView = self.current_image_view();
-        let scale: f32 = 1.0 / (f32::powf(2.0, current_image_view.get_zoom()));
-        Crop {
-            center_x: current_crop.center_x + (current_image_view.get_offset_x() as i32),
-            center_y: current_crop.center_y + (current_image_view.get_offset_y() as i32),
-            width: ((current_crop.width as f32) * scale) as i32,
-            height: ((current_crop.height as f32) * scale) as i32,
-            ..current_crop.clone()
+        if let Some(current_crop) = &mut self.image.parameters.lock().unwrap().crop {
+            let current_image_view = self.image.image_view.lock().unwrap();
+            let scale: f32 = 1.0 / (f32::powf(2.0, current_image_view.get_zoom()));
+            Crop {
+                center_x: current_crop.center_x + (current_image_view.get_offset_x() as i32),
+                center_y: current_crop.center_y + (current_image_view.get_offset_y() as i32),
+                width: ((current_crop.width as f32) * scale) as i32,
+                height: ((current_crop.height as f32) * scale) as i32,
+                ..current_crop.clone()
+            }
+        } else {
+            Crop::default()
         }
     }
 }

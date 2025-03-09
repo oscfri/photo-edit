@@ -1,14 +1,14 @@
 use crate::{ui::{message::{MainParameterMessage, MaskChangeMessage, MaskMessage, MiscMessage, ToolboxMessage}, utils::icon_button}, workspace::parameters::{Parameters, RadialMask}};
 
-pub struct ToolboxPane<'a> {
-    parameters: &'a Parameters,
+pub struct ToolboxPane {
+    parameters: Parameters,
     angle_degrees: f32,
     mask_edit_index: Option<usize>
 }
 
-impl <'a> ToolboxPane<'a> {
+impl <'a> ToolboxPane {
     pub fn new(
-            parameters: &'a Parameters,
+            parameters: Parameters,
             angle_degrees: f32,
             mask_edit_index: Option<usize>) -> Self {
         Self { parameters, angle_degrees, mask_edit_index }

@@ -17,9 +17,9 @@ pub enum MouseEvent {
     Scroll(f32)
 }
 
-impl Into<UpdateEvent> for MouseEvent {
-    fn into(self) -> UpdateEvent {
-        UpdateEvent::WorkspaceEvent(WorkspaceEvent::ImageMouseEvent(self))
+impl From<MouseEvent> for UpdateEvent {
+    fn from(event: MouseEvent) -> Self {
+        WorkspaceEvent::ImageMouseEvent(event).into()
     }
 }
 
@@ -42,33 +42,44 @@ pub enum WorkspaceEvent {
     ImageMouseEvent(MouseEvent),
 }
 
-impl Into<UpdateEvent> for WorkspaceEvent {
-    fn into(self) -> UpdateEvent {
-        UpdateEvent::WorkspaceEvent(self)
+impl From<WorkspaceEvent> for UpdateEvent {
+    fn from(event: WorkspaceEvent) -> UpdateEvent {
+        UpdateEvent::WorkspaceEvent(event)
     }
 }
 
 #[derive(Debug, Clone)]
 pub enum AlbumEvent {
-    LoadAlbum,
-    SaveAlbum,
     NextImage,
     PreviousImage,
-    DeleteImage,
-    SetImage(usize),
+    SetImage(usize)
+}
+
+impl From<AlbumEvent> for UpdateEvent {
+    fn from(event: AlbumEvent) -> Self {
+        UpdateEvent::AlbumEvent(event)
+    }
+}
+
+#[derive(Debug, Clone)]
+pub enum ImageManagerEvent {
+    AddImages,
+    Save,
+    DeleteImage(i32),
     LoadImage(i32, RawImage, RawImage)
 }
 
-impl Into<UpdateEvent> for AlbumEvent {
-    fn into(self) -> UpdateEvent {
-        UpdateEvent::AlbumEvent(self)
+impl From<ImageManagerEvent> for UpdateEvent {
+    fn from(event: ImageManagerEvent) -> Self {
+        UpdateEvent::ImageManagerEvent(event)
     }
 }
 
 pub enum UpdateEvent {
     OnStart,
     WorkspaceEvent(WorkspaceEvent),
-    AlbumEvent(AlbumEvent)
+    AlbumEvent(AlbumEvent),
+    ImageManagerEvent(ImageManagerEvent)
 }
 
 impl From<BottomPaneMessage> for UpdateEvent {
@@ -76,7 +87,7 @@ impl From<BottomPaneMessage> for UpdateEvent {
         match message {
             BottomPaneMessage::NextImage => AlbumEvent::NextImage.into(),
             BottomPaneMessage::PreviousImage => AlbumEvent::PreviousImage.into(),
-            BottomPaneMessage::DeleteImage => AlbumEvent::DeleteImage.into(),
+            BottomPaneMessage::DeleteImage(photo_id) => ImageManagerEvent::DeleteImage(photo_id).into(),
         }
     }
 }
@@ -114,7 +125,7 @@ impl From<MiscMessage> for UpdateEvent {
     fn from(message: MiscMessage) -> Self {
         match message {
             MiscMessage::AngleChanged(angle) => WorkspaceEvent::AngleChanged(angle).into(),
-            MiscMessage::SaveAlbum => AlbumEvent::SaveAlbum.into(),
+            MiscMessage::SaveAlbum => ImageManagerEvent::Save.into(),
             MiscMessage::ToggleCropMode => WorkspaceEvent::ToggleCropMode.into()
         }
     }
@@ -133,7 +144,7 @@ impl From<ToolboxMessage> for UpdateEvent {
 impl From<TopPaneMessage> for UpdateEvent {
     fn from(message: TopPaneMessage) -> Self {
         match message {
-            TopPaneMessage::LoadAlbum => AlbumEvent::LoadAlbum.into(),
+            TopPaneMessage::AddImages => ImageManagerEvent::AddImages.into(),
             TopPaneMessage::Export => WorkspaceEvent::ExportImage.into()
         }
     }
@@ -180,7 +191,7 @@ impl From<ImageSelectionMessage> for UpdateEvent {
 impl From<WelcomeMessage> for UpdateEvent {
     fn from(message: WelcomeMessage) -> Self {
         match message {
-            WelcomeMessage::LoadAlbum => AlbumEvent::LoadAlbum.into()
+            WelcomeMessage::AddImages => ImageManagerEvent::AddImages.into()
         }
     }
 }
@@ -192,7 +203,7 @@ impl From<TaskMessage> for UpdateEvent {
                 let photo_id = image_load_result.photo_id;
                 let image = image_load_result.image;
                 let thumbnail = image_load_result.thumbnail;
-                AlbumEvent::LoadImage(photo_id, image, thumbnail).into()
+                ImageManagerEvent::LoadImage(photo_id, image, thumbnail).into()
             }
         }
     }

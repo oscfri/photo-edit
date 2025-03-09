@@ -36,4 +36,4 @@ This is what's left for a feature complete MVP.
 ## Performance
 
 - [X] Load photos in background thread so it doesn't hog the entire application
-- [ ] Don't reload entire album when import new image
+- [X] Don't reload entire album when import new image

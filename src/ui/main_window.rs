@@ -13,7 +13,7 @@ pub struct MainWindow<'a> {
     bottom_pane: BottomPane,
     image_selection_pane: ImageSelectionPane<'a>,
     render_pane: RenderPane<'a>,
-    toolbox_pane: ToolboxPane<'a>,
+    toolbox_pane: ToolboxPane,
     top_pane: TopPane
 }
 
@@ -22,16 +22,17 @@ impl<'a> MainWindow<'a> {
             album: &'a Album,
             workspace: &'a Workspace,
             viewport: &'a Option<Viewport>) -> MainWindow<'a> {
+        let photo_id = album.get_photo_id();
         let album_images = &album.get_images();
         let image_index = album.get_image_index();
         let parameters = workspace.current_parameters();
         let angle_degrees = workspace.current_angle_degrees();
         let mask_index = workspace.get_mask_index();
 
-        let bottom_pane: BottomPane = BottomPane::new();
+        let bottom_pane: BottomPane = BottomPane::new(photo_id);
         let image_selection_pane: ImageSelectionPane<'a> = ImageSelectionPane::new(album_images, image_index);
         let render_pane: RenderPane<'a> = RenderPane::new(&viewport);
-        let toolbox_pane: ToolboxPane<'a> = ToolboxPane::new(parameters, angle_degrees, mask_index);
+        let toolbox_pane: ToolboxPane = ToolboxPane::new(parameters, angle_degrees, mask_index);
         let top_pane: TopPane = TopPane::new();
 
         Self {

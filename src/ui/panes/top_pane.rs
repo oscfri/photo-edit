@@ -18,7 +18,7 @@ impl<'a> TopPane {
 
     fn view_left(&self) -> iced::Element<'a, TopPaneMessage> {
         let row = iced::widget::row![
-                icon_button(iced_fonts::Bootstrap::FileEarmarkImage).on_press(TopPaneMessage::LoadAlbum),
+                icon_button(iced_fonts::Bootstrap::FileEarmarkImage).on_press(TopPaneMessage::AddImages),
                 icon_button(iced_fonts::Bootstrap::Download).on_press(TopPaneMessage::Export),
             ];
         iced::widget::container(row)
