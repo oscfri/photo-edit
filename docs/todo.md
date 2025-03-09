@@ -28,6 +28,8 @@ This is what's left for a feature complete MVP.
 - [ ] General UI improvements
 - [ ] Batch export
 - [ ] Flag/filter photos
+- [ ] Show/hide applied parameters
+- [ ] Disable parameters (for example during image load)
 
 ## Bugs
 

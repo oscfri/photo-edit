@@ -3,32 +3,49 @@ use crate::{ui::{message::{MainParameterMessage, MaskChangeMessage, MaskMessage,
 pub struct ToolboxPane {
     parameters: Parameters,
     angle_degrees: f32,
-    mask_edit_index: Option<usize>
+    mask_edit_index: Option<usize>,
+    enabled: bool
 }
 
 impl <'a> ToolboxPane {
     pub fn new(
             parameters: Parameters,
             angle_degrees: f32,
-            mask_edit_index: Option<usize>) -> Self {
-        Self { parameters, angle_degrees, mask_edit_index }
+            mask_edit_index: Option<usize>,
+            enabled: bool) -> Self {
+        Self { parameters, angle_degrees, mask_edit_index, enabled }
     }
 
     pub fn view(&self) -> iced::Element<'a, ToolboxMessage> {
-        let column = iced::widget::column![
-                self.view_main_parameter_sliders().map(ToolboxMessage::MainParameterMessage),
-                self.view_all_mask_parameter_sliders().map(ToolboxMessage::MaskMessage),
-                self.view_misc_buttons().map(ToolboxMessage::MiscMessage)
-            ]
-            .spacing(30);
-        let container = iced::widget::container(column)
-            .padding(10);
-        let scrollable = iced::widget::scrollable(container)
-            .width(iced::Fill)
-            .height(iced::Fill);
-        iced::widget::container(scrollable)
+        let contents = self.view_contents();
+
+        iced::widget::container(contents)
             .style(iced::widget::container::bordered_box)
             .into()
+    }
+
+    fn view_contents(&self) -> iced::Element<'a, ToolboxMessage> {
+        if self.enabled {
+            let column = iced::widget::column![
+                    self.view_main_parameter_sliders().map(ToolboxMessage::MainParameterMessage),
+                    self.view_all_mask_parameter_sliders().map(ToolboxMessage::MaskMessage),
+                    self.view_misc_buttons().map(ToolboxMessage::MiscMessage)
+                ]
+                .spacing(30);
+            let contents = iced::widget::container(column)
+                .padding(10);
+
+            iced::widget::scrollable(contents)
+                .width(iced::Fill)
+                .height(iced::Fill)
+                .into()
+        } else {
+            iced::widget::container(iced::widget::text("..."))
+                .center(iced::Fill)
+                .width(iced::Fill)
+                .height(iced::Fill)
+                .into()
+        }
     }
 
     fn view_main_parameter_sliders(&self) -> iced::Element<'a, MainParameterMessage> {
