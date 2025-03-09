@@ -49,7 +49,6 @@ pub enum MaskMessage {
 #[derive(Debug, Clone)]
 pub enum MiscMessage {
     AngleChanged(f32),
-    SaveAlbum,
     ToggleCropMode,
 }
 
@@ -91,6 +90,8 @@ pub enum TaskMessage {
 #[derive(Debug, Clone)]
 pub enum Message {
     OnStartMessage,
+    OnWindowCloseMessage(iced::window::Id),
+    OnTimeTickMessage,
 
     BottomPaneMessage(BottomPaneMessage),
     ImageSelectionMessage(ImageSelectionMessage),

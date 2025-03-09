@@ -9,6 +9,10 @@ impl Main {
             UpdateEvent::OnStart => {
                 self.batch_image_load()
             },
+            UpdateEvent::OnExit(window_id) => {
+                self.image_manager.save();
+                iced::window::close(window_id)
+            }
             UpdateEvent::ImageManagerEvent(image_manager_event) => {
                 self.update_image_manager(image_manager_event)
             },

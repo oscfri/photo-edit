@@ -92,7 +92,6 @@ impl <'a> ToolboxPane {
     fn view_misc_buttons(&self) -> iced::Element<'a, MiscMessage> {
         iced::widget::column![
                 iced::widget::button("Crop").on_press(MiscMessage::ToggleCropMode),
-                iced::widget::button("Save").on_press(MiscMessage::SaveAlbum),
                 iced::widget::text("Angle"),
                 iced::widget::slider(-180.0..=180.0, self.angle_degrees, MiscMessage::AngleChanged)
             ]

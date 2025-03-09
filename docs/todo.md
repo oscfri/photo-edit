@@ -24,7 +24,7 @@ This is what's left for a feature complete MVP.
 - [X] Display of outside the image (texture artifacts)
 - [ ] Prevent artifacts during exports (lines when exporting weird aspect ratios)
 - [X] Undo/redo
-- [ ] Auto save
+- [X] Auto save
 - [ ] General UI improvements
 - [ ] Batch export
 - [ ] Flag/filter photos

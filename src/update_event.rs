@@ -79,6 +79,7 @@ impl From<ImageManagerEvent> for UpdateEvent {
 
 pub enum UpdateEvent {
     OnStart,
+    OnExit(iced::window::Id),
     WorkspaceEvent(WorkspaceEvent),
     AlbumEvent(AlbumEvent),
     ImageManagerEvent(ImageManagerEvent)
@@ -127,7 +128,6 @@ impl From<MiscMessage> for UpdateEvent {
     fn from(message: MiscMessage) -> Self {
         match message {
             MiscMessage::AngleChanged(angle) => WorkspaceEvent::AngleChanged(angle).into(),
-            MiscMessage::SaveAlbum => ImageManagerEvent::Save.into(),
             MiscMessage::ToggleCropMode => WorkspaceEvent::ToggleCropMode.into()
         }
     }
@@ -136,9 +136,9 @@ impl From<MiscMessage> for UpdateEvent {
 impl From<ToolboxMessage> for UpdateEvent {
     fn from(message: ToolboxMessage) -> Self {
         match message {
-            ToolboxMessage::MainParameterMessage(message) => UpdateEvent::from(message),
-            ToolboxMessage::MaskMessage(message) => UpdateEvent::from(message),
-            ToolboxMessage::MiscMessage(message) => UpdateEvent::from(message),
+            ToolboxMessage::MainParameterMessage(message) => message.into(),
+            ToolboxMessage::MaskMessage(message) => message.into(),
+            ToolboxMessage::MiscMessage(message) => message.into(),
         }
     }
 }
@@ -179,7 +179,7 @@ impl From<MouseMessage> for UpdateEvent {
 impl From<RenderMessage> for UpdateEvent {
     fn from(message: RenderMessage) -> Self {
         match message {
-            RenderMessage::MouseMessage(message) => UpdateEvent::from(message)
+            RenderMessage::MouseMessage(message) => message.into()
         }
     }
 }
@@ -217,13 +217,15 @@ impl From<Message> for UpdateEvent {
     fn from(message: Message) -> Self {
         match message {
             Message::OnStartMessage => UpdateEvent::OnStart,
-            Message::BottomPaneMessage(message) => UpdateEvent::from(message),
-            Message::ImageSelectionMessage(message) => UpdateEvent::from(message),
-            Message::RenderMessage(message) => UpdateEvent::from(message),
-            Message::ToolboxMessage(message) => UpdateEvent::from(message),
-            Message::TopPaneMessage(message) => UpdateEvent::from(message),
-            Message::WelcomeMessage(message) => UpdateEvent::from(message),
-            Message::TaskMessage(message) => UpdateEvent::from(message)
+            Message::OnWindowCloseMessage(window_id) => UpdateEvent::OnExit(window_id),
+            Message::OnTimeTickMessage => ImageManagerEvent::Save.into(),
+            Message::BottomPaneMessage(message) => message.into(),
+            Message::ImageSelectionMessage(message) => message.into(),
+            Message::RenderMessage(message) => message.into(),
+            Message::ToolboxMessage(message) => message.into(),
+            Message::TopPaneMessage(message) => message.into(),
+            Message::WelcomeMessage(message) => message.into(),
+            Message::TaskMessage(message) => message.into()
         }
     }
 }
