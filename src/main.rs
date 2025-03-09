@@ -32,7 +32,7 @@ pub fn main() -> iced::Result {
         .resizable(true)
         .subscription(Main::subscription)
         .exit_on_close_request(false) // Allows for auto save on close
-        .run_with(|| (Main::new(), iced::Task::done(Message::OnStartMessage)))
+        .run_with(init)
 }
 
 struct Main {
@@ -43,6 +43,10 @@ struct Main {
     image_manager: ImageManager,
 
     viewport: Option<Viewport>,
+}
+
+fn init() -> (Main, iced::Task<Message>) {
+    (Main::new(), iced::Task::done(Message::OnStartMessage))
 }
 
 impl Main {
