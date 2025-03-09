@@ -29,7 +29,7 @@ This is what's left for a feature complete MVP.
 - [ ] Batch export
 - [ ] Flag/filter photos
 - [ ] Show/hide applied parameters
-- [ ] Disable parameters (for example during image load)
+- [X] Disable parameters (for example during image load)
 
 ## Bugs
 

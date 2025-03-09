@@ -74,8 +74,8 @@ impl ViewportWorkspace {
     pub fn try_new(workspace: &Workspace) -> Option<Self> {
         if let Some(image) = workspace.current_source_image() {
             let photo_id = workspace.get_photo_id();
-            let parameters = workspace.current_parameters().clone();
-            let crop = workspace.current_crop().clone().unwrap();
+            let parameters = workspace.parameters_to_display();
+            let crop = parameters.crop.clone().unwrap(); // TODO: This shouldn't be needed
             let view = workspace.current_view();
             Some(Self { image, photo_id, parameters, crop, view })
         } else {

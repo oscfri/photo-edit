@@ -114,6 +114,9 @@ impl Main {
                 WorkspaceEvent::AngleChanged(angle_degrees) => {
                     workspace.set_crop_angle(angle_degrees);
                 },
+                WorkspaceEvent::ToggleParametersVisibility => {
+                    workspace.toggle_parameters_visibility();
+                },
                 WorkspaceEvent::ExportImage => {
                     workspace.export_image();
                 },

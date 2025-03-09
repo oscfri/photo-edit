@@ -10,7 +10,8 @@ pub enum MouseState {
 pub enum BottomPaneMessage {
     NextImage,
     PreviousImage,
-    DeleteImage(i32)
+    DeleteImage(i32),
+    ToggleParametersVisibility
 }
 
 #[derive(Debug, Clone)]

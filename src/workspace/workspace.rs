@@ -70,6 +70,7 @@ impl ImageView {
 pub struct Workspace {
     image: WorkspaceImage,
     view_mode: ViewMode,
+    parameters_visible: bool,
 
     // For view dragging (there's probably a better way to handle this)
     mouse_state: MouseState,
@@ -84,6 +85,7 @@ impl Workspace {
         Self {
             image,
             view_mode: ViewMode::Normal,
+            parameters_visible: true,
             mouse_state: MouseState::Up,
             mouse_origin_x: 0,
             mouse_origin_y: 0,
@@ -113,12 +115,25 @@ impl Workspace {
         self.image.parameter_history.lock().unwrap().current()
     }
 
-    pub fn current_image_view(&self) -> ImageView {
-        self.image.image_view.lock().unwrap().clone()
+    pub fn get_parameters_visible(&self) -> bool {
+        self.parameters_visible
     }
 
-    pub fn current_crop(&self) -> Option<Crop> {
-        self.image.parameter_history.lock().unwrap().current().crop
+    pub fn parameters_to_display(&self) -> Parameters {
+        let parameters = self.image.parameter_history.lock().unwrap().current();
+
+        if self.parameters_visible {
+            parameters
+        } else {
+            Parameters {
+                crop: parameters.crop,
+                ..Parameters::default()
+            }
+        }
+    }
+
+    pub fn current_image_view(&self) -> ImageView {
+        self.image.image_view.lock().unwrap().clone()
     }
 
     pub fn current_angle_degrees(&self) -> f32 {
@@ -243,6 +258,10 @@ impl Workspace {
                     crop.angle_degrees = angle_degrees;
                 }
             });
+    }
+
+    pub fn toggle_parameters_visibility(&mut self) {
+        self.parameters_visible = !self.parameters_visible;
     }
 
     pub fn white_balance_at(&mut self, x: i32, y: i32) {

@@ -38,6 +38,7 @@ pub enum WorkspaceEvent {
     MaskBrightnessChanged(usize, f32),
     MaskAngleChanged(usize, f32),
     AngleChanged(f32),
+    ToggleParametersVisibility,
     ExportImage,
     Undo,
     Redo,
@@ -91,6 +92,7 @@ impl From<BottomPaneMessage> for UpdateEvent {
             BottomPaneMessage::NextImage => AlbumEvent::NextImage.into(),
             BottomPaneMessage::PreviousImage => AlbumEvent::PreviousImage.into(),
             BottomPaneMessage::DeleteImage(photo_id) => ImageManagerEvent::DeleteImage(photo_id).into(),
+            BottomPaneMessage::ToggleParametersVisibility => WorkspaceEvent::ToggleParametersVisibility.into()
         }
     }
 }
