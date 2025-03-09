@@ -9,6 +9,7 @@ use crate::view_mode;
 
 use super::parameters::{Crop, ParameterHistory, Parameters, RadialMask};
 
+#[derive(Clone)]
 pub struct WorkspaceImage {
     photo_id: i32,
     image: Option<Arc<RawImage>>,
@@ -67,6 +68,7 @@ impl ImageView {
     }
 }
 
+#[derive(Clone)]
 pub struct Workspace {
     image: WorkspaceImage,
     view_mode: ViewMode,
@@ -91,6 +93,17 @@ impl Workspace {
             mouse_origin_y: 0,
             offset_origin_x: 0,
             offset_origin_y: 0,
+        }
+    }
+
+    pub fn update(image: WorkspaceImage, workspace: &Option<Self>) -> Self {
+        if let Some(workspace) = workspace {
+            Self {
+                image,
+                ..workspace.clone()
+            }
+        } else {
+            Self::new(image)
         }
     }
 

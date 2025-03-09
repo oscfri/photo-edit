@@ -48,7 +48,7 @@ impl Main {
         self.album.set_images(self.image_manager.get_all_album_images());
         self.workspace = self.album.get_photo_id()
             .and_then(|photo_id| self.image_manager.get_workspace_image(photo_id))
-            .map(Workspace::new);
+            .map(|workspace_image| Workspace::update(workspace_image, &self.workspace));
         self.viewport = self.workspace.as_ref().and_then(Viewport::try_new);
         tasks
     }

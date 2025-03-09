@@ -11,7 +11,7 @@ use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::Duration;
 
-use iced::{self, Subscription};
+use iced;
 use pipeline::viewport;
 use repository::repository::Repository;
 use rusqlite::Connection;
@@ -83,7 +83,7 @@ impl Main {
         }
     }
 
-    pub fn subscription(&self) -> Subscription<Message> {
+    pub fn subscription(&self) -> iced::Subscription<Message> {
         iced::Subscription::batch(vec![
             iced::window::close_requests().map(Message::OnWindowCloseMessage),
             iced::time::every(Duration::from_secs(10)).map(|_| Message::OnTimeTickMessage),
