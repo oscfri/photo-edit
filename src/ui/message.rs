@@ -10,6 +10,7 @@ pub enum MouseState {
 pub enum BottomPaneMessage {
     NextImage,
     PreviousImage,
+    ToggleFavorite,
     DeleteImage(i32),
     ToggleParametersVisibility
 }

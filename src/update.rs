@@ -117,6 +117,9 @@ impl Main {
                 WorkspaceEvent::ToggleParametersVisibility => {
                     workspace.toggle_parameters_visibility();
                 },
+                WorkspaceEvent::ToggleFavorite => {
+                    workspace.toggle_favorite();
+                },
                 WorkspaceEvent::ExportImage => {
                     workspace.export_image();
                 },

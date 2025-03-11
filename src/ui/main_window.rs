@@ -30,8 +30,9 @@ impl<'a> MainWindow<'a> {
         let mask_index = workspace.get_mask_index();
         let toolbox_enabled = viewport.is_some();
         let parameters_visible = workspace.get_parameters_visible();
+        let is_favorite = parameters.is_favorite;
 
-        let bottom_pane: BottomPane = BottomPane::new(photo_id, parameters_visible);
+        let bottom_pane: BottomPane = BottomPane::new(photo_id, parameters_visible, is_favorite);
         let image_selection_pane: ImageSelectionPane<'a> = ImageSelectionPane::new(album_images, image_index);
         let render_pane: RenderPane<'a> = RenderPane::new(&viewport);
         let toolbox_pane: ToolboxPane = ToolboxPane::new(parameters, angle_degrees, mask_index, toolbox_enabled);

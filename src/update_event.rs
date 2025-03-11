@@ -39,6 +39,7 @@ pub enum WorkspaceEvent {
     MaskAngleChanged(usize, f32),
     AngleChanged(f32),
     ToggleParametersVisibility,
+    ToggleFavorite,
     ExportImage,
     Undo,
     Redo,
@@ -91,6 +92,7 @@ impl From<BottomPaneMessage> for UpdateEvent {
         match message {
             BottomPaneMessage::NextImage => AlbumEvent::NextImage.into(),
             BottomPaneMessage::PreviousImage => AlbumEvent::PreviousImage.into(),
+            BottomPaneMessage::ToggleFavorite => WorkspaceEvent::ToggleFavorite.into(),
             BottomPaneMessage::DeleteImage(photo_id) => ImageManagerEvent::DeleteImage(photo_id).into(),
             BottomPaneMessage::ToggleParametersVisibility => WorkspaceEvent::ToggleParametersVisibility.into()
         }

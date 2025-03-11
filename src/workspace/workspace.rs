@@ -277,6 +277,13 @@ impl Workspace {
         self.parameters_visible = !self.parameters_visible;
     }
 
+    pub fn toggle_favorite(&mut self) {
+        self.image.parameter_history.lock().unwrap()
+            .update(|parameters| {
+                parameters.is_favorite = !parameters.is_favorite;
+            });
+    }
+
     pub fn white_balance_at(&mut self, x: i32, y: i32) {
         let lab_pixel: Option<LabPixel> = self.image.image.as_ref()
             .and_then(|opt| opt.lab_pixel_at(x as usize, y as usize));
