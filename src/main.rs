@@ -73,6 +73,7 @@ impl Main {
     pub fn view(&self) -> iced::Element<Message> {
         if let Some(workspace) = &self.workspace {
             let window: MainWindow<'_> = MainWindow::new(
+                &self.image_manager,
                 &self.album,
                 &workspace,
                 &self.viewport);

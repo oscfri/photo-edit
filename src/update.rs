@@ -42,6 +42,10 @@ impl Main {
             ImageManagerEvent::DeleteImage(photo_id) => {
                 self.image_manager.delete_image(photo_id);
                 iced::Task::none()
+            },
+            ImageManagerEvent::ToggleFilter => {
+                self.image_manager.toggle_filter();
+                iced::Task::none()
             }
         };
         

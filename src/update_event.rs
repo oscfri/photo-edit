@@ -70,7 +70,8 @@ pub enum ImageManagerEvent {
     AddImages,
     Save,
     DeleteImage(i32),
-    LoadImage(i32, RawImage, RawImage)
+    LoadImage(i32, RawImage, RawImage),
+    ToggleFilter
 }
 
 impl From<ImageManagerEvent> for UpdateEvent {
@@ -154,6 +155,7 @@ impl From<TopPaneMessage> for UpdateEvent {
             TopPaneMessage::Export => WorkspaceEvent::ExportImage.into(),
             TopPaneMessage::Undo => WorkspaceEvent::Undo.into(),
             TopPaneMessage::Redo => WorkspaceEvent::Redo.into(),
+            TopPaneMessage::ToggleFilter => ImageManagerEvent::ToggleFilter.into()
         }
     }
 }

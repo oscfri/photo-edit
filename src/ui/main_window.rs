@@ -1,4 +1,5 @@
 use crate::workspace::album::Album;
+use crate::workspace::image_manager::ImageManager;
 use crate::workspace::workspace::Workspace;
 use crate::viewport::Viewport;
 
@@ -19,6 +20,7 @@ pub struct MainWindow<'a> {
 
 impl<'a> MainWindow<'a> {
     pub fn new(
+            image_manager: &'a ImageManager,
             album: &'a Album,
             workspace: &'a Workspace,
             viewport: &'a Option<Viewport>) -> MainWindow<'a> {
@@ -31,12 +33,13 @@ impl<'a> MainWindow<'a> {
         let toolbox_enabled = viewport.is_some();
         let parameters_visible = workspace.get_parameters_visible();
         let is_favorite = parameters.is_favorite;
+        let is_filter_active = image_manager.get_is_filter_active();
 
         let bottom_pane: BottomPane = BottomPane::new(photo_id, parameters_visible, is_favorite);
         let image_selection_pane: ImageSelectionPane<'a> = ImageSelectionPane::new(album_images, image_index);
         let render_pane: RenderPane<'a> = RenderPane::new(&viewport);
         let toolbox_pane: ToolboxPane = ToolboxPane::new(parameters, angle_degrees, mask_index, toolbox_enabled);
-        let top_pane: TopPane = TopPane::new();
+        let top_pane: TopPane = TopPane::new(is_filter_active);
 
         Self {
             bottom_pane,

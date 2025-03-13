@@ -21,6 +21,7 @@ pub struct ImagePath {
 pub struct ImageManager {
     repository: Arc<Repository>,
     source_images: BTreeMap<i32, SourceImage>,
+    is_filter_active: bool
 }
 
 impl ImageManager {
@@ -29,7 +30,8 @@ impl ImageManager {
             source_images: BTreeMap<i32, SourceImage>) -> Self {
         Self {
             repository,
-            source_images
+            source_images,
+            is_filter_active: false
         }
     }
 
@@ -80,6 +82,13 @@ impl ImageManager {
 
     pub fn get_all_album_images(&self) -> Vec<AlbumImage> {
         self.source_images.iter()
+            .filter(|(_, image)| {
+                if self.is_filter_active {
+                    image.parameter_history.lock().unwrap().current().is_favorite
+                } else {
+                    true
+                }
+            })
             .map(|(photo_id, image)| {
                 let thumbnail = image.thumbnail.clone();
                 AlbumImage::new(*photo_id, thumbnail)
@@ -109,6 +118,14 @@ impl ImageManager {
     pub fn delete_image(&mut self, photo_id: i32) {
         self.repository.delete_photo(photo_id).ok();
         self.source_images.remove(&photo_id);
+    }
+
+    pub fn toggle_filter(&mut self) {
+        self.is_filter_active = !self.is_filter_active;
+    }
+
+    pub fn get_is_filter_active(&self) -> bool {
+        self.is_filter_active
     }
 
     fn create_image(album_photo: &AlbumPhotoDto) -> SourceImage {

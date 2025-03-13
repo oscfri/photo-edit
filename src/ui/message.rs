@@ -66,7 +66,8 @@ pub enum TopPaneMessage {
     AddImages,
     Export,
     Undo,
-    Redo
+    Redo,
+    ToggleFilter
 }
 
 #[derive(Debug, Clone)]
