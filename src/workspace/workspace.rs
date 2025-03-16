@@ -15,6 +15,7 @@ pub struct WorkspaceImage {
     image: Option<Arc<RawImage>>,
     parameter_history: Arc<Mutex<ParameterHistory>>,
     image_view: Arc<Mutex<ImageView>>,
+    file_name: String
 }
 
 impl WorkspaceImage {
@@ -22,12 +23,14 @@ impl WorkspaceImage {
             photo_id: i32,
             image: Option<Arc<RawImage>>,
             parameter_history: Arc<Mutex<ParameterHistory>>,
-            image_view: Arc<Mutex<ImageView>>,) -> Self {
+            image_view: Arc<Mutex<ImageView>>,
+            file_name: String) -> Self {
         Self {
             photo_id,
             image,
             parameter_history,
-            image_view
+            image_view,
+            file_name
         }
     }
 }
@@ -109,6 +112,10 @@ impl Workspace {
 
     pub fn get_photo_id(&self) -> i32 {
         self.image.photo_id
+    }
+
+    pub fn get_file_name(&self) -> String {
+        self.image.file_name.clone()
     }
 
     pub fn get_mouse_state(&self) -> MouseState {

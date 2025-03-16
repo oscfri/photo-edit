@@ -13,29 +13,34 @@ This is what's left for a feature complete MVP.
 
 ## Refinement
 
-- [ ] Crop UX. It's not very intuitive right now.
-- [ ] Ensure crop can't be outside image.
 - [ ] Crop presets (4:3, 16:9, etc.)
+- [ ] Radial mask feathering
+- [ ] Prevent artifacts during exports (lines when exporting weird aspect ratios)
+- [ ] General UI improvements
 - [X] Parameter formulas. They don't look very good right now.
-- [ ] Highlights/shadows
 - [X] Radial mask width and height
 - [X] Radial mask rotation
-- [ ] Radial mask feathering
 - [X] Display of outside the image (texture artifacts)
-- [ ] Prevent artifacts during exports (lines when exporting weird aspect ratios)
 - [X] Undo/redo
 - [X] Auto save
-- [ ] General UI improvements
-- [ ] Batch export
-- [ ] Flag/filter photos
-- [ ] Show/hide applied parameters
+- [X] Flag/filter photos
+- [X] Show/hide applied parameters
 - [X] Disable parameters (for example during image load)
 
 ## Bugs
 
+- [ ] Filter with no favorite photos
+- [ ] Toggle favorite when filter is active
 - [X] When switching image while having a radial mask active, there's risk of index out of bounds
 
 ## Performance
 
 - [X] Load photos in background thread so it doesn't hog the entire application
 - [X] Don't reload entire album when import new image
+
+## Bonus Refinement
+
+- [ ] Crop UX. It's not very intuitive right now.
+- [ ] Ensure crop can't be outside image.
+- [ ] Batch export
+- [ ] Highlights/shadows

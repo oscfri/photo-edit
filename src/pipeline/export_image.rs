@@ -1,4 +1,4 @@
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 use iced::widget::shader::wgpu;
 
@@ -13,11 +13,12 @@ use super::pipeline_factory::PipelineFactory;
 // TODO: This should be done in a separate thread...
 pub async fn export_image(workspace: &Workspace) {
     if let Some(viewport_workspace) = ViewportWorkspace::try_new(&workspace) {
-        export_image_from_viewport(viewport_workspace).await
+        let file_name = workspace.get_file_name();
+        export_image_from_viewport(viewport_workspace, file_name).await
     }
 }
 
-async fn export_image_from_viewport(viewport_workspace: ViewportWorkspace) {
+async fn export_image_from_viewport(viewport_workspace: ViewportWorkspace, file_name: String) {
     let (device, queue) = request_device().await.unwrap();
     
     // TODO: Figure out a way to bring image size...
@@ -76,7 +77,10 @@ async fn export_image_from_viewport(viewport_workspace: ViewportWorkspace) {
                     .map(|b| u32::from_ne_bytes(b.try_into().unwrap()))
                     .collect();
 
-                write_image(&view, &PathBuf::from("test.jpg"));
+                let path = Path::new("./exports/image.jpg")
+                    .with_file_name(file_name)
+                    .with_extension("jpg");
+                write_image(&view, &path);
 
                 drop(mapped_range);
                 capturable.unmap();
@@ -158,10 +162,7 @@ fn write_image(data: &Vec<u32>, path: &PathBuf) {
         rgb_data.push(blue);
     }
 
-    println!("Data: {}", rgb_data.len());
-
     let image: image::RgbImage = image::RgbImage::from_raw(2048, 2048, rgb_data).unwrap();
-
-    println!("Size: {}, {}", image.width(), image.height());
+    
     image.save_with_format(path, image::ImageFormat::Jpeg).unwrap();
 }

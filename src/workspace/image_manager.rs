@@ -99,11 +99,15 @@ impl ImageManager {
     pub fn get_workspace_image(&self, photo_id: i32) -> Option<WorkspaceImage> {
         self.source_images.get(&photo_id)
             .map(|image| {
+                let file_name = image.path.file_stem()
+                    .map(|s| s.to_string_lossy().into_owned())
+                    .unwrap_or("default".into());
                 WorkspaceImage::new(
                     photo_id,
                     image.image.clone(),
                     image.parameter_history.clone(),
-                    image.image_view.clone())
+                    image.image_view.clone(),
+                    file_name)
             })
     }
 
