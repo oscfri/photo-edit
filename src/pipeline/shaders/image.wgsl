@@ -185,7 +185,16 @@ fn calculate_alpha(position: vec2<f32>, radial_parameter: RadialParameter) -> f3
 
     let mahalanobis_matrix = scale_matrix;
     let distance = sqrt(dot(difference, mahalanobis_matrix * difference));
-    return cubic_hermite(distance);
+    if (radial_parameter.feather <= 0.0) {
+        if (distance > 1.0) {
+            return 0.0;
+        } else {
+            return 1.0;
+        }
+    } else {
+        let feathered_distance = (distance - (1.0 - radial_parameter.feather)) / (radial_parameter.feather);
+        return cubic_hermite(feathered_distance);
+    }
 }
 
 fn cubic_hermite(x: f32) -> f32 {

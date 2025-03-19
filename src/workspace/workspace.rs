@@ -271,6 +271,14 @@ impl Workspace {
             });
     }
 
+    pub fn set_mask_feather(&mut self, mask_index: usize, feather: f32) {
+        self.image.parameter_history.lock().unwrap()
+            .update(|parameters| {
+                let radial_mask = &mut parameters.radial_masks[mask_index];
+                radial_mask.feather = feather;
+            });
+    }
+
     pub fn set_crop_angle(&mut self, angle_degrees: f32) {
         self.image.parameter_history.lock().unwrap()
             .update(|parameters| {

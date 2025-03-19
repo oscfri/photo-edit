@@ -21,6 +21,7 @@ pub struct RadialMask {
     pub width: i32,
     pub height: i32,
     pub angle: f32,
+    pub feather: f32,
     pub brightness: f32,
     pub is_linear: bool
 }

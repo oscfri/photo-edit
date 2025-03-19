@@ -115,6 +115,9 @@ impl Main {
                 WorkspaceEvent::MaskAngleChanged(index, angle) => {
                     workspace.set_mask_angle(index, angle);
                 },
+                WorkspaceEvent::MaskFeatherChanged(index, angle) => {
+                    workspace.set_mask_feather(index, angle);
+                },
                 WorkspaceEvent::AngleChanged(angle_degrees) => {
                     workspace.set_crop_angle(angle_degrees);
                 },

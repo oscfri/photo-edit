@@ -14,7 +14,7 @@ This is what's left for a feature complete MVP.
 ## Refinement
 
 - [ ] Crop presets (4:3, 16:9, etc.)
-- [ ] Radial mask feathering
+- [X] Radial mask feathering
 - [ ] Prevent artifacts during exports (lines when exporting weird aspect ratios)
 - [ ] General UI improvements
 - [X] Parameter formulas. They don't look very good right now.
@@ -31,6 +31,7 @@ This is what's left for a feature complete MVP.
 
 - [ ] Filter with no favorite photos
 - [ ] Toggle favorite when filter is active
+- [ ] Ensure exports folder exists
 - [X] When switching image while having a radial mask active, there's risk of index out of bounds
 
 ## Performance
@@ -43,4 +44,5 @@ This is what's left for a feature complete MVP.
 - [ ] Crop UX. It's not very intuitive right now.
 - [ ] Ensure crop can't be outside image.
 - [ ] Batch export
+- [ ] Set exports directory
 - [ ] Highlights/shadows

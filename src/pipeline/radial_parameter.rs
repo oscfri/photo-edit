@@ -33,6 +33,7 @@ impl RadialParameters {
                 entries[index].height = radial_mask.height as f32;
             }
             entries[index].angle = radial_mask.angle / 180.0 * std::f32::consts::PI;
+            entries[index].feather = (radial_mask.feather + 100.0) / 200.0;
             entries[index].brightness = radial_mask.brightness;
         }
         RadialParameters {

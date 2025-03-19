@@ -37,6 +37,7 @@ pub enum WorkspaceEvent {
     MaskToggleLinear(usize, bool),
     MaskBrightnessChanged(usize, f32),
     MaskAngleChanged(usize, f32),
+    MaskFeatherChanged(usize, f32),
     AngleChanged(f32),
     ToggleParametersVisibility,
     ToggleFavorite,
@@ -119,6 +120,7 @@ impl From<MaskMessage> for UpdateEvent {
             MaskMessage::MaskChanged(mask_index, message) => {
                 match message {
                     MaskChangeMessage::MaskAngleChanged(angle) => WorkspaceEvent::MaskAngleChanged(mask_index, angle).into(),
+                    MaskChangeMessage::FeatherChanged(angle) => WorkspaceEvent::MaskFeatherChanged(mask_index, angle).into(),
                     MaskChangeMessage::BrightnessChanged(brightness) => WorkspaceEvent::MaskBrightnessChanged(mask_index, brightness).into(),
                     MaskChangeMessage::MaskToggleLinear(toggle) => WorkspaceEvent::MaskToggleLinear(mask_index, toggle).into(),
                     MaskChangeMessage::DeleteMask => WorkspaceEvent::DeleteMask(mask_index).into(),

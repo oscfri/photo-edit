@@ -101,6 +101,11 @@ impl <'a> ToolboxPane {
                     -180.0..=180.0,
                     radial_mask.angle,
                     MaskChangeMessage::MaskAngleChanged),
+                iced::widget::text("Feather"),
+                    iced::widget::slider(
+                        -100.0..=100.0,
+                        radial_mask.feather,
+                        MaskChangeMessage::FeatherChanged),
                 buttons,
             ]
             .into()

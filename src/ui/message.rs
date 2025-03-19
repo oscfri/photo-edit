@@ -39,7 +39,8 @@ pub enum MaskChangeMessage {
     ToggleMaskMode,
     MaskToggleLinear(bool),
     BrightnessChanged(f32),
-    MaskAngleChanged(f32)
+    MaskAngleChanged(f32),
+    FeatherChanged(f32)
 }
 
 #[derive(Debug, Clone)]
