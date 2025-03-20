@@ -1,4 +1,4 @@
-use crate::{ui::{message::{MainParameterMessage, MaskChangeMessage, MaskMessage, MiscMessage, ToolboxMessage}, utils::icon_button}, workspace::parameters::{Parameters, RadialMask}};
+use crate::{ui::{message::{MainParameterMessage, MaskChangeMessage, MaskMessage, MiscMessage, ToolboxMessage}, utils::icon_button}, workspace::parameters::{CropPreset, Parameters, RadialMask}};
 
 pub struct ToolboxPane {
     parameters: Parameters,
@@ -112,8 +112,22 @@ impl <'a> ToolboxPane {
     }
 
     fn view_misc_buttons(&self) -> iced::Element<'a, MiscMessage> {
+        let crop_presets = [
+            CropPreset::Free,
+            CropPreset::Ratio(1, 1),
+            CropPreset::Ratio(5, 4),
+            CropPreset::Ratio(4, 3),
+            CropPreset::Ratio(3, 2),
+            CropPreset::Ratio(16, 9),
+            CropPreset::Ratio(4, 5),
+            CropPreset::Ratio(3, 4),
+            CropPreset::Ratio(2, 3),
+            CropPreset::Ratio(9, 16),
+        ];
+
         iced::widget::column![
                 iced::widget::button("Crop").on_press(MiscMessage::ToggleCropMode),
+                iced::widget::pick_list(crop_presets, Some(self.parameters.crop_preset), MiscMessage::CropPresetChanged),
                 iced::widget::text("Angle"),
                 iced::widget::slider(-180.0..=180.0, self.angle_degrees, MiscMessage::AngleChanged)
             ]

@@ -7,7 +7,7 @@ use crate::ui::message::MouseState;
 use crate::view_mode::ViewMode;
 use crate::view_mode;
 
-use super::parameters::{Crop, ParameterHistory, Parameters, RadialMask};
+use super::parameters::{Crop, CropPreset, ParameterHistory, Parameters, RadialMask};
 
 #[derive(Clone)]
 pub struct WorkspaceImage {
@@ -288,6 +288,18 @@ impl Workspace {
             });
     }
 
+    pub fn set_crop_preset(&mut self, crop_preset: CropPreset) {
+        self.image.parameter_history.lock().unwrap()
+            .update(|parameters| {
+                if let Some(crop) = &mut parameters.crop {
+                    parameters.crop_preset = crop_preset;
+                    if let CropPreset::Ratio(width, height) = crop_preset {
+                        crop.width = ((width as f32) * (crop.height as f32) / (height as f32)) as i32;
+                    }
+                }
+            });   
+    }
+
     pub fn toggle_parameters_visibility(&mut self) {
         self.parameters_visible = !self.parameters_visible;
     }
@@ -323,8 +335,15 @@ impl Workspace {
                     let angle: f32 = crop.angle_degrees / 180.0 * std::f32::consts::PI;
                     let sin: f32 = f32::sin(angle);
                     let cos: f32 = f32::cos(angle);
-                    crop.width = ((width * cos + height * sin).abs() * 2.0) as i32;
+                    
                     crop.height = ((-width * sin + height * cos).abs() * 2.0) as i32;
+
+                    match parameters.crop_preset {
+                        CropPreset::Free =>
+                            crop.width = ((width * cos + height * sin).abs() * 2.0) as i32,
+                        CropPreset::Ratio(w, h) =>
+                            crop.width = ((w as f32) * (crop.height as f32) / (h as f32)) as i32,
+                    }
                 }
             });
     }

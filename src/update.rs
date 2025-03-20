@@ -121,6 +121,9 @@ impl Main {
                 WorkspaceEvent::AngleChanged(angle_degrees) => {
                     workspace.set_crop_angle(angle_degrees);
                 },
+                WorkspaceEvent::CropPresetChanged(crop_preset) => {
+                    workspace.set_crop_preset(crop_preset);
+                },
                 WorkspaceEvent::ToggleParametersVisibility => {
                     workspace.toggle_parameters_visibility();
                 },

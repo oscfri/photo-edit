@@ -1,4 +1,4 @@
-use crate::{pipeline::viewport, types::RawImage, ui::message::{BottomPaneMessage, ImageSelectionMessage, MainParameterMessage, MaskChangeMessage, MaskMessage, Message, MiscMessage, MouseMessage, RenderMessage, TaskMessage, ToolboxMessage, TopPaneMessage, WelcomeMessage}};
+use crate::{pipeline::viewport, types::RawImage, ui::message::{BottomPaneMessage, ImageSelectionMessage, MainParameterMessage, MaskChangeMessage, MaskMessage, Message, MiscMessage, MouseMessage, RenderMessage, TaskMessage, ToolboxMessage, TopPaneMessage, WelcomeMessage}, workspace::parameters::CropPreset};
 
 #[derive(Debug, Clone, Copy)]
 pub struct MousePosition {
@@ -39,6 +39,7 @@ pub enum WorkspaceEvent {
     MaskAngleChanged(usize, f32),
     MaskFeatherChanged(usize, f32),
     AngleChanged(f32),
+    CropPresetChanged(CropPreset),
     ToggleParametersVisibility,
     ToggleFavorite,
     ExportImage,
@@ -135,7 +136,8 @@ impl From<MiscMessage> for UpdateEvent {
     fn from(message: MiscMessage) -> Self {
         match message {
             MiscMessage::AngleChanged(angle) => WorkspaceEvent::AngleChanged(angle).into(),
-            MiscMessage::ToggleCropMode => WorkspaceEvent::ToggleCropMode.into()
+            MiscMessage::ToggleCropMode => WorkspaceEvent::ToggleCropMode.into(),
+            MiscMessage::CropPresetChanged(crop_preset) => WorkspaceEvent::CropPresetChanged(crop_preset).into()
         }
     }
 }

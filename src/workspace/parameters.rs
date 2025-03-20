@@ -11,7 +11,8 @@ pub struct Parameters {
     pub saturation: f32,
     pub radial_masks: Vec<RadialMask>,
     pub crop: Option<Crop>,
-    pub is_favorite: bool
+    pub crop_preset: CropPreset,
+    pub is_favorite: bool,
 }
 
 #[derive(Debug, Default, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
@@ -33,6 +34,27 @@ pub struct Crop {
     pub width: i32,
     pub height: i32,
     pub angle_degrees: f32,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, serde::Serialize, serde::Deserialize)]
+pub enum CropPreset {
+    Free,
+    Ratio(i32, i32)
+}
+
+impl Default for CropPreset {
+    fn default() -> Self {
+        Self::Free
+    }
+}
+
+impl std::fmt::Display for CropPreset {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Free => write!(f, "Free"),
+            Self::Ratio(w, h) => write!(f, "{}:{}", w, h)
+        }
+    }
 }
 
 pub struct ParameterHistory {

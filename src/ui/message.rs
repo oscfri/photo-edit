@@ -1,4 +1,4 @@
-use crate::workspace::image_loader::ImageLoadResult;
+use crate::workspace::{image_loader::ImageLoadResult, parameters::CropPreset};
 
 #[derive(Debug, Clone, Copy)]
 pub enum MouseState {
@@ -53,6 +53,7 @@ pub enum MaskMessage {
 pub enum MiscMessage {
     AngleChanged(f32),
     ToggleCropMode,
+    CropPresetChanged(CropPreset)
 }
 
 #[derive(Debug, Clone)]
