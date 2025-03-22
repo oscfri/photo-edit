@@ -9,6 +9,7 @@ use crate::pipeline::vertex;
 
 use super::camera_uniform::CameraUniform;
 use super::crop_uniform::CropUniform;
+use super::export_image;
 use super::parameter_uniform::ParameterUniform;
 use super::radial_parameter::RadialParameters;
 
@@ -35,7 +36,7 @@ impl<'a> PipelineFactory<'a> {
         let parameter_buffer = self.create_uniform_buffer(size_of::<ParameterUniform>(), "parameter_buffer");
         let crop_buffer = self.create_uniform_buffer(size_of::<CropUniform>(), "crop_buffer");
         let radial_parameters_buffer = self.create_uniform_buffer(size_of::<RadialParameters>(), "radial_parameters_buffer");
-        let output_texture_buffer = self.create_storage_buffer(4 * 2048 * 2048 as usize, "output_texture_buffer");
+        let output_texture_buffer = self.create_storage_buffer((4 * export_image::EXPORT_SIZE * export_image::EXPORT_SIZE) as usize, "output_texture_buffer");
 
         let buffers = &[
             &camera_buffer,
@@ -96,13 +97,13 @@ impl<'a> PipelineFactory<'a> {
     }
 
     fn create_storage_texture(&self, label: &str) -> wgpu::Texture {
-        // TODO: This should correspond to the crop size
+        // TODO: This should at least fit the crop size
         self.device.create_texture(
             &wgpu::TextureDescriptor {
                 label: Some(label),
                 size: wgpu::Extent3d {
-                    width: 2048,
-                    height: 2048,
+                    width: export_image::EXPORT_SIZE,
+                    height: export_image::EXPORT_SIZE,
                     depth_or_array_layers: 1
                 },
                 mip_level_count: 1,

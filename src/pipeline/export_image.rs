@@ -10,6 +10,8 @@ use super::viewport::ViewportWorkspace;
 use super::transform::Rectangle;
 use super::pipeline_factory::PipelineFactory;
 
+pub const EXPORT_SIZE: u32 = 8192;
+
 // TODO: This should be done in a separate thread...
 pub async fn export_image(workspace: &Workspace) {
     if let Some(viewport_workspace) = ViewportWorkspace::try_new(&workspace) {
@@ -23,10 +25,10 @@ async fn export_image_from_viewport(viewport_workspace: ViewportWorkspace, file_
     
     // TODO: Figure out a way to bring image size...
     let bounds = Rectangle {
-        center_x: 1024.0,
-        center_y: 1024.0,
-        width: 2048.0,
-        height: 2048.0,
+        center_x: (EXPORT_SIZE / 2) as f32,
+        center_y: (EXPORT_SIZE / 2) as f32,
+        width: EXPORT_SIZE as f32,
+        height: EXPORT_SIZE as f32,
         angle_degrees: 0.0
     };
 
@@ -54,18 +56,20 @@ async fn export_image_from_viewport(viewport_workspace: ViewportWorkspace, file_
             buffer: &pipeline.output_texture_buffer,
             layout: wgpu::ImageDataLayout {
                 offset: 0,
-                bytes_per_row: Some(2048 * 4),
+                bytes_per_row: Some(EXPORT_SIZE * 4),
                 rows_per_image: None
             }
         },
         wgpu::Extent3d {
-            width: 2048,
-            height: 2048,
+            width: EXPORT_SIZE,
+            height: EXPORT_SIZE,
             depth_or_array_layers: 1
         });
 
     queue.submit(Some(encoder.finish()));
 
+    let width = viewport_workspace.crop.width as u32;
+    let height = viewport_workspace.crop.height as u32;
     let buffer = pipeline.output_texture_buffer;
     let capturable = buffer.clone();
     buffer.slice(..)
@@ -80,7 +84,7 @@ async fn export_image_from_viewport(viewport_workspace: ViewportWorkspace, file_
                 let path = Path::new("./exports/image.jpg")
                     .with_file_name(file_name)
                     .with_extension("jpg");
-                write_image(&view, &path);
+                write_image(&view, &path, width, height);
 
                 drop(mapped_range);
                 capturable.unmap();
@@ -117,8 +121,8 @@ fn render(encoder: &mut wgpu::CommandEncoder, device: &wgpu::Device, pipeline: &
         &wgpu::TextureDescriptor {
             label: Some("target"),
             size: wgpu::Extent3d {
-                width: 4096 as u32, // TODO: Not sure what good values are here. This needs to be large to prevent artifacts
-                height: 4096 as u32, // Is there a way to guarantee no artifacts?
+                width: EXPORT_SIZE, // TODO: Not sure what good values are here. This needs to be large to prevent artifacts
+                height: EXPORT_SIZE, // Is there a way to guarantee no artifacts?
                 depth_or_array_layers: 1
             },
             mip_level_count: 1,
@@ -150,19 +154,29 @@ fn render(encoder: &mut wgpu::CommandEncoder, device: &wgpu::Device, pipeline: &
     pipeline.render_pass(&mut pass);
 }
 
-fn write_image(data: &Vec<u32>, path: &PathBuf) {
-    let mut rgb_data: Vec<u8> = Vec::with_capacity(2048 * 2048 * 3);
+fn write_image(data: &Vec<u32>, path: &PathBuf, width: u32, height: u32) {
+    let mut rgb_data: Vec<u8> = Vec::with_capacity((width * height * 3) as usize);
 
+    let mut x = 0;
+    let mut y = 0;
     for d in data {
-        let red: u8 = (d & 0xff) as u8;
-        let green: u8 = ((d >> 8) & 0xff) as u8;
-        let blue: u8 = ((d >> 16) & 0xff) as u8;
-        rgb_data.push(red);
-        rgb_data.push(green);
-        rgb_data.push(blue);
+        if x < width && y < height {
+            let red: u8 = (d & 0xff) as u8;
+            let green: u8 = ((d >> 8) & 0xff) as u8;
+            let blue: u8 = ((d >> 16) & 0xff) as u8;
+            rgb_data.push(red);
+            rgb_data.push(green);
+            rgb_data.push(blue);
+        }
+
+        x += 1;
+        if x >= EXPORT_SIZE {
+            x = 0;
+            y += 1;
+        }
     }
 
-    let image: image::RgbImage = image::RgbImage::from_raw(2048, 2048, rgb_data).unwrap();
+    let image: image::RgbImage = image::RgbImage::from_raw(width, height, rgb_data).unwrap();
     
     image.save_with_format(path, image::ImageFormat::Jpeg).unwrap();
 }

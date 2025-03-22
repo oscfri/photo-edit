@@ -124,12 +124,12 @@ fn create_uv_area() -> Rectangle {
     }
 }
 
-fn create_export_area() -> Rectangle {
+fn create_export_area(crop: &Crop) -> Rectangle {
     Rectangle {
-        center_x: 1024.0,
-        center_y: 1024.0,
-        width: 2048.0,
-        height: 2048.0,
+        center_x: (crop.width as f32) / 2.0,
+        center_y: (crop.height as f32) / 2.0,
+        width: crop.width as f32,
+        height: crop.height as f32,
         angle_degrees: 0.0
     }
 }
@@ -148,7 +148,7 @@ impl CameraUniform {
         let crop_area: Rectangle = create_crop_relative_area(crop, image_width, image_height);
         let image_area: Rectangle = create_crop_image_area(view);
         let aspect_area: Rectangle = create_aspect_area(image_width, image_height);
-        let export_area: Rectangle = create_export_area();
+        let export_area: Rectangle = create_export_area(crop);
         let uv_area: Rectangle = create_uv_area();
 
         let base_to_aspect = transform(&uv_area, &aspect_area);

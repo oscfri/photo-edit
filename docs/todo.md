@@ -15,7 +15,7 @@ This is what's left for a feature complete MVP.
 
 - [X] Crop presets (4:3, 16:9, etc.)
 - [X] Radial mask feathering
-- [ ] Prevent artifacts during exports (lines when exporting weird aspect ratios)
+- [X] Prevent artifacts during exports (lines when exporting weird aspect ratios)
 - [ ] General UI improvements
 - [X] Parameter formulas. They don't look very good right now.
 - [X] Radial mask width and height
@@ -38,6 +38,7 @@ This is what's left for a feature complete MVP.
 
 - [ ] Save thumbnails in database
 - [ ] Don't have all images loaded in memory
+- [ ] Export photos in background
 - [X] Load photos in background thread so it doesn't hog the entire application
 - [X] Don't reload entire album when import new image
 
