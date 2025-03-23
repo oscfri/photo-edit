@@ -68,6 +68,9 @@ impl ImageView {
             self.zoom = -1.0;
         } else if self.zoom > 10.0 {
             self.zoom = 10.0
+        } else if self.zoom.abs() < 1e-5 {
+            // Snap to 0 to make default comparison more reliable
+            self.zoom = 0.0
         }
     }
 
