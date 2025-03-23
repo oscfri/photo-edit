@@ -27,15 +27,18 @@ impl<'a> MainWindow<'a> {
         let photo_id = album.get_photo_id();
         let album_images = &album.get_images();
         let image_index = album.get_image_index();
+
         let parameters = workspace.current_parameters();
         let angle_degrees = workspace.current_angle_degrees();
         let mask_index = workspace.get_mask_index();
-        let toolbox_enabled = viewport.is_some();
         let parameters_visible = workspace.get_parameters_visible();
+        let can_reset_view = workspace.can_reset_view();
         let is_favorite = parameters.is_favorite;
+
+        let toolbox_enabled = viewport.is_some();
         let is_filter_active = image_manager.get_is_filter_active();
 
-        let bottom_pane: BottomPane = BottomPane::new(photo_id, parameters_visible, is_favorite);
+        let bottom_pane: BottomPane = BottomPane::new(photo_id, parameters_visible, is_favorite, can_reset_view);
         let image_selection_pane: ImageSelectionPane<'a> = ImageSelectionPane::new(album_images, image_index);
         let render_pane: RenderPane<'a> = RenderPane::new(&viewport);
         let toolbox_pane: ToolboxPane = ToolboxPane::new(parameters, angle_degrees, mask_index, toolbox_enabled);

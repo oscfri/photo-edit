@@ -36,7 +36,7 @@ impl WorkspaceImage {
     }
 }
 
-#[derive(Debug, Default, Clone)]
+#[derive(Debug, Default, Clone, PartialEq)]
 pub struct ImageView {
     pub offset_x: f32,
     pub offset_y: f32,
@@ -155,6 +155,10 @@ impl Workspace {
                 ..ViewportParameters::default()
             }
         }
+    }
+
+    pub fn can_reset_view(&self) -> bool {
+        !self.image.image_view.lock().unwrap().eq(&ImageView::default())
     }
 
     pub fn current_image_view(&self) -> ImageView {
