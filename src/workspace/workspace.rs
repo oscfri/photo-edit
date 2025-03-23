@@ -70,6 +70,10 @@ impl ImageView {
             self.zoom = 10.0
         }
     }
+
+    pub fn reset(&mut self) {
+        *self = Self::default()
+    }
 }
 
 #[derive(Clone)]
@@ -380,6 +384,10 @@ impl Workspace {
                     crop.height = 0;
                 }
             });
+    }
+
+    pub fn reset_view(&mut self) {
+        self.image.image_view.lock().unwrap().reset();
     }
 
     pub fn update_view_zoom(&mut self, scroll_delta: f32) {

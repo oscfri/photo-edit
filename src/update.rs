@@ -145,6 +145,9 @@ impl Main {
                 WorkspaceEvent::Redo => {
                     workspace.redo();
                 },
+                WorkspaceEvent::ResetView => {
+                    workspace.reset_view();
+                }
                 WorkspaceEvent::ImageMouseEvent(mouse_event) => {
                     Self::update_mouse_on_image(workspace, mouse_event);
                 }

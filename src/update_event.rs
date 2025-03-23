@@ -47,6 +47,7 @@ pub enum WorkspaceEvent {
     ExportImage,
     Undo,
     Redo,
+    ResetView,
     ImageMouseEvent(MouseEvent),
 }
 
@@ -99,6 +100,7 @@ impl From<BottomPaneMessage> for UpdateEvent {
             BottomPaneMessage::PreviousImage => AlbumEvent::PreviousImage.into(),
             BottomPaneMessage::ToggleFavorite => WorkspaceEvent::ToggleFavorite.into(),
             BottomPaneMessage::DeleteImage(photo_id) => ImageManagerEvent::DeleteImage(photo_id).into(),
+            BottomPaneMessage::ResetView => WorkspaceEvent::ResetView.into(),
             BottomPaneMessage::ToggleParametersVisibility => WorkspaceEvent::ToggleParametersVisibility.into()
         }
     }
