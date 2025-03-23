@@ -13,8 +13,8 @@ impl CropUniform {
     pub fn new(workspace: &ViewportWorkspace, viewport: &Rectangle) -> Self {
         let ratio = viewport.width / (workspace.get_image_width() as f32);
         Self {
-            width: workspace.crop.width as f32,
-            height: workspace.crop.height as f32,
+            width: workspace.parameters.crop.width as f32,
+            height: workspace.parameters.crop.height as f32,
             ratio: ratio,
             _1: 0.0
         }

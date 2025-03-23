@@ -3,8 +3,7 @@ use std::sync::Arc;
 use crate::types::RawImage;
 use crate::pipeline::pipeline;
 use crate::pipeline::camera_uniform;
-use crate::workspace::parameters::Crop;
-use crate::workspace::parameters::Parameters;
+use crate::workspace::parameters::RadialMask;
 use crate::workspace::workspace::Workspace;
 
 use iced::mouse;
@@ -60,13 +59,32 @@ fn update_relative_mouse(mouse_x: i32, mouse_y: i32) {
     }
 }
 
+#[derive(Default, Debug, Clone)]
+pub struct ViewportCrop {
+    pub center_x: i32,
+    pub center_y: i32,
+    pub width: i32,
+    pub height: i32,
+    pub angle_degrees: f32
+}
+
+#[derive(Default, Debug, Clone)]
+pub struct ViewportParameters {
+    pub brightness: f32,
+    pub contrast: f32,
+    pub tint: f32,
+    pub temperature: f32,
+    pub saturation: f32,
+    pub radial_masks: Vec<RadialMask>,
+    pub crop: ViewportCrop
+}
+
 #[derive(Debug, Clone)]
 pub struct ViewportWorkspace {
     pub image: Arc<RawImage>,
     pub photo_id: i32,
-    pub parameters: Parameters,
-    pub crop: Crop,
-    pub view: Crop
+    pub parameters: ViewportParameters,
+    pub view: ViewportCrop
 }
 
 impl ViewportWorkspace {
@@ -74,9 +92,8 @@ impl ViewportWorkspace {
         if let Some(image) = workspace.current_source_image() {
             let photo_id = workspace.get_photo_id();
             let parameters = workspace.parameters_to_display();
-            let crop = parameters.crop.clone().unwrap(); // TODO: This shouldn't be needed
             let view = workspace.current_view();
-            Some(Self { image, photo_id, parameters, crop, view })
+            Some(Self { image, photo_id, parameters, view })
         } else {
             None
         }
@@ -122,7 +139,7 @@ impl Viewport {
                 let relative_point: iced::Point = camera_uniform::point_to_image_position(
                     &point,
                     &bounds_rectangle,
-                    &Crop {
+                    &ViewportCrop {
                         center_x: 0,
                         center_y: 0,
                         ..self.workspace.view.clone()

@@ -2,12 +2,13 @@ use core::f32;
 use std::sync::{Arc, Mutex};
 
 use crate::pipeline::export_image::export_image;
+use crate::pipeline::viewport::{ViewportCrop, ViewportParameters};
 use crate::types::{LabPixel, RawImage};
 use crate::ui::message::MouseState;
 use crate::view_mode::ViewMode;
 use crate::view_mode;
 
-use super::parameters::{Crop, CropPreset, ParameterHistory, Parameters, RadialMask};
+use super::parameters::{CropPreset, ParameterHistory, Parameters, RadialMask};
 
 #[derive(Clone)]
 pub struct WorkspaceImage {
@@ -139,15 +140,15 @@ impl Workspace {
         self.parameters_visible
     }
 
-    pub fn parameters_to_display(&self) -> Parameters {
-        let parameters = self.image.parameter_history.lock().unwrap().current();
+    pub fn parameters_to_display(&self) -> ViewportParameters {
+        let parameters = self.image.parameter_history.lock().unwrap().current().into();
 
         if self.parameters_visible {
             parameters
         } else {
-            Parameters {
+            ViewportParameters {
                 crop: parameters.crop,
-                ..Parameters::default()
+                ..ViewportParameters::default()
             }
         }
     }
@@ -379,10 +380,10 @@ impl Workspace {
         self.image.image_view.lock().unwrap().update_offset(offset_x, offset_y);
     }
 
-    pub fn current_view(&self) -> Crop {
+    pub fn current_view(&self) -> ViewportCrop {
         match self.view_mode {
             // Show full image in Crop mode
-            view_mode::ViewMode::Crop => Crop {
+            view_mode::ViewMode::Crop => ViewportCrop {
                 center_x: (self.current_source_image().unwrap().width as i32) / 2,
                 center_y: (self.current_source_image().unwrap().height as i32) / 2,
                 width: self.current_source_image().unwrap().width as i32,
@@ -393,19 +394,19 @@ impl Workspace {
         }
     }
 
-    fn make_view(&self) -> Crop {
+    fn make_view(&self) -> ViewportCrop {
         if let Some(current_crop) = self.image.parameter_history.lock().unwrap().current().crop {
             let current_image_view = self.image.image_view.lock().unwrap();
             let scale: f32 = 1.0 / (f32::powf(2.0, current_image_view.get_zoom()));
-            Crop {
+            ViewportCrop {
                 center_x: current_crop.center_x + (current_image_view.get_offset_x() as i32),
                 center_y: current_crop.center_y + (current_image_view.get_offset_y() as i32),
                 width: ((current_crop.width as f32) * scale) as i32,
                 height: ((current_crop.height as f32) * scale) as i32,
-                ..current_crop
+                angle_degrees: current_crop.angle_degrees
             }
         } else {
-            Crop::default()
+            ViewportCrop::default()
         }
     }
 }

@@ -67,8 +67,8 @@ async fn export_image_from_viewport(viewport_workspace: ViewportWorkspace, file_
 
     queue.submit(Some(encoder.finish()));
 
-    let width = viewport_workspace.crop.width as u32;
-    let height = viewport_workspace.crop.height as u32;
+    let width = viewport_workspace.parameters.crop.width as u32;
+    let height = viewport_workspace.parameters.crop.height as u32;
     let buffer = pipeline.output_texture_buffer;
     let capturable = buffer.clone();
     buffer.slice(..)

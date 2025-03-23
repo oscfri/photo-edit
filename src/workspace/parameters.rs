@@ -2,6 +2,8 @@ use std::time::SystemTime;
 
 use serde;
 
+use crate::pipeline::viewport::{ViewportCrop, ViewportParameters};
+
 #[derive(Debug, Default, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct Parameters {
     pub brightness: f32, // TODO: Rename to exposure
@@ -12,6 +14,7 @@ pub struct Parameters {
     pub radial_masks: Vec<RadialMask>,
     pub crop: Option<Crop>,
     pub crop_preset: CropPreset,
+    pub crop_rotation: i32,
     pub is_favorite: bool,
 }
 
@@ -36,6 +39,18 @@ pub struct Crop {
     pub angle_degrees: f32,
 }
 
+impl Into<ViewportCrop> for Crop {
+    fn into(self) -> ViewportCrop {
+        ViewportCrop {
+            center_x: self.center_x,
+            center_y: self.center_y,
+            width: self.width,
+            height: self.height,
+            angle_degrees: self.angle_degrees
+        }
+    }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, serde::Serialize, serde::Deserialize)]
 pub enum CropPreset {
     Free,
@@ -53,6 +68,24 @@ impl std::fmt::Display for CropPreset {
         match self {
             Self::Free => write!(f, "Free"),
             Self::Ratio(w, h) => write!(f, "{}:{}", w, h)
+        }
+    }
+}
+
+impl Into<ViewportParameters> for Parameters {
+    fn into(self) -> ViewportParameters {
+        let crop = match self.crop {
+            Some(crop) => crop.into(),
+            _ => ViewportCrop::default()
+        };
+        ViewportParameters {
+            brightness: self.brightness,
+            contrast: self.contrast,
+            tint: self.tint,
+            temperature: self.temperature,
+            saturation: self.saturation,
+            radial_masks: self.radial_masks.clone(),
+            crop: crop
         }
     }
 }

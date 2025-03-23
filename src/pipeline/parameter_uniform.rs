@@ -1,4 +1,4 @@
-use crate::workspace::parameters::Parameters;
+use super::viewport::ViewportParameters;
 
 #[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
 #[repr(C)]
@@ -11,7 +11,7 @@ pub struct ParameterUniform {
 }
 
 impl ParameterUniform {
-    pub fn new(parameters: &Parameters) -> Self {
+    pub fn new(parameters: &ViewportParameters) -> Self {
         Self {
             brightness: parameters.brightness,
             contrast: (parameters.contrast * 0.5 + 100.0) / 100.0,

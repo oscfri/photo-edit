@@ -1,4 +1,4 @@
-use crate::workspace::parameters::Parameters;
+use super::viewport::ViewportParameters;
 
 #[derive(Default, Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
 #[repr(C)]
@@ -21,7 +21,7 @@ pub struct RadialParameters {
 }
 
 impl RadialParameters {
-    pub fn new(parameters: &Parameters) -> RadialParameters {
+    pub fn new(parameters: &ViewportParameters) -> RadialParameters {
         let mut entries = [RadialParameter::default(); 128];
         for (index, radial_mask) in parameters.radial_masks.iter().take(entries.len()).enumerate() {
             entries[index].center_x = radial_mask.center_x as f32;

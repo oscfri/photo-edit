@@ -1,8 +1,8 @@
 use cgmath::{self, Matrix};
 
-use crate::{pipeline::transform::{transform, Rectangle}, workspace::parameters::Crop};
+use crate::pipeline::transform::{transform, Rectangle};
 
-use super::viewport::ViewportWorkspace;
+use super::viewport::{ViewportCrop, ViewportWorkspace};
 
 // It's important we're working with 4x4 matrixes. Otherwise we'll run into annoying memory alignment issues.
 #[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
@@ -19,7 +19,7 @@ pub struct CameraUniform {
 pub fn point_to_image_position(
         point: &iced::Point,
         bounds: &Rectangle,
-        crop: &Crop) -> iced::Point {
+        crop: &ViewportCrop) -> iced::Point {
     let crop_area: Rectangle = create_crop_area(crop);
     let viewport_area: Rectangle = create_viewport_area(bounds, crop);
 
@@ -43,7 +43,7 @@ fn create_render_area() -> Rectangle {
     }
 }
 
-fn create_viewport_area(bounds: &Rectangle, crop: &Crop) -> Rectangle {
+fn create_viewport_area(bounds: &Rectangle, crop: &ViewportCrop) -> Rectangle {
     let crop_aspect_ratio: f32 = (crop.width as f32) / (crop.height as f32);
     let bounds_aspect_ratio: f32 = bounds.width / bounds.height;
     let width: f32 = bounds.width * (crop_aspect_ratio / bounds_aspect_ratio).min(1.0);
@@ -57,7 +57,7 @@ fn create_viewport_area(bounds: &Rectangle, crop: &Crop) -> Rectangle {
     }
 }
 
-fn create_crop_area(crop: &Crop) -> Rectangle {
+fn create_crop_area(crop: &ViewportCrop) -> Rectangle {
     Rectangle {
         center_x: crop.center_x as f32,
         center_y: crop.center_y as f32,
@@ -67,7 +67,7 @@ fn create_crop_area(crop: &Crop) -> Rectangle {
     }
 }
 
-fn create_crop_relative_area(crop: &Crop, image_width: usize, image_height: usize) -> Rectangle {
+fn create_crop_relative_area(crop: &ViewportCrop, image_width: usize, image_height: usize) -> Rectangle {
     let image_width_f32: f32 = image_width as f32;
     let image_height_f32: f32 = image_height as f32;
     // Need to offset the center point to accomodate for the aspect ratio conversion
@@ -88,7 +88,7 @@ fn create_crop_relative_area(crop: &Crop, image_width: usize, image_height: usiz
     }
 }
 
-fn create_crop_image_area(crop: &Crop) -> Rectangle {
+fn create_crop_image_area(crop: &ViewportCrop) -> Rectangle {
     let center_x: f32 = crop.center_x as f32;
     let center_y: f32 = crop.center_y as f32;
     let width: f32 = crop.width as f32;
@@ -126,7 +126,7 @@ fn create_uv_area() -> Rectangle {
     }
 }
 
-fn create_export_area(crop: &Crop) -> Rectangle {
+fn create_export_area(crop: &ViewportCrop) -> Rectangle {
     Rectangle {
         center_x: (crop.width as f32) / 2.0,
         center_y: (crop.height as f32) / 2.0,
@@ -143,7 +143,7 @@ impl CameraUniform {
             workspace: &ViewportWorkspace) -> Self {
                 
         let view = &workspace.view;
-        let crop = &workspace.crop;
+        let crop = &workspace.parameters.crop;
         let image_width = workspace.image.width;
         let image_height = workspace.image.height;
                 

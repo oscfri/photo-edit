@@ -113,9 +113,10 @@ impl <'a> ToolboxPane {
 
     fn view_misc_buttons(&self) -> iced::Element<'a, MiscMessage> {
         iced::widget::column![
+                iced::widget::text("Crop"),
                 self.view_crop_buttons(),
                 iced::widget::text("Angle"),
-                slider_scaled(-450.0..=450.0, self.angle_degrees, 10.0, MiscMessage::AngleChanged)
+                slider_scaled(-3600.0..=3600.0, self.angle_degrees, 40.0, MiscMessage::AngleChanged)
             ]
             .into()
     }
@@ -136,6 +137,8 @@ impl <'a> ToolboxPane {
 
         iced::widget::row![
                 icon_button(self.crop_icon()).on_press(MiscMessage::ToggleCropMode),
+                icon_button(iced_fonts::Nerd::RotateLeftVariant),
+                icon_button(iced_fonts::Nerd::RotateRightVariant),
                 iced::widget::pick_list(crop_presets, Some(self.parameters.crop_preset), MiscMessage::CropPresetChanged),
             ]
             .into()
