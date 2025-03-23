@@ -2,6 +2,8 @@ use cgmath::{self, Matrix};
 
 use crate::{pipeline::transform::{transform, Rectangle}, workspace::parameters::Crop};
 
+use super::viewport::ViewportWorkspace;
+
 // It's important we're working with 4x4 matrixes. Otherwise we'll run into annoying memory alignment issues.
 #[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
 #[repr(C)]
@@ -9,7 +11,7 @@ pub struct CameraUniform {
     window_to_render: [[f32; 4]; 4],
     base_to_viewport_window: [[f32; 4]; 4],
     base_to_cropped_base: [[f32; 4]; 4],
-    base_to_cropped_base2: [[f32; 4]; 4], // TODO: Come up with good name
+    view_to_crop: [[f32; 4]; 4],
     base_to_image_area: [[f32; 4]; 4],
     base_to_export_area: [[f32; 4]; 4],
 }
@@ -138,10 +140,13 @@ impl CameraUniform {
     pub fn new(
             bounds: &Rectangle,
             window_area: &Rectangle,
-            view: &Crop,
-            crop: &Crop,
-            image_width: usize,
-            image_height: usize) -> Self {
+            workspace: &ViewportWorkspace) -> Self {
+                
+        let view = &workspace.view;
+        let crop = &workspace.crop;
+        let image_width = workspace.image.width;
+        let image_height = workspace.image.height;
+                
         let render_area: Rectangle = create_render_area();
         let viewport_area: Rectangle = create_viewport_area(bounds, view);
         let view_area: Rectangle = create_crop_relative_area(view, image_width, image_height);
@@ -160,7 +165,7 @@ impl CameraUniform {
             window_to_render: transform(&window_area, &render_area).into(),
             base_to_viewport_window: transform(&uv_area, &viewport_area).into(),
             base_to_cropped_base: (base_to_aspect * uv_to_view * aspect_to_base).into(),
-            base_to_cropped_base2: (base_to_aspect * crop_to_uv * aspect_to_base).into(),
+            view_to_crop: (base_to_aspect * crop_to_uv * aspect_to_base).into(),
             base_to_image_area: transform(&uv_area, &image_area).into(),
             base_to_export_area: transform(&uv_area, &export_area).into(),
         }

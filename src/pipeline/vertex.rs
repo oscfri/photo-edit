@@ -3,7 +3,6 @@ use iced::widget::shader::wgpu;
 #[derive(Debug, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
 #[repr(C)]
 pub struct Vertex {
-    position: glam::Vec2,
     uv: glam::Vec2
 }
 
@@ -27,27 +26,21 @@ impl Vertex {
 pub fn vertices_square() -> [Vertex; 6] {
     [
         Vertex {
-            position: glam::vec2(-1.0, -1.0),
             uv: glam::vec2(0.0, 1.0)
         },
         Vertex {
-            position: glam::vec2(1.0, -1.0),
             uv: glam::vec2(1.0, 1.0)
         },
         Vertex {
-            position: glam::vec2(1.0, 1.0),
             uv: glam::vec2(1.0, 0.0)
         },
         Vertex {
-            position: glam::vec2(1.0, 1.0),
             uv: glam::vec2(1.0, 0.0)
         },
         Vertex {
-            position: glam::vec2(-1.0, 1.0),
             uv: glam::vec2(0.0, 0.0)
         },
         Vertex {
-            position: glam::vec2(-1.0, -1.0),
             uv: glam::vec2(0.0, 1.0)
         },
     ]

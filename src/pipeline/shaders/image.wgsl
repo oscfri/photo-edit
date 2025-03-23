@@ -2,7 +2,7 @@ struct CameraUniform {
     window_to_render: mat4x4<f32>,
     base_to_viewport_window: mat4x4<f32>,
     base_to_cropped_base: mat4x4<f32>,
-    base_to_cropped_base2: mat4x4<f32>,
+    view_to_crop: mat4x4<f32>,
     base_to_image_area: mat4x4<f32>,
     base_to_export_area: mat4x4<f32>,
 };
@@ -20,7 +20,10 @@ struct ParameterUniform {
 var<uniform> parameters: ParameterUniform;
 
 struct CropUniform {
-    visible: i32
+    width: f32,
+    height: f32,
+    ratio: f32,
+    _1: f32
 };
 @group(0) @binding(2)
 var<uniform> crop: CropUniform;
@@ -43,8 +46,7 @@ struct RadialParameters {
 var<uniform> radial_parameters: RadialParameters;
 
 struct Vertex {
-    @location(0) position: vec2<f32>,
-    @location(1) uv: vec2<f32>
+    @location(0) uv: vec2<f32>
 }
 
 struct VertexOutput {
@@ -61,7 +63,7 @@ fn vs_main(vertex: Vertex) -> VertexOutput {
     let base: vec4<f32> = vec4<f32>(vertex.uv, 0.0, 1.0);
     let render_position = base * camera.base_to_viewport_window * camera.window_to_render;
     let view_coords = base * camera.base_to_cropped_base;
-    let crop_coords = view_coords * camera.base_to_cropped_base2;
+    let crop_coords = view_coords * camera.view_to_crop * camera.base_to_export_area;
     let image_coords = base * camera.base_to_image_area;
     let export_coords = base * camera.base_to_export_area;
 
@@ -211,7 +213,7 @@ fn draw_crop_area(vertex: VertexOutput, rgb: vec3<f32>) -> vec3<f32> {
     if (in_crop_area(vertex)) {
         return rgb;
     } else if (in_crop_border(vertex)) {
-        return vec3<f32>(1.0, 1.0, 1.0);
+        return vec3<f32>(1.0, 1.0, 1.0) - rgb;
     } else {
         return rgb * 0.25;
     }
@@ -219,8 +221,8 @@ fn draw_crop_area(vertex: VertexOutput, rgb: vec3<f32>) -> vec3<f32> {
 
 fn in_crop_area(vertex: VertexOutput) -> bool {
     let position = vertex.crop_coords;
-    if (position.x < 0.0 || position.x > 1.0 ||
-            position.y < 0.0 || position.y > 1.0) {
+    if (position.x < 0.0 || position.x > crop.width ||
+            position.y < 0.0 || position.y > crop.height) {
         return false;
     } else {
         return true;
@@ -228,9 +230,9 @@ fn in_crop_area(vertex: VertexOutput) -> bool {
 }
 
 fn in_crop_border(vertex: VertexOutput) -> bool {
-    let position = vertex.crop_coords;
-    if (position.x < 0.0 || position.x > 1.0 ||
-            position.y < 0.0 || position.y > 1.0) {
+    let position = vertex.crop_coords * crop.ratio;
+    if (position.x < -1.0 || position.x > crop.width * crop.ratio + 1.0 ||
+            position.y < -1.0 || position.y > crop.height * crop.ratio + 1.0) {
         return false;
     } else {
         return true;

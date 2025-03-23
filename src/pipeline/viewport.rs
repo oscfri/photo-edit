@@ -1,7 +1,6 @@
 use std::sync::Arc;
 
 use crate::types::RawImage;
-use crate::view_mode::ViewMode;
 use crate::pipeline::pipeline;
 use crate::pipeline::camera_uniform;
 use crate::workspace::parameters::Crop;
@@ -95,18 +94,15 @@ impl ViewportWorkspace {
 #[derive(Debug, Clone)]
 pub struct Viewport {
     workspace: ViewportWorkspace,
-    view_mode: ViewMode,
     cursor: mouse::Cursor
 }
 
 impl Viewport {
     pub fn try_new(workspace: &Workspace) -> Option<Self> {
         if let Some(viewport_workspace) = ViewportWorkspace::try_new(workspace) {
-            let view_mode: ViewMode = workspace.get_view_mode();
             let cursor: mouse::Cursor = mouse::Cursor::Unavailable;
             Some(Self {
                 workspace: viewport_workspace,
-                view_mode,
                 cursor
             })
         } else {
@@ -216,7 +212,7 @@ impl shader::Primitive for Viewport {
         let bounds_rectangle = Self::bounds_to_rectangle(bounds);
         let viewport_rectangle = Self::viewport_to_rectangle(viewport);
 
-        pipeline.update(queue, &self.workspace, &self.view_mode, &bounds_rectangle, &viewport_rectangle);
+        pipeline.update(queue, &self.workspace, &bounds_rectangle, &viewport_rectangle);
     }
 
     fn render(

@@ -1,4 +1,4 @@
-use crate::{pipeline::camera_uniform, view_mode::ViewMode};
+use crate::pipeline::camera_uniform;
 
 use iced::widget::shader::wgpu::{self, RenderPass};
 
@@ -51,18 +51,14 @@ impl Pipeline {
             &self,
             queue: &wgpu::Queue,
             workspace: &ViewportWorkspace,
-            view_mode: &ViewMode,
             bounds: &Rectangle,
             viewport: &Rectangle) {
         let camera_uniform = camera_uniform::CameraUniform::new(
                 &bounds,
                 &viewport,
-                &workspace.view,
-                &workspace.crop,
-                workspace.image.width,
-                workspace.image.height);
+                &workspace);
         let parameter_uniform = parameter_uniform::ParameterUniform::new(&workspace.parameters);
-        let crop_uniform = crop_uniform::CropUniform::new(&view_mode);
+        let crop_uniform = crop_uniform::CropUniform::new(&workspace, &viewport);
         let radial_parameters = radial_parameter::RadialParameters::new(&workspace.parameters);
 
         queue.write_buffer(&self.camera_buffer, 0, bytemuck::bytes_of(&camera_uniform));

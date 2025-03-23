@@ -2,7 +2,6 @@ use std::path::{Path, PathBuf};
 
 use iced::widget::shader::wgpu;
 
-use crate::view_mode::ViewMode;
 use crate::workspace::workspace::Workspace;
 
 use super::pipeline::Pipeline;
@@ -39,7 +38,7 @@ async fn export_image_from_viewport(viewport_workspace: ViewportWorkspace, file_
         wgpu::TextureFormat::Rgba8UnormSrgb);
 
     let pipeline = pipline_factory.create();
-    pipeline.update(&queue, &viewport_workspace, &ViewMode::Normal, &bounds, &bounds);
+    pipeline.update(&queue, &viewport_workspace, &bounds, &bounds);
 
     let mut encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
 
