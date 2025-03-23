@@ -1,4 +1,4 @@
-use crate::{ui::{message::{MainParameterMessage, MaskChangeMessage, MaskMessage, MiscMessage, ToolboxMessage}, utils::icon_button}, workspace::parameters::{CropPreset, Parameters, RadialMask}};
+use crate::{ui::{message::{MainParameterMessage, MaskChangeMessage, MaskMessage, MiscMessage, ToolboxMessage}, utils::{icon_button, slider_scaled}}, workspace::parameters::{CropPreset, Parameters, RadialMask}};
 
 pub struct ToolboxPane {
     parameters: Parameters,
@@ -78,7 +78,7 @@ impl <'a> ToolboxPane {
         iced::widget::column![
                 iced::widget::text("Mask"),
                 mask_elements,
-                icon_button(iced_fonts::Bootstrap::PlusCircle).on_press(MaskMessage::AddMask),
+                icon_button(iced_fonts::Nerd::PlusCircle).on_press(MaskMessage::AddMask),
             ]
             .into()
     }
@@ -86,7 +86,7 @@ impl <'a> ToolboxPane {
     fn view_mask_parameter_sliders(&self, mask_index: usize, radial_mask: &RadialMask) -> iced::Element<'a, MaskChangeMessage> {
         let buttons = iced::widget::row![
                 icon_button(self.mask_edit_icon(mask_index)).on_press(MaskChangeMessage::ToggleMaskMode),
-                icon_button(iced_fonts::Bootstrap::Trashthree).on_press(MaskChangeMessage::DeleteMask),
+                icon_button(iced_fonts::Nerd::Trash).on_press(MaskChangeMessage::DeleteMask),
                 iced::widget::checkbox("Linear", radial_mask.is_linear)
                     .on_toggle(MaskChangeMessage::MaskToggleLinear),
             ];
@@ -112,6 +112,15 @@ impl <'a> ToolboxPane {
     }
 
     fn view_misc_buttons(&self) -> iced::Element<'a, MiscMessage> {
+        iced::widget::column![
+                self.view_crop_buttons(),
+                iced::widget::text("Angle"),
+                slider_scaled(-450.0..=450.0, self.angle_degrees, 10.0, MiscMessage::AngleChanged)
+            ]
+            .into()
+    }
+
+    fn view_crop_buttons(&self) -> iced::Element<'a, MiscMessage> {
         let crop_presets = [
             CropPreset::Free,
             CropPreset::Ratio(1, 1),
@@ -125,20 +134,22 @@ impl <'a> ToolboxPane {
             CropPreset::Ratio(9, 16),
         ];
 
-        iced::widget::column![
-                iced::widget::button("Crop").on_press(MiscMessage::ToggleCropMode),
+        iced::widget::row![
+                icon_button(self.crop_icon()).on_press(MiscMessage::ToggleCropMode),
                 iced::widget::pick_list(crop_presets, Some(self.parameters.crop_preset), MiscMessage::CropPresetChanged),
-                iced::widget::text("Angle"),
-                iced::widget::slider(-180.0..=180.0, self.angle_degrees, MiscMessage::AngleChanged)
             ]
             .into()
     }
 
-    fn mask_edit_icon(&self, mask_index: usize) -> iced_fonts::Bootstrap {
+    fn mask_edit_icon(&self, mask_index: usize) -> iced_fonts::Nerd {
         if self.mask_edit_index == Some(mask_index) {
-            iced_fonts::Bootstrap::PencilFill
+            iced_fonts::Nerd::PencilTwo
         } else {
-            iced_fonts::Bootstrap::Pencil
+            iced_fonts::Nerd::PencilOutline
         }
+    }
+
+    fn crop_icon(&self) -> iced_fonts::Nerd {
+        iced_fonts::Nerd::CropOne
     }
 }

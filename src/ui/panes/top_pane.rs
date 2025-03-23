@@ -22,8 +22,8 @@ impl<'a> TopPane {
 
     fn view_left(&self) -> iced::Element<'a, TopPaneMessage> {
         let row = iced::widget::row![
-                icon_button(iced_fonts::Bootstrap::FileEarmarkImage).on_press(TopPaneMessage::AddImages),
-                icon_button(iced_fonts::Bootstrap::Download).on_press(TopPaneMessage::Export),
+                icon_button(iced_fonts::Nerd::FileImagePlus).on_press(TopPaneMessage::AddImages),
+                icon_button(iced_fonts::Nerd::Download).on_press(TopPaneMessage::Export),
             ];
         iced::widget::container(row)
             .align_left(iced::Fill)
@@ -41,19 +41,19 @@ impl<'a> TopPane {
 
     fn view_right(&self) -> iced::Element<'a, TopPaneMessage> {
         let row = iced::widget::row![
-                icon_button(iced_fonts::Bootstrap::ArrowCounterclockwise).on_press(TopPaneMessage::Undo),
-                icon_button(iced_fonts::Bootstrap::ArrowClockwise).on_press(TopPaneMessage::Redo),
+                icon_button(iced_fonts::Nerd::UndoOne).on_press(TopPaneMessage::Undo),
+                icon_button(iced_fonts::Nerd::RedoOne).on_press(TopPaneMessage::Redo),
             ];
         iced::widget::container(row)
             .align_right(iced::Fill)
             .into()
     }
 
-    fn make_filter_icon(&self) -> iced_fonts::Bootstrap {
+    fn make_filter_icon(&self) -> iced_fonts::Nerd {
         if self.is_filter_active {
-            iced_fonts::Bootstrap::FunnelFill
+            iced_fonts::Nerd::FilterFilled
         } else {
-            iced_fonts::Bootstrap::Funnel
+            iced_fonts::Nerd::Filter
         }
     }
 }

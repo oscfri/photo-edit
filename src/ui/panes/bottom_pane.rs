@@ -30,10 +30,10 @@ impl<'a> BottomPane {
 
     fn view_center(&self) -> iced::Element<'a, BottomPaneMessage> {
         let row = iced::widget::row![
-                icon_button(iced_fonts::Bootstrap::ChevronLeft).on_press(BottomPaneMessage::PreviousImage),
+                icon_button(iced_fonts::Nerd::ChevronLeft).on_press(BottomPaneMessage::PreviousImage),
                 icon_button(self.make_favorite_icon()).on_press(BottomPaneMessage::ToggleFavorite),
-                icon_button(iced_fonts::Bootstrap::ChevronRight).on_press(BottomPaneMessage::NextImage),
-                icon_button(iced_fonts::Bootstrap::Trashthree).on_press_maybe(self.photo_id.map(BottomPaneMessage::DeleteImage)),
+                icon_button(iced_fonts::Nerd::ChevronRight).on_press(BottomPaneMessage::NextImage),
+                icon_button(iced_fonts::Nerd::Trash).on_press_maybe(self.photo_id.map(BottomPaneMessage::DeleteImage)),
             ];
         iced::widget::container(row)
             .center_x(iced::Fill)
@@ -49,19 +49,19 @@ impl<'a> BottomPane {
             .into()
     }
 
-    fn make_parameters_visibility_icon(&self) -> iced_fonts::Bootstrap {
+    fn make_parameters_visibility_icon(&self) -> iced_fonts::Nerd {
         if self.parameters_visible {
-            iced_fonts::Bootstrap::EyeSlash
+            iced_fonts::Nerd::EyeTwo
         } else {
-            iced_fonts::Bootstrap::EyeSlashFill
+            iced_fonts::Nerd::EyeOutline
         }
     }
 
-    fn make_favorite_icon(&self) -> iced_fonts::Bootstrap {
+    fn make_favorite_icon(&self) -> iced_fonts::Nerd {
         if self.is_favorite {
-            iced_fonts::Bootstrap::HeartFill
+            iced_fonts::Nerd::HeartFill
         } else {
-            iced_fonts::Bootstrap::Heart
+            iced_fonts::Nerd::Heart
         }
     }
 }
