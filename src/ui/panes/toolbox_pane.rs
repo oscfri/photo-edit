@@ -135,11 +135,12 @@ impl <'a> ToolboxPane {
             CropPreset::Ratio(9, 16),
         ];
 
+        let crop_preset = self.parameters.crop.as_ref().map(|crop| crop.preset);
         iced::widget::row![
                 icon_button(self.crop_icon()).on_press(MiscMessage::ToggleCropMode),
-                icon_button(iced_fonts::Nerd::RotateLeftVariant),
-                icon_button(iced_fonts::Nerd::RotateRightVariant),
-                iced::widget::pick_list(crop_presets, Some(self.parameters.crop_preset), MiscMessage::CropPresetChanged),
+                icon_button(iced_fonts::Nerd::RotateLeftVariant).on_press(MiscMessage::CropRotateLeft),
+                icon_button(iced_fonts::Nerd::RotateRightVariant).on_press(MiscMessage::CropRotateRight),
+                iced::widget::pick_list(crop_presets, crop_preset, MiscMessage::CropPresetChanged),
             ]
             .into()
     }

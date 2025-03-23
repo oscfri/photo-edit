@@ -2,7 +2,7 @@ use std::{collections::BTreeMap, path::PathBuf, sync::{Arc, Mutex}};
 
 use crate::{repository::repository::{AlbumPhotoDto, Repository}, types::RawImage};
 
-use super::{album_image::AlbumImage, parameters::{Crop, ParameterHistory, Parameters}, workspace::{ImageView, WorkspaceImage}};
+use super::{album_image::AlbumImage, parameters::{Crop, CropPreset, ParameterHistory, Parameters}, workspace::{ImageView, WorkspaceImage}};
 
 #[derive(Clone)]
 struct SourceImage {
@@ -158,7 +158,9 @@ impl ImageManager {
             center_y: (image_height as i32) / 2,
             width: image_width as i32,
             height: image_height as i32,
-            angle_degrees: 0.0
+            angle_degrees: 0.0,
+            rotation: 0,
+            preset: CropPreset::Free
         }
     }
 

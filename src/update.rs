@@ -121,6 +121,12 @@ impl Main {
                 WorkspaceEvent::AngleChanged(angle_degrees) => {
                     workspace.set_crop_angle(angle_degrees);
                 },
+                WorkspaceEvent::CropRotateLeft => {
+                    workspace.crop_rotate_left();
+                },
+                WorkspaceEvent::CropRotateRight => {
+                    workspace.crop_rotate_right();
+                },
                 WorkspaceEvent::CropPresetChanged(crop_preset) => {
                     workspace.set_crop_preset(crop_preset);
                 },

@@ -3,7 +3,8 @@ use std::sync::Arc;
 use crate::types::RawImage;
 use crate::pipeline::pipeline;
 use crate::pipeline::camera_uniform;
-use crate::workspace::parameters::RadialMask;
+use crate::workspace::parameters::Crop;
+use crate::workspace::parameters::{Parameters, RadialMask};
 use crate::workspace::workspace::Workspace;
 
 use iced::mouse;
@@ -68,6 +69,18 @@ pub struct ViewportCrop {
     pub angle_degrees: f32
 }
 
+impl From<Crop> for ViewportCrop {
+    fn from(crop: Crop) -> Self {
+        Self {
+            center_x: crop.center_x,
+            center_y: crop.center_y,
+            width: crop.width,
+            height: crop.height,
+            angle_degrees: crop.get_full_angle()
+        }
+    }
+}
+
 #[derive(Default, Debug, Clone)]
 pub struct ViewportParameters {
     pub brightness: f32,
@@ -77,6 +90,24 @@ pub struct ViewportParameters {
     pub saturation: f32,
     pub radial_masks: Vec<RadialMask>,
     pub crop: ViewportCrop
+}
+
+impl From<Parameters> for ViewportParameters {
+    fn from(parameters: Parameters) -> ViewportParameters {
+        let crop = match parameters.crop {
+            Some(crop) => crop.into(),
+            _ => ViewportCrop::default()
+        };
+        ViewportParameters {
+            brightness: parameters.brightness,
+            contrast: parameters.contrast,
+            tint: parameters.tint,
+            temperature: parameters.temperature,
+            saturation: parameters.saturation,
+            radial_masks: parameters.radial_masks.clone(),
+            crop: crop
+        }
+    }
 }
 
 #[derive(Debug, Clone)]

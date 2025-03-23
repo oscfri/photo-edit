@@ -53,6 +53,8 @@ pub enum MaskMessage {
 pub enum MiscMessage {
     AngleChanged(f32),
     ToggleCropMode,
+    CropRotateLeft,
+    CropRotateRight,
     CropPresetChanged(CropPreset)
 }
 

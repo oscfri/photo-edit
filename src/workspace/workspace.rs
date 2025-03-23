@@ -289,11 +289,32 @@ impl Workspace {
             });
     }
 
+    pub fn crop_rotate_left(&mut self) {
+        self.image.parameter_history.lock().unwrap()
+            .update(|parameters| {
+                if let Some(crop) = &mut parameters.crop {
+                    crop.rotation = (crop.rotation + 1) % 4;
+                }
+            });
+    }
+
+    pub fn crop_rotate_right(&mut self) {
+        self.image.parameter_history.lock().unwrap()
+            .update(|parameters| {
+                if let Some(crop) = &mut parameters.crop {
+                    crop.rotation -= 1;
+                    if crop.rotation < 0 {
+                        crop.rotation = 3;
+                    }
+                }
+            });
+    }
+
     pub fn set_crop_preset(&mut self, crop_preset: CropPreset) {
         self.image.parameter_history.lock().unwrap()
             .update(|parameters| {
                 if let Some(crop) = &mut parameters.crop {
-                    parameters.crop_preset = crop_preset;
+                    crop.preset = crop_preset;
                     if let CropPreset::Ratio(width, height) = crop_preset {
                         crop.width = ((width as f32) * (crop.height as f32) / (height as f32)) as i32;
                     }
@@ -339,7 +360,7 @@ impl Workspace {
                     
                     crop.height = ((-width * sin + height * cos).abs() * 2.0) as i32;
 
-                    match parameters.crop_preset {
+                    match crop.preset {
                         CropPreset::Free =>
                             crop.width = ((width * cos + height * sin).abs() * 2.0) as i32,
                         CropPreset::Ratio(w, h) =>
@@ -383,12 +404,17 @@ impl Workspace {
     pub fn current_view(&self) -> ViewportCrop {
         match self.view_mode {
             // Show full image in Crop mode
-            view_mode::ViewMode::Crop => ViewportCrop {
-                center_x: (self.current_source_image().unwrap().width as i32) / 2,
-                center_y: (self.current_source_image().unwrap().height as i32) / 2,
-                width: self.current_source_image().unwrap().width as i32,
-                height: self.current_source_image().unwrap().height as i32,
-                angle_degrees: self.current_angle_degrees(),
+            view_mode::ViewMode::Crop => {
+                let angle_degrees = self.image.parameter_history.lock().unwrap().current().crop
+                    .map(|crop| crop.get_full_angle())
+                    .unwrap_or(0.0);
+                ViewportCrop {
+                    center_x: (self.current_source_image().unwrap().width as i32) / 2,
+                    center_y: (self.current_source_image().unwrap().height as i32) / 2,
+                    width: self.current_source_image().unwrap().width as i32,
+                    height: self.current_source_image().unwrap().height as i32,
+                    angle_degrees: angle_degrees,
+                }
             },
             _ => self.make_view()
         }
@@ -396,14 +422,15 @@ impl Workspace {
 
     fn make_view(&self) -> ViewportCrop {
         if let Some(current_crop) = self.image.parameter_history.lock().unwrap().current().crop {
+            let view: ViewportCrop = current_crop.into();
             let current_image_view = self.image.image_view.lock().unwrap();
             let scale: f32 = 1.0 / (f32::powf(2.0, current_image_view.get_zoom()));
             ViewportCrop {
-                center_x: current_crop.center_x + (current_image_view.get_offset_x() as i32),
-                center_y: current_crop.center_y + (current_image_view.get_offset_y() as i32),
-                width: ((current_crop.width as f32) * scale) as i32,
-                height: ((current_crop.height as f32) * scale) as i32,
-                angle_degrees: current_crop.angle_degrees
+                center_x: view.center_x + (current_image_view.get_offset_x() as i32),
+                center_y: view.center_y + (current_image_view.get_offset_y() as i32),
+                width: ((view.width as f32) * scale) as i32,
+                height: ((view.height as f32) * scale) as i32,
+                angle_degrees: view.angle_degrees
             }
         } else {
             ViewportCrop::default()

@@ -39,6 +39,8 @@ pub enum WorkspaceEvent {
     MaskAngleChanged(usize, f32),
     MaskFeatherChanged(usize, f32),
     AngleChanged(f32),
+    CropRotateLeft,
+    CropRotateRight,
     CropPresetChanged(CropPreset),
     ToggleParametersVisibility,
     ToggleFavorite,
@@ -137,6 +139,8 @@ impl From<MiscMessage> for UpdateEvent {
         match message {
             MiscMessage::AngleChanged(angle) => WorkspaceEvent::AngleChanged(angle).into(),
             MiscMessage::ToggleCropMode => WorkspaceEvent::ToggleCropMode.into(),
+            MiscMessage::CropRotateLeft => WorkspaceEvent::CropRotateLeft.into(),
+            MiscMessage::CropRotateRight => WorkspaceEvent::CropRotateRight.into(),
             MiscMessage::CropPresetChanged(crop_preset) => WorkspaceEvent::CropPresetChanged(crop_preset).into()
         }
     }
