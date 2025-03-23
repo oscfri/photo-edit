@@ -115,7 +115,8 @@ pub struct ViewportWorkspace {
     pub image: Arc<RawImage>,
     pub photo_id: i32,
     pub parameters: ViewportParameters,
-    pub view: ViewportCrop
+    pub view: ViewportCrop,
+    pub display_grid: bool
 }
 
 impl ViewportWorkspace {
@@ -124,7 +125,14 @@ impl ViewportWorkspace {
             let photo_id = workspace.get_photo_id();
             let parameters = workspace.parameters_to_display();
             let view = workspace.current_view();
-            Some(Self { image, photo_id, parameters, view })
+            let display_grid = workspace.get_display_grid();
+            Some(Self {
+                image,
+                photo_id,
+                parameters,
+                view,
+                display_grid
+            })
         } else {
             None
         }
@@ -260,7 +268,7 @@ impl shader::Primitive for Viewport {
         let bounds_rectangle = Self::bounds_to_rectangle(bounds);
         let viewport_rectangle = Self::viewport_to_rectangle(viewport);
 
-        pipeline.update(queue, &self.workspace, &bounds_rectangle, &viewport_rectangle);
+        pipeline.update(queue, &self.workspace, &bounds_rectangle, &viewport_rectangle, viewport.scale_factor() as f32);
     }
 
     fn render(

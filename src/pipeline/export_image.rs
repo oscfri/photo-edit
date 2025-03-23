@@ -38,7 +38,7 @@ async fn export_image_from_viewport(viewport_workspace: ViewportWorkspace, file_
         wgpu::TextureFormat::Rgba8UnormSrgb);
 
     let pipeline = pipline_factory.create();
-    pipeline.update(&queue, &viewport_workspace, &bounds, &bounds);
+    pipeline.update(&queue, &viewport_workspace, &bounds, &bounds, 1.0);
 
     let mut encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
 

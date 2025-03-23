@@ -147,10 +147,13 @@ impl Main {
                 },
                 WorkspaceEvent::ResetView => {
                     workspace.reset_view();
-                }
+                },
+                WorkspaceEvent::ToggleDisplayGrid => {
+                    workspace.toggle_display_grid();
+                },
                 WorkspaceEvent::ImageMouseEvent(mouse_event) => {
                     Self::update_mouse_on_image(workspace, mouse_event);
-                }
+                },
             }
             self.viewport = Viewport::try_new(workspace);
         };

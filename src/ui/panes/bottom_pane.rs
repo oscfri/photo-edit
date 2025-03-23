@@ -47,7 +47,7 @@ impl<'a> BottomPane {
 
     fn view_right(&self) -> iced::Element<'a, BottomPaneMessage> {
         let row = iced::widget::row![
-                icon_button(iced_fonts::Nerd::Grid),
+                icon_button(iced_fonts::Nerd::Grid).on_press(BottomPaneMessage::ToggleDisplayGrid),
                 icon_button(iced_fonts::Nerd::TargetVariant).on_press_maybe(self.can_reset_view.then(|| BottomPaneMessage::ResetView)),
                 icon_button(self.make_parameters_visibility_icon()).on_press(BottomPaneMessage::ToggleParametersVisibility)
             ];

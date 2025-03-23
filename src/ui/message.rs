@@ -13,6 +13,7 @@ pub enum BottomPaneMessage {
     ToggleFavorite,
     DeleteImage(i32),
     ResetView,
+    ToggleDisplayGrid,
     ToggleParametersVisibility
 }
 

@@ -84,6 +84,7 @@ pub struct Workspace {
     image: WorkspaceImage,
     view_mode: ViewMode,
     parameters_visible: bool,
+    display_grid: bool,
 
     // For view dragging (there's probably a better way to handle this)
     mouse_state: MouseState,
@@ -100,6 +101,7 @@ impl Workspace {
             view_mode: ViewMode::Normal,
             parameters_visible: true,
             mouse_state: MouseState::Up,
+            display_grid: false,
             mouse_origin_x: 0,
             mouse_origin_y: 0,
             offset_origin_x: 0,
@@ -124,6 +126,14 @@ impl Workspace {
 
     pub fn get_file_name(&self) -> String {
         self.image.file_name.clone()
+    }
+
+    pub fn get_display_grid(&self) -> bool {
+        self.display_grid
+    }
+
+    pub fn toggle_display_grid(&mut self) {
+        self.display_grid = !self.display_grid;
     }
 
     pub fn get_mouse_state(&self) -> MouseState {

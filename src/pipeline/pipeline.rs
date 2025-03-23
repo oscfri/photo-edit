@@ -52,13 +52,14 @@ impl Pipeline {
             queue: &wgpu::Queue,
             workspace: &ViewportWorkspace,
             bounds: &Rectangle,
-            viewport: &Rectangle) {
+            viewport: &Rectangle,
+            scale_factor: f32) {
         let camera_uniform = camera_uniform::CameraUniform::new(
                 &bounds,
                 &viewport,
                 &workspace);
         let parameter_uniform = parameter_uniform::ParameterUniform::new(&workspace.parameters);
-        let crop_uniform = crop_uniform::CropUniform::new(&workspace, &viewport);
+        let crop_uniform = crop_uniform::CropUniform::new(&workspace, &viewport, scale_factor);
         let radial_parameters = radial_parameter::RadialParameters::new(&workspace.parameters);
 
         queue.write_buffer(&self.camera_buffer, 0, bytemuck::bytes_of(&camera_uniform));

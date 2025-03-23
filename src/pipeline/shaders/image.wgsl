@@ -23,7 +23,7 @@ struct CropUniform {
     width: f32,
     height: f32,
     ratio: f32,
-    _1: f32
+    display_grid: i32
 };
 @group(0) @binding(2)
 var<uniform> crop: CropUniform;
@@ -84,25 +84,29 @@ var t_output: texture_storage_2d<rgba8unorm, write>;
 
 @fragment
 fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
-    let rgb: vec3<f32> = get_pixel_color(in.view_coords, in.image_coords);
-    let rgb_final: vec3<f32> = draw_crop_area(in, rgb);
+    if (all(in.view_coords >= vec2(0.0) && in.view_coords <= vec2(1.0))) {
+        let lab_actual: vec3<f32> = get_pixel_color(in.view_coords, in.image_coords);
+        let lab_crop: vec3<f32> = draw_crop_area(in, lab_actual);
+        let lab_final: vec3<f32> = draw_grid(in, lab_crop);
 
-    let gamma_corrected: vec3<f32> = pow(rgb, vec3(1.0/2.2));
-    textureStore(t_output, vec2<i32>(in.export_coords.xy), vec4<f32>(gamma_corrected, 1.0));
+        let rgb_actual: vec3<f32> = lab_to_rgb(lab_actual);
+        let rgb_final: vec3<f32> = lab_to_rgb(lab_final);
 
-    return vec4<f32>(rgb_final, 1.0);
+        let gamma_corrected: vec3<f32> = pow(rgb_actual, vec3(1.0/2.2));
+        textureStore(t_output, vec2<i32>(in.export_coords.xy), vec4<f32>(gamma_corrected, 1.0));
+
+        return vec4<f32>(rgb_final, 1.0);
+    } else {
+        textureStore(t_output, vec2<i32>(in.export_coords.xy), vec4(1.0));
+        return vec4(1.0);
+    }
 }
 
 fn get_pixel_color(view_coords: vec2<f32>, image_coords: vec2<f32>) -> vec3<f32> {
-    if (all(view_coords >= vec2(0.0) && view_coords <= vec2(1.0))) {
-        let texture_sample: vec4<f32> = textureSample(t_diffuse, s_diffuse, view_coords);
-        let rgb: vec3<f32> = texture_sample.xyz;
-        let lab: vec3<f32> = rgb_to_lab(rgb);
-        let lab_applied: vec3<f32> = apply_parameters(lab, image_coords);
-        return lab_to_rgb(lab_applied);
-    } else {
-        return vec3(1.0);
-    }
+    let texture_sample: vec4<f32> = textureSample(t_diffuse, s_diffuse, view_coords);
+    let rgb: vec3<f32> = texture_sample.xyz;
+    let lab: vec3<f32> = rgb_to_lab(rgb);
+    return apply_parameters(lab, image_coords);
 }
 
 fn apply_parameters(lab: vec3<f32>, position: vec2<f32>) -> vec3<f32> {
@@ -209,13 +213,13 @@ fn cubic_hermite(x: f32) -> f32 {
     }
 }
 
-fn draw_crop_area(vertex: VertexOutput, rgb: vec3<f32>) -> vec3<f32> {
+fn draw_crop_area(vertex: VertexOutput, lab: vec3<f32>) -> vec3<f32> {
     if (in_crop_area(vertex)) {
-        return rgb;
+        return lab;
     } else if (in_crop_border(vertex)) {
-        return vec3<f32>(1.0, 1.0, 1.0) - rgb;
+        return vec3<f32>(1.0 - lab.x, lab.yz);
     } else {
-        return rgb * 0.25;
+        return lab * vec3<f32>(0.5, 0.25, 0.25);
     }
 }
 
@@ -237,6 +241,74 @@ fn in_crop_border(vertex: VertexOutput) -> bool {
     } else {
         return true;
     }
+}
+
+fn draw_grid(vertex: VertexOutput, lab: vec3<f32>) -> vec3<f32> {
+    if (crop.display_grid == 0) {
+        return lab;
+    } else if (in_big_grid(vertex)) {
+        if (lab.x > 0.8) {
+            return vec3<f32>(0.7, lab.yz * 0.5);
+        } else {
+            return vec3<f32>(0.9, lab.yz * 0.5);
+        }
+    } else if (in_small_grid(vertex)) {
+        if (lab.x > 0.7) {
+            return vec3<f32>(0.6, lab.yz * 0.5);
+        } else {
+            return vec3<f32>(0.8, lab.yz * 0.5);
+        }
+    } else {
+        return lab;
+    }
+}
+
+fn in_big_grid(vertex: VertexOutput) -> bool {
+    let position = vertex.crop_coords * crop.ratio;
+    let width = crop.width * crop.ratio;
+    let height = crop.height * crop.ratio;
+
+    let in_vertical_grid = 
+        in_pixel(position.x, width * 2.0 / 6.0) ||
+        in_pixel(position.x, width * 4.0 / 6.0);
+    let in_horizontal_grid =
+        in_pixel(position.y, height * 2.0 / 6.0) ||
+        in_pixel(position.y, height * 4.0 / 6.0);
+
+    if (in_vertical_grid) {
+        return true;
+    } else if (in_horizontal_grid) {
+        return true;
+    } else {
+        return false;
+    }
+}
+
+fn in_small_grid(vertex: VertexOutput) -> bool {
+    let position = vertex.crop_coords * crop.ratio;
+    let width = crop.width * crop.ratio;
+    let height = crop.height * crop.ratio;
+
+    let in_vertical_grid = 
+        in_pixel(position.x, width * 1.0 / 6.0) ||
+        in_pixel(position.x, width * 3.0 / 6.0) ||
+        in_pixel(position.x, width * 5.0 / 6.0);
+    let in_horizontal_grid =
+        in_pixel(position.y, height * 1.0 / 6.0) ||
+        in_pixel(position.y, height * 3.0 / 6.0) ||
+        in_pixel(position.y, height * 5.0 / 6.0);
+
+    if (i32(position.y) % 2 == 0 && in_vertical_grid) {
+        return true;
+    } else if (i32(position.x) % 2 == 0 && in_horizontal_grid) {
+        return true;
+    } else {
+        return false;
+    }
+}
+
+fn in_pixel(x1: f32, x2: f32) -> bool {
+    return x1 >= x2 - 0.75 && x1 <= x2 + 0.75;
 }
 
 /**

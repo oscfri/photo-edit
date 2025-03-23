@@ -48,6 +48,7 @@ pub enum WorkspaceEvent {
     Undo,
     Redo,
     ResetView,
+    ToggleDisplayGrid,
     ImageMouseEvent(MouseEvent),
 }
 
@@ -101,6 +102,7 @@ impl From<BottomPaneMessage> for UpdateEvent {
             BottomPaneMessage::ToggleFavorite => WorkspaceEvent::ToggleFavorite.into(),
             BottomPaneMessage::DeleteImage(photo_id) => ImageManagerEvent::DeleteImage(photo_id).into(),
             BottomPaneMessage::ResetView => WorkspaceEvent::ResetView.into(),
+            BottomPaneMessage::ToggleDisplayGrid => WorkspaceEvent::ToggleDisplayGrid.into(),
             BottomPaneMessage::ToggleParametersVisibility => WorkspaceEvent::ToggleParametersVisibility.into()
         }
     }
