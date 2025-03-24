@@ -156,8 +156,9 @@ impl ImageManager {
         Crop {
             center_x: (image_width as i32) / 2,
             center_y: (image_height as i32) / 2,
-            width: image_width as i32,
-            height: image_height as i32,
+            source_image_width: image_width,
+            source_image_height: image_height,
+            scale: 0.0,
             angle_degrees: 0.0,
             rotation: 0,
             preset: CropPreset::Original

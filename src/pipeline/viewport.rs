@@ -71,11 +71,12 @@ pub struct ViewportCrop {
 
 impl From<Crop> for ViewportCrop {
     fn from(crop: Crop) -> Self {
+        let scale = f32::powf(2.0, crop.scale);
         Self {
             center_x: crop.center_x,
             center_y: crop.center_y,
-            width: crop.width,
-            height: crop.height,
+            width: ((crop.source_image_width as f32) * scale) as i32,
+            height: ((crop.source_image_height as f32) * scale) as i32,
             angle_degrees: crop.get_full_angle()
         }
     }

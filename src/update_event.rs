@@ -39,6 +39,7 @@ pub enum WorkspaceEvent {
     MaskAngleChanged(usize, f32),
     MaskFeatherChanged(usize, f32),
     AngleChanged(f32),
+    CropScaleChanged(f32),
     CropRotateLeft,
     CropRotateRight,
     CropPresetChanged(CropPreset),
@@ -142,6 +143,7 @@ impl From<MiscMessage> for UpdateEvent {
     fn from(message: MiscMessage) -> Self {
         match message {
             MiscMessage::AngleChanged(angle) => WorkspaceEvent::AngleChanged(angle).into(),
+            MiscMessage::CropScaleChanged(scale) => WorkspaceEvent::CropScaleChanged(scale).into(),
             MiscMessage::ToggleCropMode => WorkspaceEvent::ToggleCropMode.into(),
             MiscMessage::CropRotateLeft => WorkspaceEvent::CropRotateLeft.into(),
             MiscMessage::CropRotateRight => WorkspaceEvent::CropRotateRight.into(),

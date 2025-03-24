@@ -54,6 +54,7 @@ pub enum MaskMessage {
 #[derive(Debug, Clone)]
 pub enum MiscMessage {
     AngleChanged(f32),
+    CropScaleChanged(f32),
     ToggleCropMode,
     CropRotateLeft,
     CropRotateRight,

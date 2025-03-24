@@ -3,6 +3,7 @@ use crate::{ui::{message::{MainParameterMessage, MaskChangeMessage, MaskMessage,
 pub struct ToolboxPane {
     parameters: Parameters,
     angle_degrees: f32,
+    crop_scale: f32,
     mask_edit_index: Option<usize>,
     enabled: bool
 }
@@ -11,9 +12,10 @@ impl <'a> ToolboxPane {
     pub fn new(
             parameters: Parameters,
             angle_degrees: f32,
+            crop_scale: f32,
             mask_edit_index: Option<usize>,
             enabled: bool) -> Self {
-        Self { parameters, angle_degrees, mask_edit_index, enabled }
+        Self { parameters, angle_degrees, crop_scale, mask_edit_index, enabled }
     }
 
     pub fn view(&self) -> iced::Element<'a, ToolboxMessage> {
@@ -116,7 +118,9 @@ impl <'a> ToolboxPane {
                 iced::widget::text("Crop"),
                 self.view_crop_buttons(),
                 iced::widget::text("Angle"),
-                slider_scaled(-3600.0..=3600.0, self.angle_degrees, 40.0, MiscMessage::AngleChanged)
+                slider_scaled(-3600.0..=3600.0, self.angle_degrees, 40.0, MiscMessage::AngleChanged),
+                iced::widget::text("Scale"),
+                slider_scaled(-500.0..=0.0, self.crop_scale, 100.0, MiscMessage::CropScaleChanged)
             ]
             .into()
     }

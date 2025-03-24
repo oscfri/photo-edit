@@ -183,6 +183,11 @@ impl Workspace {
             .map_or(0.0, |crop| crop.angle_degrees)
     }
 
+    pub fn current_crop_scale(&self) -> f32 {
+        self.current_parameters().crop.as_ref()
+            .map_or(0.0, |crop| crop.scale)
+    }
+
     pub fn get_view_mode(&self) -> ViewMode {
         self.view_mode
     }
@@ -310,6 +315,15 @@ impl Workspace {
             });
     }
 
+    pub fn set_crop_scale(&mut self, scale: f32) {
+        self.image.parameter_history.lock().unwrap()
+            .update(|parameters| {
+                if let Some(crop) = &mut parameters.crop {
+                    crop.scale = scale;
+                }
+            });
+    }
+
     pub fn crop_rotate_left(&mut self) {
         self.image.parameter_history.lock().unwrap()
             .update(|parameters| {
@@ -336,9 +350,6 @@ impl Workspace {
             .update(|parameters| {
                 if let Some(crop) = &mut parameters.crop {
                     crop.preset = crop_preset;
-                    if let CropPreset::Ratio(width, height) = crop_preset {
-                        crop.width = ((width as f32) * (crop.height as f32) / (height as f32)) as i32;
-                    }
                 }
             });   
     }
@@ -373,35 +384,8 @@ impl Workspace {
         self.image.parameter_history.lock().unwrap()
             .update(|parameters| {
                 if let Some(crop) = &mut parameters.crop {
-                    let width: f32 = (x - crop.center_x) as f32;
-                    let height: f32 = (y - crop.center_y) as f32;
-                    let angle: f32 = crop.angle_degrees / 180.0 * std::f32::consts::PI;
-                    let sin: f32 = f32::sin(angle);
-                    let cos: f32 = f32::cos(angle);
-                    
-                    crop.height = ((-width * sin + height * cos).abs() * 2.0) as i32;
-
-                    let (width, height) = match crop.preset {
-                        CropPreset::Original => {
-                            let w = self.current_source_image().unwrap().width as i32;
-                            let h = self.current_source_image().unwrap().height as i32;
-                            (w, h)
-                        },
-                        CropPreset::Ratio(w, h) => (w, h),
-                    };
-                    crop.width = ((width as f32) * (crop.height as f32) / (height as f32)) as i32
-                }
-            });
-    }
-
-    pub fn new_crop(&mut self, x: i32, y: i32) {
-        self.image.parameter_history.lock().unwrap()
-            .update(|parameters| {
-                if let Some(crop) = &mut parameters.crop {
                     crop.center_x = x;
                     crop.center_y = y;
-                    crop.width = 0;
-                    crop.height = 0;
                 }
             });
     }

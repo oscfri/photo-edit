@@ -121,6 +121,9 @@ impl Main {
                 WorkspaceEvent::AngleChanged(angle_degrees) => {
                     workspace.set_crop_angle(angle_degrees);
                 },
+                WorkspaceEvent::CropScaleChanged(crop_scale) => {
+                    workspace.set_crop_scale(crop_scale);
+                },
                 WorkspaceEvent::CropRotateLeft => {
                     workspace.crop_rotate_left();
                 },
@@ -222,9 +225,6 @@ impl Main {
                 if matches!(workspace.get_mouse_state(), MouseState::Down) {
                     workspace.update_crop(mouse_position.image_x, mouse_position.image_y);
                 }
-            },
-            MouseEvent::Press(mouse_position) => {
-                workspace.new_crop(mouse_position.image_x, mouse_position.image_y);
             },
             _ => {}
         }

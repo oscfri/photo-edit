@@ -30,8 +30,9 @@ pub struct RadialMask {
 pub struct Crop {
     pub center_x: i32,
     pub center_y: i32,
-    pub width: i32,
-    pub height: i32,
+    pub source_image_width: usize,
+    pub source_image_height: usize,
+    pub scale: f32,
     pub angle_degrees: f32,
     pub preset: CropPreset,
     pub rotation: i32,

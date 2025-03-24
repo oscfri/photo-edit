@@ -30,6 +30,7 @@ impl<'a> MainWindow<'a> {
 
         let parameters = workspace.current_parameters();
         let angle_degrees = workspace.current_angle_degrees();
+        let crop_scale = workspace.current_crop_scale();
         let mask_index = workspace.get_mask_index();
         let parameters_visible = workspace.get_parameters_visible();
         let can_reset_view = workspace.can_reset_view();
@@ -41,7 +42,7 @@ impl<'a> MainWindow<'a> {
         let bottom_pane: BottomPane = BottomPane::new(photo_id, parameters_visible, is_favorite, can_reset_view);
         let image_selection_pane: ImageSelectionPane<'a> = ImageSelectionPane::new(album_images, image_index);
         let render_pane: RenderPane<'a> = RenderPane::new(&viewport);
-        let toolbox_pane: ToolboxPane = ToolboxPane::new(parameters, angle_degrees, mask_index, toolbox_enabled);
+        let toolbox_pane: ToolboxPane = ToolboxPane::new(parameters, angle_degrees, crop_scale, mask_index, toolbox_enabled);
         let top_pane: TopPane = TopPane::new(is_filter_active);
 
         Self {
