@@ -123,7 +123,7 @@ impl <'a> ToolboxPane {
 
     fn view_crop_buttons(&self) -> iced::Element<'a, MiscMessage> {
         let crop_presets = [
-            CropPreset::Free,
+            CropPreset::Original,
             CropPreset::Ratio(1, 1),
             CropPreset::Ratio(5, 4),
             CropPreset::Ratio(4, 3),

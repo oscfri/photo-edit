@@ -45,20 +45,20 @@ impl Crop {
 
 #[derive(Debug, Clone, Copy, PartialEq, serde::Serialize, serde::Deserialize)]
 pub enum CropPreset {
-    Free,
+    Original,
     Ratio(i32, i32)
 }
 
 impl Default for CropPreset {
     fn default() -> Self {
-        Self::Free
+        Self::Original
     }
 }
 
 impl std::fmt::Display for CropPreset {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::Free => write!(f, "Free"),
+            Self::Original => write!(f, "Original"),
             Self::Ratio(w, h) => write!(f, "{}:{}", w, h)
         }
     }

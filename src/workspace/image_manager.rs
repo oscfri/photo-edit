@@ -160,7 +160,7 @@ impl ImageManager {
             height: image_height as i32,
             angle_degrees: 0.0,
             rotation: 0,
-            preset: CropPreset::Free
+            preset: CropPreset::Original
         }
     }
 

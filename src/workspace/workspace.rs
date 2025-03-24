@@ -381,12 +381,15 @@ impl Workspace {
                     
                     crop.height = ((-width * sin + height * cos).abs() * 2.0) as i32;
 
-                    match crop.preset {
-                        CropPreset::Free =>
-                            crop.width = ((width * cos + height * sin).abs() * 2.0) as i32,
-                        CropPreset::Ratio(w, h) =>
-                            crop.width = ((w as f32) * (crop.height as f32) / (h as f32)) as i32,
-                    }
+                    let (width, height) = match crop.preset {
+                        CropPreset::Original => {
+                            let w = self.current_source_image().unwrap().width as i32;
+                            let h = self.current_source_image().unwrap().height as i32;
+                            (w, h)
+                        },
+                        CropPreset::Ratio(w, h) => (w, h),
+                    };
+                    crop.width = ((width as f32) * (crop.height as f32) / (height as f32)) as i32
                 }
             });
     }
