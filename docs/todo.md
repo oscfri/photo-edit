@@ -37,7 +37,7 @@ This is what's left for a feature complete MVP.
 ## Performance
 
 - [ ] Save thumbnails in database
-- [ ] Don't have all images loaded in memory
+- [X] Don't have all images loaded in memory
 - [ ] Export photos in background
 - [X] Load photos in background thread so it doesn't hog the entire application
 - [X] Don't reload entire album when import new image

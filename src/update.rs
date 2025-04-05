@@ -1,3 +1,5 @@
+use iced::Task;
+
 use crate::{pipeline::viewport::Viewport, ui::message::TaskMessage, update_event::{AlbumEvent, ImageManagerEvent, MouseEvent, UpdateEvent, WorkspaceEvent}, workspace::{image_loader, workspace::Workspace}, Main, Message, MouseState, ViewMode};
 
 use std::{path::PathBuf, usize};
@@ -37,6 +39,9 @@ impl Main {
             },
             ImageManagerEvent::LoadImage(photo_id, image, thumbnail) => {
                 self.image_manager.set_image(photo_id, image, thumbnail);
+                if let Some(photo_id) = self.album.get_photo_id() {
+                    self.image_manager.flush_cache(photo_id);
+                }
                 iced::Task::none()
             },
             ImageManagerEvent::DeleteImage(photo_id) => {
@@ -73,7 +78,7 @@ impl Main {
             .and_then(|photo_id| self.image_manager.get_workspace_image(photo_id))
             .map(Workspace::new);
         self.viewport = self.workspace.as_ref().and_then(Viewport::try_new);
-        iced::Task::none()
+        self.batch_image_load()
     }
 
     fn update_workspace(&mut self, workspace_event: WorkspaceEvent) -> iced::Task<Message> {
@@ -248,14 +253,18 @@ impl Main {
     }
 
     fn batch_image_load(&self) -> iced::Task<Message> {
-        iced::Task::batch(self.image_manager.get_paths_without_image().iter()
-            .map(|image_path| {
-                let photo_id = image_path.photo_id;
-                let path = image_path.path.clone();
-                iced::Task::perform(
-                    image_loader::load_image(photo_id, path),
-                    TaskMessage::NewImage)
-            }))
-            .map(Message::TaskMessage)
+        if let Some(curent_photo_id) = self.album.get_photo_id() {
+            iced::Task::batch(self.image_manager.get_paths_to_load(curent_photo_id).iter()
+                .map(|image_path| {
+                    let photo_id = image_path.photo_id;
+                    let path = image_path.path.clone();
+                    iced::Task::perform(
+                        image_loader::load_image(photo_id, path),
+                        TaskMessage::NewImage)
+                }))
+                .map(Message::TaskMessage)
+        } else {
+            Task::none()
+        }
     }
 }

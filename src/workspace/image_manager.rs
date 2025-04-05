@@ -1,8 +1,14 @@
 use std::{collections::BTreeMap, path::PathBuf, sync::{Arc, Mutex}};
 
+use itertools::Itertools;
+
 use crate::{repository::repository::{AlbumPhotoDto, Repository}, types::RawImage};
 
 use super::{album_image::AlbumImage, parameters::{Crop, CropPreset, ParameterHistory, Parameters}, workspace::{ImageView, WorkspaceImage}};
+
+// TODO: Adapt these values
+const CACHE_SIZE: usize = 20;
+const LOAD_SIZE: usize = 10;
 
 #[derive(Clone)]
 struct SourceImage {
@@ -13,7 +19,7 @@ struct SourceImage {
     image_view: Arc<Mutex<ImageView>>,
 }
 
-pub struct ImagePath {
+pub struct ImagePathToLoad {
     pub photo_id: i32,
     pub path: PathBuf,
 }
@@ -52,13 +58,18 @@ impl ImageManager {
         self.source_images = new_images;
     }
 
-    pub fn get_paths_without_image(&self) -> Vec<ImagePath> {
+    pub fn get_paths_to_load(&self, photo_id_hint: i32) -> Vec<ImagePathToLoad> {
         self.source_images.iter()
+            .map(|(photo_id, _)| photo_id.clone())
+            .sorted_by_key(|photo_id| (photo_id - photo_id_hint).abs())
+            .take(LOAD_SIZE)
+            .flat_map(|photo_id| self.source_images.get(&photo_id)
+                .map(|source_image| (photo_id, source_image)))
             .filter(|(_, source_image)| source_image.image.is_none())
             .map(|(photo_id, source_image)| {
                 let path = source_image.path.clone();
-                ImagePath {
-                    photo_id: *photo_id,
+                ImagePathToLoad {
+                    photo_id: photo_id,
                     path
                 }
             })
@@ -80,6 +91,21 @@ impl ImageManager {
         }
     }
 
+    pub fn flush_cache(&mut self, photo_id_hint: i32) {
+        let photo_ids_to_unload: Vec<i32> = self.source_images.iter()
+            .map(|(photo_id, _)| photo_id.clone())
+            .sorted_by_key(|photo_id| (photo_id - photo_id_hint).abs())
+            .skip(CACHE_SIZE)
+            .collect();
+
+        for photo_id in photo_ids_to_unload {
+            if let Some(source_image) = self.source_images.get_mut(&photo_id) {
+                source_image.image = None;
+                source_image.thumbnail = None; // TODO: Handle thumbnails in a good way
+            }
+        }
+    }
+
     pub fn get_all_album_images(&self) -> Vec<AlbumImage> {
         self.source_images.iter()
             .filter(|(_, image)| {
@@ -98,15 +124,15 @@ impl ImageManager {
 
     pub fn get_workspace_image(&self, photo_id: i32) -> Option<WorkspaceImage> {
         self.source_images.get(&photo_id)
-            .map(|image| {
-                let file_name = image.path.file_stem()
+            .map(|source_image| {
+                let file_name = source_image.path.file_stem()
                     .map(|s| s.to_string_lossy().into_owned())
                     .unwrap_or("default".into());
                 WorkspaceImage::new(
                     photo_id,
-                    image.image.clone(),
-                    image.parameter_history.clone(),
-                    image.image_view.clone(),
+                    source_image.image.clone(),
+                    source_image.parameter_history.clone(),
+                    source_image.image_view.clone(),
                     file_name)
             })
     }
