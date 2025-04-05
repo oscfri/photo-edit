@@ -78,6 +78,8 @@ impl ImageManager {
 
     pub fn set_image(&mut self, photo_id: i32, image: RawImage, thumbnail: RawImage) {
         if let Some(source_image) = self.source_images.get_mut(&photo_id) {
+            self.repository.add_thumbnail(photo_id, &thumbnail).ok();
+
             let image_width = image.width;
             let image_height = image.height;
             source_image.image = Some(Arc::new(image));
@@ -101,7 +103,6 @@ impl ImageManager {
         for photo_id in photo_ids_to_unload {
             if let Some(source_image) = self.source_images.get_mut(&photo_id) {
                 source_image.image = None;
-                source_image.thumbnail = None; // TODO: Handle thumbnails in a good way
             }
         }
     }
@@ -161,7 +162,8 @@ impl ImageManager {
     fn create_image(album_photo: &AlbumPhotoDto) -> SourceImage {
         let path = PathBuf::from(&album_photo.file_name);
         let image = None;
-        let thumbnail = None;
+        let thumbnail = album_photo.thumbnail.as_ref()
+            .map(|thumbnail| Arc::new(thumbnail.clone()));
         let paramters_raw = Self::parse_parameters(&album_photo.parameters);
         let parameter_history = Arc::new(Mutex::new(paramters_raw.into()));
         let image_view = Arc::new(Mutex::new(ImageView::default()));

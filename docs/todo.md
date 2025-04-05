@@ -26,6 +26,7 @@ This is what's left for a feature complete MVP.
 - [X] Flag/filter photos
 - [X] Show/hide applied parameters
 - [X] Disable parameters (for example during image load)
+- [ ] Move database to proper config path (using directories crate)
 
 ## Bugs
 
@@ -36,7 +37,7 @@ This is what's left for a feature complete MVP.
 
 ## Performance
 
-- [ ] Save thumbnails in database
+- [X] Save thumbnails in database
 - [X] Don't have all images loaded in memory
 - [ ] Export photos in background
 - [X] Load photos in background thread so it doesn't hog the entire application
