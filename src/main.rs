@@ -11,6 +11,7 @@ use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::Duration;
 
+use directories::ProjectDirs;
 use iced;
 use pipeline::viewport;
 use repository::repository::Repository;
@@ -51,7 +52,9 @@ fn init() -> (Main, iced::Task<Message>) {
 
 impl Main {
     fn new() -> Self {
-        let connection: Connection = Connection::open(PathBuf::from("album.sqlite")).unwrap();
+        let db_path: PathBuf = Self::create_db_path();
+
+        let connection: Connection = Connection::open(db_path).unwrap();
         let repository = Arc::new(repository_factory::RepositoryFactory::new(connection).create());
         let image_manager = ImageManager::create_from(repository.clone());
         let album = Album::new(image_manager.get_all_album_images());
@@ -68,6 +71,17 @@ impl Main {
             image_manager,
             viewport,
         }
+    }
+
+    fn create_db_path() -> PathBuf {
+        let config_dir = ProjectDirs::from("com", "Photo Editor", "Photo Editor")
+            .unwrap()
+            .config_dir()
+            .to_path_buf();
+
+        std::fs::create_dir_all(&config_dir).unwrap();
+        
+        config_dir.join("album.db")
     }
 
     pub fn view(&self) -> iced::Element<Message> {

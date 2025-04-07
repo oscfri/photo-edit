@@ -26,7 +26,7 @@ This is what's left for a feature complete MVP.
 - [X] Flag/filter photos
 - [X] Show/hide applied parameters
 - [X] Disable parameters (for example during image load)
-- [ ] Move database to proper config path (using directories crate)
+- [X] Move database to proper config path (using directories crate)
 
 ## Bugs
 
