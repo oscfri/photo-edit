@@ -60,6 +60,7 @@ impl ImageManager {
 
     pub fn get_paths_to_load(&self, photo_id_hint: i32) -> Vec<ImagePathToLoad> {
         self.source_images.iter()
+            .filter(|(_, source_image)| self.should_display_image(source_image))
             .map(|(photo_id, _)| photo_id.clone())
             .sorted_by_key(|photo_id| (photo_id - photo_id_hint).abs())
             .take(LOAD_SIZE)
@@ -109,13 +110,7 @@ impl ImageManager {
 
     pub fn get_all_album_images(&self) -> Vec<AlbumImage> {
         self.source_images.iter()
-            .filter(|(_, image)| {
-                if self.is_filter_active {
-                    image.parameter_history.lock().unwrap().current().is_favorite
-                } else {
-                    true
-                }
-            })
+            .filter(|(_, image)| self.should_display_image(&image))
             .map(|(photo_id, image)| {
                 let thumbnail = image.thumbnail.clone();
                 AlbumImage::new(*photo_id, thumbnail)
@@ -197,5 +192,13 @@ impl ImageManager {
         repository.get_album_photos().unwrap().iter()
             .map(|album_photo_dto| (album_photo_dto.id, Self::create_image(album_photo_dto)))
             .collect()
+    }
+
+    fn should_display_image(&self, source_image: &SourceImage) -> bool {
+        if self.is_filter_active {
+            source_image.parameter_history.lock().unwrap().current().is_favorite
+        } else {
+            true
+        }
     }
 }
