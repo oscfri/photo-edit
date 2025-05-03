@@ -71,8 +71,11 @@ fn handle_key_press(key: iced::keyboard::Key) -> Option<KeyboardMessage> {
 
 fn handle_key_press_character(character: &str) -> Option<KeyboardMessage> {
     match character {
-        "a" => Some(KeyboardMessage::PreviousImage),
         "d" => Some(KeyboardMessage::NextImage),
+        "a" => Some(KeyboardMessage::PreviousImage),
+        "q" => Some(KeyboardMessage::CropRotateLeft),
+        "e" => Some(KeyboardMessage::CropRotateRight),
+        "f" => Some(KeyboardMessage::ToggleFavorite),
         _ => None
     }
 }

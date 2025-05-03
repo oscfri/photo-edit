@@ -99,8 +99,11 @@ pub enum TaskMessage {
 
 #[derive(Debug, Clone)]
 pub enum KeyboardMessage {
+    NextImage,
     PreviousImage,
-    NextImage
+    CropRotateLeft,
+    CropRotateRight,
+    ToggleFavorite
 }
 
 #[derive(Debug, Clone)]

@@ -223,8 +223,11 @@ impl From<WelcomeMessage> for UpdateEvent {
 impl From<KeyboardMessage> for UpdateEvent {
     fn from(message: KeyboardMessage) -> Self {
         match message {
+            KeyboardMessage::NextImage => AlbumEvent::NextImage.into(),
             KeyboardMessage::PreviousImage => AlbumEvent::PreviousImage.into(),
-            KeyboardMessage::NextImage => AlbumEvent::NextImage.into()
+            KeyboardMessage::CropRotateLeft => WorkspaceEvent::CropRotateLeft.into(),
+            KeyboardMessage::CropRotateRight => WorkspaceEvent::CropRotateRight.into(),
+            KeyboardMessage::ToggleFavorite => WorkspaceEvent::ToggleFavorite.into(),
         }
     }
 }
