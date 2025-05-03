@@ -70,31 +70,30 @@ pub struct ViewportCrop {
     pub angle_degrees: f32
 }
 
+fn width_height_from_crop(crop: &Crop) -> (f32, f32) {
+    match crop.preset {
+        CropPreset::Original => {
+            (crop.source_image_width as f32, crop.source_image_height as f32)
+        },
+        CropPreset::Ratio(width, height) => {
+            let crop_width = crop.source_image_width as f32;
+            let crop_height = crop_width * (height as f32) / (width as f32);
+            (crop_width, crop_height)
+        }
+    }
+}
+
 impl From<Crop> for ViewportCrop {
     fn from(crop: Crop) -> Self {
         let scale = f32::powf(2.0, crop.scale);
+        let (width, height) = width_height_from_crop(&crop);
 
-        match crop.preset {
-            CropPreset::Original => {
-                Self {
-                    center_x: crop.center_x,
-                    center_y: crop.center_y,
-                    width: ((crop.source_image_width as f32) * scale) as i32,
-                    height: ((crop.source_image_height as f32) * scale) as i32,
-                    angle_degrees: crop.get_full_angle()
-                }
-            },
-            CropPreset::Ratio(width, height) => {
-                let crop_width = (crop.source_image_width as f32) * scale;
-                let crop_height = crop_width * (height as f32) / (width as f32);
-                Self {
-                    center_x: crop.center_x,
-                    center_y: crop.center_y,
-                    width: crop_width as i32,
-                    height: crop_height as i32,
-                    angle_degrees: crop.get_full_angle()
-                }
-            }
+        Self {
+            center_x: crop.center_x,
+            center_y: crop.center_y,
+            width: (width * scale) as i32,
+            height: (height * scale) as i32,
+            angle_degrees: crop.get_full_angle()
         }
     }
 }
