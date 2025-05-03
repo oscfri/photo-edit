@@ -86,7 +86,7 @@ pub struct Workspace {
     parameters_visible: bool,
     display_grid: bool,
 
-    // For view dragging (there's probably a better way to handle this)
+    // For view/crop dragging (there's probably a better way to handle this)
     mouse_state: MouseState,
     mouse_origin_x: i32,
     mouse_origin_y: i32,
@@ -403,6 +403,23 @@ impl Workspace {
             },
             None => {}
         }
+    }
+
+    pub fn new_crop_offset_origin(&mut self, x: i32, y: i32) {
+        self.mouse_origin_x = x;
+        self.mouse_origin_y = y;
+        if let Some(crop) = self.current_parameters().crop.as_ref() {
+            self.offset_origin_x = crop.center_x;
+            self.offset_origin_y = crop.center_y;
+        }
+    }
+
+    pub fn update_crop_offset(&mut self, x: i32, y: i32) {
+        let delta_x: i32 = x - self.mouse_origin_x;
+        let delta_y: i32 = y - self.mouse_origin_y;
+        let offset_x: i32 = self.offset_origin_x + delta_x;
+        let offset_y: i32 = self.offset_origin_y + delta_y;
+        self.update_crop(offset_x, offset_y);
     }
 
     pub fn update_crop(&mut self, x: i32, y: i32) {

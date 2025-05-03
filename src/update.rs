@@ -234,8 +234,11 @@ impl Main {
         match mouse_event {
             MouseEvent::Over(mouse_position) => {
                 if matches!(workspace.get_mouse_state(), MouseState::Down) {
-                    workspace.update_crop(mouse_position.image_x, mouse_position.image_y);
+                    workspace.update_crop_offset(mouse_position.image_x, mouse_position.image_y);
                 }
+            },
+            MouseEvent::Press(mouse_position) => {
+                workspace.new_crop_offset_origin(mouse_position.image_x, mouse_position.image_y);
             },
             _ => {}
         }
