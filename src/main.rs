@@ -77,6 +77,7 @@ fn handle_key_press_character(character: &str) -> Option<KeyboardMessage> {
         "e" => Some(KeyboardMessage::CropRotateRight),
         "f" => Some(KeyboardMessage::ToggleFavorite),
         "g" => Some(KeyboardMessage::ToggleDisplayGrid),
+        "c" => Some(KeyboardMessage::ToggleCropMode),
         _ => None
     }
 }
