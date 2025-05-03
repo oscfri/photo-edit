@@ -8,7 +8,7 @@ use super::{album_image::AlbumImage, parameters::{Crop, CropPreset, ParameterHis
 
 // TODO: Adapt these values
 const CACHE_SIZE: usize = 40;
-const LOAD_SIZE: usize = 20;
+const LOAD_SIZE: usize = 5;
 
 #[derive(Clone)]
 struct SourceImage {
