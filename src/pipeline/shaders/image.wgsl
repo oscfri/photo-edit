@@ -146,8 +146,8 @@ fn from_lightness_adjustment_space(lab: vec3<f32>) -> vec3<f32> {
 }
 
 fn calculate_brightness_value(lab: vec3<f32>) -> f32 {
-    var shadows_modifier: f32 = clamp(0.5 - lab.x, 0.0, 1.0);
-    var highlights_modifier: f32 = clamp(lab.x - 0.5, 0.0, 1.0);
+    var shadows_modifier: f32 = clamp(0.5 - lab.x, 0.0, 1.0) * 2.0;
+    var highlights_modifier: f32 = clamp(lab.x - 0.5, 0.0, 1.0) * 0.5;
 
     return shadows_modifier * parameters.shadows +
         highlights_modifier * parameters.highlights +
