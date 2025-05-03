@@ -7,8 +7,8 @@ use crate::{repository::repository::{AlbumPhotoDto, Repository}, types::RawImage
 use super::{album_image::AlbumImage, parameters::{Crop, CropPreset, ParameterHistory, Parameters}, workspace::{ImageView, WorkspaceImage}};
 
 // TODO: Adapt these values
-const CACHE_SIZE: usize = 20;
-const LOAD_SIZE: usize = 10;
+const CACHE_SIZE: usize = 40;
+const LOAD_SIZE: usize = 20;
 
 #[derive(Clone)]
 struct SourceImage {
