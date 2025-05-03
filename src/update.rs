@@ -50,7 +50,7 @@ impl Main {
             },
             ImageManagerEvent::ToggleFilter => {
                 self.image_manager.toggle_filter();
-                iced::Task::none()
+                self.batch_image_load()
             }
         };
         
