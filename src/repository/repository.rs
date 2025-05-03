@@ -111,7 +111,7 @@ impl Repository {
     pub fn delete_photo(&self, photo_id: i32) -> Result<()> {
         self.connection.execute(
             "DELETE FROM thumbnail
-            WHERE id = ?1",
+            WHERE photo_id = ?1",
             [photo_id]
         )?;
         self.connection.execute(
