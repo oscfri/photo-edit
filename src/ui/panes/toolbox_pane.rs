@@ -52,20 +52,30 @@ impl <'a> ToolboxPane {
 
     fn view_main_parameter_sliders(&self) -> iced::Element<'a, MainParameterMessage> {
         iced::widget::column![
-                iced::widget::text("Brightness"),
-                iced::widget::slider(-100.0..=100.0, self.parameters.brightness, MainParameterMessage::BrightnessChanged),
-                iced::widget::text("Contrast"),
-                iced::widget::slider(-100.0..=100.0, self.parameters.contrast, MainParameterMessage::ContrastChanged),
-                iced::widget::text("Shadows"),
-                iced::widget::slider(-100.0..=100.0, self.parameters.shadows, MainParameterMessage::ShadowsChanged),
-                iced::widget::text("Highlights"),
-                iced::widget::slider(-100.0..=100.0, self.parameters.highlights, MainParameterMessage::HighlightsChanged),
-                iced::widget::text("Tint"),
-                iced::widget::slider(-100.0..=100.0, self.parameters.tint,  MainParameterMessage::TintChanged),
-                iced::widget::text("Temperature"),
-                iced::widget::slider(-100.0..=100.0, self.parameters.temperature, MainParameterMessage::TemperatureChanged),
-                iced::widget::text("Saturation"),
-                iced::widget::slider(-100.0..=100.0, self.parameters.saturation, MainParameterMessage::SaturationChanged)
+                self.view_slider("Brightness", self.parameters.brightness, MainParameterMessage::BrightnessChanged),
+                self.view_slider("Contrast", self.parameters.contrast, MainParameterMessage::ContrastChanged),
+                self.view_slider("Shadows", self.parameters.shadows, MainParameterMessage::ShadowsChanged),
+                self.view_slider("Highlights", self.parameters.highlights, MainParameterMessage::HighlightsChanged),
+                self.view_slider("Tint", self.parameters.tint, MainParameterMessage::TintChanged),
+                self.view_slider("Temperature", self.parameters.temperature, MainParameterMessage::TemperatureChanged),
+                self.view_slider("Saturation", self.parameters.saturation, MainParameterMessage::SaturationChanged),
+            ]
+            .into()
+    }
+
+    fn view_slider(&self, label: &'a str, value: f32, message: impl Fn(f32) -> MainParameterMessage + 'a) -> iced::Element<'a, MainParameterMessage> {
+        let label_text = iced::widget::container(iced::widget::text(label))
+            .align_left(iced::Fill);
+        let value_text = iced::widget::container(iced::widget::text(format!("{}", value)))
+            .align_right(iced::Fill);
+        let label_row = iced::widget::row![
+                label_text,
+                value_text
+            ];
+        let slider = iced::widget::slider(-100.0..=100.0, value, message);
+        iced::widget::column![
+                label_row,
+                slider
             ]
             .into()
     }
