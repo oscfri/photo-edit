@@ -328,6 +328,7 @@ impl Workspace {
         self.image.parameter_history.lock().unwrap()
             .update(|parameters| {
                 if let Some(crop) = &mut parameters.crop {
+                    crop.preset = crop.preset.rotate();
                     crop.rotation = (crop.rotation + 1) % 4;
                 }
             });
@@ -337,6 +338,7 @@ impl Workspace {
         self.image.parameter_history.lock().unwrap()
             .update(|parameters| {
                 if let Some(crop) = &mut parameters.crop {
+                    crop.preset = crop.preset.rotate();
                     crop.rotation -= 1;
                     if crop.rotation < 0 {
                         crop.rotation = 3;

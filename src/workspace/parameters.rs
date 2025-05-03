@@ -60,7 +60,16 @@ impl std::fmt::Display for CropPreset {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::Original => write!(f, "Original"),
-            Self::Ratio(w, h) => write!(f, "{}:{}", w, h)
+            Self::Ratio(width, height) => write!(f, "{}:{}", width, height)
+        }
+    }
+}
+
+impl CropPreset {
+    pub fn rotate(&self) -> CropPreset {
+        match self {
+            Self::Original => Self::Original,
+            Self::Ratio(width, height) => Self::Ratio(*height, *width)
         }
     }
 }

@@ -73,7 +73,11 @@ pub struct ViewportCrop {
 fn width_height_from_crop(crop: &Crop) -> (f32, f32) {
     match crop.preset {
         CropPreset::Original => {
-            (crop.source_image_width as f32, crop.source_image_height as f32)
+            if crop.rotation % 2 == 0 {
+                (crop.source_image_width as f32, crop.source_image_height as f32)
+            } else {
+                (crop.source_image_height as f32, crop.source_image_width as f32)
+            }
         },
         CropPreset::Ratio(width, height) => {
             let crop_width = crop.source_image_width as f32;
