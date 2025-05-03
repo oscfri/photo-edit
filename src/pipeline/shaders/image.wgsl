@@ -12,6 +12,8 @@ var<uniform> camera: CameraUniform;
 struct ParameterUniform {
     brightness: f32,
     contrast: f32,
+    shadows: f32,
+    highlights: f32,
     tint: f32,
     temperature: f32,
     saturation: f32
@@ -125,7 +127,8 @@ fn apply_global_parameters(lab: vec3<f32>) -> vec3<f32> {
     applied = to_lightness_adjustment_space(applied);
 
     // Lightness adjustment
-    applied = apply_brightness(applied, parameters.brightness);
+    var brightness_value = calculate_brightness_value(applied);
+    applied = apply_brightness(applied, brightness_value);
     applied -= vec3<f32>(0.5, 0.0, 0.0);
     applied *= vec3<f32>(parameters.contrast, 1.0, 1.0);
     applied += vec3<f32>(0.5, 0.0, 0.0);
@@ -140,6 +143,15 @@ fn to_lightness_adjustment_space(lab: vec3<f32>) -> vec3<f32> {
 
 fn from_lightness_adjustment_space(lab: vec3<f32>) -> vec3<f32> {
     return lab * vec3<f32>(1.0, lab.x + 0.1, lab.x + 0.1);
+}
+
+fn calculate_brightness_value(lab: vec3<f32>) -> f32 {
+    var shadows_modifier: f32 = clamp(0.5 - lab.x, 0.0, 1.0);
+    var highlights_modifier: f32 = clamp(lab.x - 0.5, 0.0, 1.0);
+
+    return shadows_modifier * parameters.shadows +
+        highlights_modifier * parameters.highlights +
+        parameters.brightness;
 }
 
 fn apply_brightness(lab: vec3<f32>, brightness: f32) -> vec3<f32> {

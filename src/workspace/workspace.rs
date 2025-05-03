@@ -239,6 +239,16 @@ impl Workspace {
             .update(|parameters| parameters.contrast = contrast)
     }
 
+    pub fn set_shadows(&mut self, shadows: f32) {
+        self.image.parameter_history.lock().unwrap()
+            .update(|parameters| parameters.shadows = shadows)
+    }
+
+    pub fn set_highlights(&mut self, highlights: f32) {
+        self.image.parameter_history.lock().unwrap()
+            .update(|parameters| parameters.highlights = highlights)
+    }
+
     pub fn set_tint(&mut self, tint: f32) {
         self.image.parameter_history.lock().unwrap()
             .update(|parameters| parameters.tint = tint)

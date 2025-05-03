@@ -9,6 +9,10 @@ pub struct Parameters {
     pub tint: f32,
     pub temperature: f32,
     pub saturation: f32,
+    #[serde(default)]
+    pub shadows: f32,
+    #[serde(default)]
+    pub highlights: f32,
     pub radial_masks: Vec<RadialMask>,
     pub crop: Option<Crop>,
     pub is_favorite: bool,

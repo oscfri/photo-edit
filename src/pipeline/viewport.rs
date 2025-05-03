@@ -106,6 +106,8 @@ impl From<Crop> for ViewportCrop {
 pub struct ViewportParameters {
     pub brightness: f32,
     pub contrast: f32,
+    pub shadows: f32,
+    pub highlights: f32,
     pub tint: f32,
     pub temperature: f32,
     pub saturation: f32,
@@ -122,6 +124,8 @@ impl From<Parameters> for ViewportParameters {
         ViewportParameters {
             brightness: parameters.brightness,
             contrast: parameters.contrast,
+            shadows: parameters.shadows,
+            highlights: parameters.highlights,
             tint: parameters.tint,
             temperature: parameters.temperature,
             saturation: parameters.saturation,

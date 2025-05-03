@@ -96,6 +96,12 @@ impl Main {
                 WorkspaceEvent::ContrastChanged(contrast) => {
                     workspace.set_contrast(contrast);
                 },
+                WorkspaceEvent::ShadowsChanged(shadows) => {
+                    workspace.set_shadows(shadows);
+                },
+                WorkspaceEvent::HighlightsChanged(highlights) => {
+                    workspace.set_highlights(highlights);
+                },
                 WorkspaceEvent::TintChanged(tint) => {
                     workspace.set_tint(tint);
                 },

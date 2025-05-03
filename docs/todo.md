@@ -49,4 +49,4 @@ This is what's left for a feature complete MVP.
 - [ ] Ensure crop can't be outside image.
 - [ ] Batch export
 - [ ] Set exports directory
-- [ ] Highlights/shadows
+- [X] Highlights/shadows

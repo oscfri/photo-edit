@@ -29,6 +29,8 @@ pub enum WorkspaceEvent {
     ToggleMaskMode(usize),
     BrightnessChanged(f32),
     ContrastChanged(f32),
+    ShadowsChanged(f32),
+    HighlightsChanged(f32),
     TintChanged(f32),
     TemperatureChanged(f32),
     SaturationChanged(f32),
@@ -114,6 +116,8 @@ impl From<MainParameterMessage> for UpdateEvent {
         match message {
             MainParameterMessage::BrightnessChanged(brightness) => WorkspaceEvent::BrightnessChanged(brightness).into(),
             MainParameterMessage::ContrastChanged(contrast) => WorkspaceEvent::ContrastChanged(contrast).into(),
+            MainParameterMessage::ShadowsChanged(shadows) => WorkspaceEvent::ShadowsChanged(shadows).into(),
+            MainParameterMessage::HighlightsChanged(highlights) => WorkspaceEvent::HighlightsChanged(highlights).into(),
             MainParameterMessage::SaturationChanged(saturation) => WorkspaceEvent::SaturationChanged(saturation).into(),
             MainParameterMessage::TemperatureChanged(temperature) => WorkspaceEvent::TemperatureChanged(temperature).into(),
             MainParameterMessage::TintChanged(tint) => WorkspaceEvent::TintChanged(tint).into()
