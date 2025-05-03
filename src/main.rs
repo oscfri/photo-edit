@@ -23,7 +23,7 @@ use workspace::album::Album;
 use workspace::image_manager::ImageManager;
 use workspace::workspace::Workspace;
 use repository::repository_factory;
-use ui::message::{Message, MouseState};
+use ui::message::{KeyboardMessage, Message, MouseState};
 use ui::main_window::MainWindow;
 use viewport::Viewport;
 
@@ -49,6 +49,32 @@ struct Main {
 
 fn init() -> (Main, iced::Task<Message>) {
     (Main::new(), iced::Task::done(Message::OnStartMessage))
+}
+
+fn handle_keyboard_event(event: iced::keyboard::Event) -> Option<KeyboardMessage> {
+    match event {
+        iced::keyboard::Event::KeyPressed { key, modified_key: _, physical_key: _, location: _, modifiers: _, text: _ } => {
+            handle_key_press(key)
+        },
+        _ => None
+    }
+}
+
+fn handle_key_press(key: iced::keyboard::Key) -> Option<KeyboardMessage> {
+    match key.as_ref() {
+        iced::keyboard::Key::Character(character) => {
+            handle_key_press_character(character)
+        },
+        _ => None
+    }
+}
+
+fn handle_key_press_character(character: &str) -> Option<KeyboardMessage> {
+    match character {
+        "a" => Some(KeyboardMessage::PreviousImage),
+        "d" => Some(KeyboardMessage::NextImage),
+        _ => None
+    }
 }
 
 impl Main {
@@ -101,6 +127,10 @@ impl Main {
 
     pub fn subscription(&self) -> iced::Subscription<Message> {
         iced::Subscription::batch(vec![
+            iced::event::listen_with(|event, _status, _window| match event {
+                iced::Event::Keyboard(keyboard_event) => handle_keyboard_event(keyboard_event).map(Message::KeyboardMessage),
+                _ => None
+            }),
             iced::window::close_requests().map(Message::OnWindowCloseMessage),
             iced::time::every(Duration::from_secs(10)).map(|_| Message::OnTimeTickMessage),
         ])

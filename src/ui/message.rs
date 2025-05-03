@@ -98,6 +98,12 @@ pub enum TaskMessage {
 }
 
 #[derive(Debug, Clone)]
+pub enum KeyboardMessage {
+    PreviousImage,
+    NextImage
+}
+
+#[derive(Debug, Clone)]
 pub enum Message {
     OnStartMessage,
     OnWindowCloseMessage(iced::window::Id),
@@ -109,6 +115,8 @@ pub enum Message {
     ToolboxMessage(ToolboxMessage),
     TopPaneMessage(TopPaneMessage),
     WelcomeMessage(WelcomeMessage),
+
+    KeyboardMessage(KeyboardMessage),
 
     TaskMessage(TaskMessage)
 }

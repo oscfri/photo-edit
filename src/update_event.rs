@@ -1,4 +1,4 @@
-use crate::{pipeline::viewport, types::RawImage, ui::message::{BottomPaneMessage, ImageSelectionMessage, MainParameterMessage, MaskChangeMessage, MaskMessage, Message, MiscMessage, MouseMessage, RenderMessage, TaskMessage, ToolboxMessage, TopPaneMessage, WelcomeMessage}, workspace::parameters::CropPreset};
+use crate::{pipeline::viewport, types::RawImage, ui::message::{BottomPaneMessage, ImageSelectionMessage, KeyboardMessage, MainParameterMessage, MaskChangeMessage, MaskMessage, Message, MiscMessage, MouseMessage, RenderMessage, TaskMessage, ToolboxMessage, TopPaneMessage, WelcomeMessage}, workspace::parameters::CropPreset};
 
 #[derive(Debug, Clone, Copy)]
 pub struct MousePosition {
@@ -220,6 +220,15 @@ impl From<WelcomeMessage> for UpdateEvent {
     }
 }
 
+impl From<KeyboardMessage> for UpdateEvent {
+    fn from(message: KeyboardMessage) -> Self {
+        match message {
+            KeyboardMessage::PreviousImage => AlbumEvent::PreviousImage.into(),
+            KeyboardMessage::NextImage => AlbumEvent::NextImage.into()
+        }
+    }
+}
+
 impl From<TaskMessage> for UpdateEvent {
     fn from(message: TaskMessage) -> Self {
         match message {
@@ -245,6 +254,7 @@ impl From<Message> for UpdateEvent {
             Message::ToolboxMessage(message) => message.into(),
             Message::TopPaneMessage(message) => message.into(),
             Message::WelcomeMessage(message) => message.into(),
+            Message::KeyboardMessage(message) => message.into(),
             Message::TaskMessage(message) => message.into()
         }
     }
