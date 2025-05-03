@@ -351,7 +351,7 @@ impl Workspace {
                 if let Some(crop) = &mut parameters.crop {
                     crop.preset = crop_preset;
                 }
-            });   
+            });
     }
 
     pub fn toggle_parameters_visibility(&mut self) {

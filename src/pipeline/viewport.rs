@@ -4,6 +4,7 @@ use crate::types::RawImage;
 use crate::pipeline::pipeline;
 use crate::pipeline::camera_uniform;
 use crate::workspace::parameters::Crop;
+use crate::workspace::parameters::CropPreset;
 use crate::workspace::parameters::{Parameters, RadialMask};
 use crate::workspace::workspace::Workspace;
 
@@ -72,12 +73,28 @@ pub struct ViewportCrop {
 impl From<Crop> for ViewportCrop {
     fn from(crop: Crop) -> Self {
         let scale = f32::powf(2.0, crop.scale);
-        Self {
-            center_x: crop.center_x,
-            center_y: crop.center_y,
-            width: ((crop.source_image_width as f32) * scale) as i32,
-            height: ((crop.source_image_height as f32) * scale) as i32,
-            angle_degrees: crop.get_full_angle()
+
+        match crop.preset {
+            CropPreset::Original => {
+                Self {
+                    center_x: crop.center_x,
+                    center_y: crop.center_y,
+                    width: ((crop.source_image_width as f32) * scale) as i32,
+                    height: ((crop.source_image_height as f32) * scale) as i32,
+                    angle_degrees: crop.get_full_angle()
+                }
+            },
+            CropPreset::Ratio(width, height) => {
+                let crop_width = (crop.source_image_width as f32) * scale;
+                let crop_height = crop_width * (height as f32) / (width as f32);
+                Self {
+                    center_x: crop.center_x,
+                    center_y: crop.center_y,
+                    width: crop_width as i32,
+                    height: crop_height as i32,
+                    angle_degrees: crop.get_full_angle()
+                }
+            }
         }
     }
 }
