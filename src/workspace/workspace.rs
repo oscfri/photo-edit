@@ -148,6 +148,14 @@ impl Workspace {
         self.image.image.clone()
     }
 
+    pub fn current_source_image_width(&self) -> Option<usize> {
+        self.image.image.as_ref().map(|image| image.width)
+    }
+
+    pub fn current_source_image_height(&self) -> Option<usize> {
+        self.image.image.as_ref().map(|image| image.height)
+    }
+
     // TODO: Check all uses of this one
     pub fn current_parameters(&self) -> Parameters {
         self.image.parameter_history.lock().unwrap().current()
@@ -176,6 +184,11 @@ impl Workspace {
 
     pub fn current_image_view(&self) -> ImageView {
         self.image.image_view.lock().unwrap().clone()
+    }
+
+    pub fn current_crop_rotation(&self) -> i32 {
+        self.current_parameters().crop.as_ref()
+            .map_or(0, |crop| crop.rotation)
     }
 
     pub fn current_angle_degrees(&self) -> f32 {
@@ -422,12 +435,26 @@ impl Workspace {
                 let angle_degrees = self.image.parameter_history.lock().unwrap().current().crop
                     .map(|crop| crop.get_full_angle())
                     .unwrap_or(0.0);
-                ViewportCrop {
-                    center_x: (self.current_source_image().unwrap().width as i32) / 2,
-                    center_y: (self.current_source_image().unwrap().height as i32) / 2,
-                    width: self.current_source_image().unwrap().width as i32,
-                    height: self.current_source_image().unwrap().height as i32,
-                    angle_degrees: angle_degrees,
+                let width = self.current_source_image_width().unwrap();
+                let height = self.current_source_image_height().unwrap();
+                let scale = 1.1;
+
+                if self.current_crop_rotation() % 2 == 0 {
+                    ViewportCrop {
+                        center_x: (width as i32) / 2,
+                        center_y: (height as i32) / 2,
+                        width: ((width as f32) * scale) as i32,
+                        height: ((height as f32) * scale) as i32,
+                        angle_degrees: angle_degrees,
+                    }
+                } else {
+                    ViewportCrop {
+                        center_x: (width as i32) / 2,
+                        center_y: (height as i32) / 2,
+                        width: ((height as f32) * scale) as i32,
+                        height: ((width as f32) * scale) as i32,
+                        angle_degrees: angle_degrees,
+                    }
                 }
             },
             _ => self.make_view()
