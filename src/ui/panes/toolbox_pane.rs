@@ -66,7 +66,7 @@ impl <'a> ToolboxPane {
     fn view_slider(&self, label: &'a str, value: f32, message: impl Fn(f32) -> MainParameterMessage + 'a) -> iced::Element<'a, MainParameterMessage> {
         let label_text = iced::widget::container(iced::widget::text(label))
             .align_left(iced::Fill);
-        let value_text = iced::widget::container(iced::widget::text(format!("{}", value)))
+        let value_text = iced::widget::container(iced::widget::text(format!("{:.1}", value)))
             .align_right(iced::Fill);
         let label_row = iced::widget::row![
                 label_text,
