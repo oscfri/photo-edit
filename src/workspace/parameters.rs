@@ -107,6 +107,10 @@ impl ParameterHistory {
 
         if self.has_changed() {
             if self.needs_new() {
+                while self.parameter_history_index + 1 < self.parameter_history.len() {
+                    self.parameter_history.pop();
+                }
+
                 self.parameter_history.push(self.parameters.clone());
                 self.parameter_history_index += 1;
                 self.last_updated = SystemTime::now();
