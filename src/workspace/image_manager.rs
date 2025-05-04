@@ -17,6 +17,7 @@ struct SourceImage {
     thumbnail: Option<Arc<RawImage>>,
     parameter_history: Arc<Mutex<ParameterHistory>>,
     image_view: Arc<Mutex<ImageView>>,
+    pending_load: bool
 }
 
 pub struct ImagePathToLoad {
@@ -65,6 +66,7 @@ impl ImageManager {
             .flat_map(|photo_id| self.source_images.get(&photo_id)
                 .map(|source_image| (photo_id, source_image)))
             .filter(|(_, source_image)| source_image.image.is_none())
+            .filter(|(_, source_image)| !source_image.pending_load)
             .map(|(photo_id, source_image)| {
                 let path = source_image.path.clone();
                 ImagePathToLoad {
@@ -81,6 +83,7 @@ impl ImageManager {
 
             let image_width = image.width;
             let image_height = image.height;
+            source_image.pending_load = false;
             source_image.image = Some(Arc::new(image));
             source_image.thumbnail = Some(Arc::new(thumbnail));
             source_image.parameter_history.lock().unwrap()
@@ -89,6 +92,12 @@ impl ImageManager {
                         parameters.crop = Some(Self::create_default_crop(image_width, image_height));
                     }
                 });
+        }
+    }
+
+    pub fn set_image_pending_load(&mut self, photo_id: i32) {
+        if let Some(source_image) = self.source_images.get_mut(&photo_id) {
+            source_image.pending_load = true
         }
     }
 
@@ -161,12 +170,16 @@ impl ImageManager {
         let paramters_raw = Self::parse_parameters(&album_photo.parameters);
         let parameter_history = Arc::new(Mutex::new(paramters_raw.into()));
         let image_view = Arc::new(Mutex::new(ImageView::default()));
+        let pending_load = false;
+
+
         SourceImage {
             path,
             image,
             thumbnail,
             parameter_history,
-            image_view
+            image_view,
+            pending_load
         }
     }
 

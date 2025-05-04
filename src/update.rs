@@ -272,12 +272,15 @@ impl Main {
         }
     }
 
-    fn batch_image_load(&self) -> iced::Task<Message> {
+    fn batch_image_load(&mut self) -> iced::Task<Message> {
         if let Some(curent_photo_id) = self.album.get_photo_id() {
             iced::Task::batch(self.image_manager.get_paths_to_load(curent_photo_id).iter()
                 .map(|image_path| {
                     let photo_id = image_path.photo_id;
                     let path = image_path.path.clone();
+
+                    self.image_manager.set_image_pending_load(photo_id);
+
                     iced::Task::perform(
                         image_loader::load_image(photo_id, path),
                         TaskMessage::NewImage)
