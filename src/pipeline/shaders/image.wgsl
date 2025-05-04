@@ -147,9 +147,12 @@ fn from_lightness_adjustment_space(lab: vec3<f32>) -> vec3<f32> {
 }
 
 fn calculate_brightness_value(lab: vec3<f32>) -> f32 {
-    var shadows_modifier: f32 = clamp((lab.x + 0.5) * (0.5 - lab.x), 0.0, 1.0) * 2.0;
-    var midtones_modifier: f32 = clamp((lab.x - 0.25) * (0.75 - lab.x), 0.0, 1.0) * 4.0;
-    var highlights_modifier: f32 = clamp((lab.x - 0.5) * (1.5 - lab.x), 0.0, 1.0) * 1.0;
+    // Shadows range: [0.0, 0.75]
+    // Midtones range: [0.0, 1.0]
+    // Highlights range: [0.25, 1.0]
+    var shadows_modifier: f32 = cubic_hermite(1.0 - (0.75 - lab.x) / 0.75) * 2.0;
+    var midtones_modifier: f32 = cubic_hermite(abs(lab.x - 0.5) / 0.5);
+    var highlights_modifier: f32 = cubic_hermite(1.0 - (lab.x - 0.25) / 0.75) * 0.5;
 
     return shadows_modifier * parameters.shadows +
         midtones_modifier * parameters.midtones +

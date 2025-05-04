@@ -30,12 +30,14 @@ impl <'a> ToolboxPane {
         if self.enabled {
             let column = iced::widget::column![
                     self.view_main_parameter_sliders().map(ToolboxMessage::MainParameterMessage),
+                    iced::widget::horizontal_rule(2),
                     self.view_all_mask_parameter_sliders().map(ToolboxMessage::MaskMessage),
+                    iced::widget::horizontal_rule(2),
                     self.view_misc_buttons().map(ToolboxMessage::MiscMessage)
                 ]
-                .spacing(30);
+                .spacing(15);
             let contents = iced::widget::container(column)
-                .padding(10);
+                .padding(15);
 
             iced::widget::scrollable(contents)
                 .width(iced::Fill)
@@ -51,16 +53,27 @@ impl <'a> ToolboxPane {
     }
 
     fn view_main_parameter_sliders(&self) -> iced::Element<'a, MainParameterMessage> {
-        iced::widget::column![
+        let main_group = iced::widget::column![
                 self.view_slider("Brightness", self.parameters.brightness, MainParameterMessage::BrightnessChanged),
                 self.view_slider("Contrast", self.parameters.contrast, MainParameterMessage::ContrastChanged),
+            ];
+        let tones_group = iced::widget::column![
                 self.view_slider("Shadows", self.parameters.shadows, MainParameterMessage::ShadowsChanged),
                 self.view_slider("Midtones", self.parameters.midtones, MainParameterMessage::MidtonesChanged),
                 self.view_slider("Highlights", self.parameters.highlights, MainParameterMessage::HighlightsChanged),
+            ];
+        let colors_group = iced::widget::column![
                 self.view_slider("Tint", self.parameters.tint, MainParameterMessage::TintChanged),
                 self.view_slider("Temperature", self.parameters.temperature, MainParameterMessage::TemperatureChanged),
                 self.view_slider("Saturation", self.parameters.saturation, MainParameterMessage::SaturationChanged),
+            ];
+
+        iced::widget::column![
+                main_group,
+                tones_group,
+                colors_group,
             ]
+            .spacing(15)
             .into()
     }
 
