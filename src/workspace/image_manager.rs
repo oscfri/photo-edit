@@ -7,7 +7,7 @@ use crate::{repository::repository::{AlbumPhotoDto, Repository}, types::RawImage
 use super::{album_image::AlbumImage, parameters::{Crop, CropPreset, ParameterHistory, Parameters}, workspace::{ImageView, WorkspaceImage}};
 
 // TODO: Adapt these values
-const CACHE_SIZE: usize = 40;
+const CACHE_SIZE: usize = 20;
 const LOAD_SIZE: usize = 5;
 
 #[derive(Clone)]
@@ -59,18 +59,16 @@ impl ImageManager {
     }
 
     pub fn get_paths_to_load(&self, photo_id_hint: i32) -> Vec<ImagePathToLoad> {
-        self.source_images.iter()
-            .filter(|(_, source_image)| self.should_display_image(source_image))
-            .map(|(photo_id, _)| photo_id.clone())
-            .sorted_by_key(|photo_id| (photo_id - photo_id_hint).abs())
-            .take(LOAD_SIZE)
+        let photo_ids_to_load: Vec<i32> = self.get_photo_ids_to_keep_in_memory(photo_id_hint, LOAD_SIZE);
+        
+        photo_ids_to_load.iter()
             .flat_map(|photo_id| self.source_images.get(&photo_id)
                 .map(|source_image| (photo_id, source_image)))
             .filter(|(_, source_image)| source_image.image.is_none())
             .map(|(photo_id, source_image)| {
                 let path = source_image.path.clone();
                 ImagePathToLoad {
-                    photo_id: photo_id,
+                    photo_id: *photo_id,
                     path
                 }
             })
@@ -95,10 +93,11 @@ impl ImageManager {
     }
 
     pub fn flush_cache(&mut self, photo_id_hint: i32) {
+        let photo_ids_to_keep: Vec<i32> = self.get_photo_ids_to_keep_in_memory(photo_id_hint, CACHE_SIZE);
+
         let photo_ids_to_unload: Vec<i32> = self.source_images.iter()
-            .map(|(photo_id, _)| photo_id.clone())
-            .sorted_by_key(|photo_id| (photo_id - photo_id_hint).abs())
-            .skip(CACHE_SIZE)
+            .map(|(photo_id, _)| *photo_id)
+            .filter(|photo_id| !photo_ids_to_keep.contains(photo_id))
             .collect();
 
         for photo_id in photo_ids_to_unload {
@@ -200,5 +199,23 @@ impl ImageManager {
         } else {
             true
         }
+    }
+
+    fn get_photo_ids_to_keep_in_memory(&self, photo_id_hint: i32, cache_size: usize) -> Vec<i32> {
+        let photo_ids_to_display: Vec<i32> = self.source_images.iter()
+            .filter(|(_, source_image)| self.should_display_image(source_image))
+            .map(|(photo_id, _)| *photo_id)
+            .collect();
+
+        let index_hint = photo_ids_to_display.iter().enumerate()
+            .min_by_key(|(_, photo_id)| (*photo_id - photo_id_hint).abs())
+            .map(|(index, _)| index as i32)
+            .unwrap_or(0);
+
+        photo_ids_to_display.iter().enumerate()
+            .sorted_by_key(|(index, _)| ((*index as i32) - index_hint).abs())
+            .map(|(_, photo_id)| *photo_id)
+            .take(cache_size)
+            .collect()
     }
 }
