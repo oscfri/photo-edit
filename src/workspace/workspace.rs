@@ -244,6 +244,11 @@ impl Workspace {
             .update(|parameters| parameters.shadows = shadows)
     }
 
+    pub fn set_midtones(&mut self, midtones: f32) {
+        self.image.parameter_history.lock().unwrap()
+            .update(|parameters| parameters.midtones = midtones)
+    }
+
     pub fn set_highlights(&mut self, highlights: f32) {
         self.image.parameter_history.lock().unwrap()
             .update(|parameters| parameters.highlights = highlights)

@@ -31,6 +31,7 @@ pub enum MainParameterMessage {
     BrightnessChanged(f32),
     ContrastChanged(f32),
     ShadowsChanged(f32),
+    MidtonesChanged(f32),
     HighlightsChanged(f32),
     SaturationChanged(f32),
     TemperatureChanged(f32),

@@ -99,6 +99,9 @@ impl Main {
                 WorkspaceEvent::ShadowsChanged(shadows) => {
                     workspace.set_shadows(shadows);
                 },
+                WorkspaceEvent::MidtonesChanged(midtones) => {
+                    workspace.set_midtones(midtones);
+                },
                 WorkspaceEvent::HighlightsChanged(highlights) => {
                     workspace.set_highlights(highlights);
                 },

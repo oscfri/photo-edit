@@ -13,6 +13,7 @@ struct ParameterUniform {
     brightness: f32,
     contrast: f32,
     shadows: f32,
+    midtones: f32,
     highlights: f32,
     tint: f32,
     temperature: f32,
@@ -146,10 +147,12 @@ fn from_lightness_adjustment_space(lab: vec3<f32>) -> vec3<f32> {
 }
 
 fn calculate_brightness_value(lab: vec3<f32>) -> f32 {
-    var shadows_modifier: f32 = clamp(0.5 - lab.x, 0.0, 1.0) * 2.0;
-    var highlights_modifier: f32 = clamp(lab.x - 0.5, 0.0, 1.0) * 0.5;
+    var shadows_modifier: f32 = clamp((lab.x + 0.5) * (0.5 - lab.x), 0.0, 1.0) * 2.0;
+    var midtones_modifier: f32 = clamp((lab.x - 0.25) * (0.75 - lab.x), 0.0, 1.0) * 4.0;
+    var highlights_modifier: f32 = clamp((lab.x - 0.5) * (1.5 - lab.x), 0.0, 1.0) * 1.0;
 
     return shadows_modifier * parameters.shadows +
+        midtones_modifier * parameters.midtones +
         highlights_modifier * parameters.highlights +
         parameters.brightness;
 }

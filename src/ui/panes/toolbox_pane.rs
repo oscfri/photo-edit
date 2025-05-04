@@ -55,6 +55,7 @@ impl <'a> ToolboxPane {
                 self.view_slider("Brightness", self.parameters.brightness, MainParameterMessage::BrightnessChanged),
                 self.view_slider("Contrast", self.parameters.contrast, MainParameterMessage::ContrastChanged),
                 self.view_slider("Shadows", self.parameters.shadows, MainParameterMessage::ShadowsChanged),
+                self.view_slider("Midtones", self.parameters.midtones, MainParameterMessage::MidtonesChanged),
                 self.view_slider("Highlights", self.parameters.highlights, MainParameterMessage::HighlightsChanged),
                 self.view_slider("Tint", self.parameters.tint, MainParameterMessage::TintChanged),
                 self.view_slider("Temperature", self.parameters.temperature, MainParameterMessage::TemperatureChanged),

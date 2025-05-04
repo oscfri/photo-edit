@@ -12,6 +12,8 @@ pub struct Parameters {
     #[serde(default)]
     pub shadows: f32,
     #[serde(default)]
+    pub midtones: f32,
+    #[serde(default)]
     pub highlights: f32,
     pub radial_masks: Vec<RadialMask>,
     pub crop: Option<Crop>,
