@@ -64,10 +64,10 @@ impl ImageView {
     pub fn update_zoom(&mut self, zoom_delta: f32) {
         self.zoom += zoom_delta;
 
-        if self.zoom < -1.0 {
-            self.zoom = -1.0;
-        } else if self.zoom > 10.0 {
-            self.zoom = 10.0
+        if self.zoom < 0.0 {
+            self.zoom = 0.0;
+        } else if self.zoom > 4.0 {
+            self.zoom = 4.0
         } else if self.zoom.abs() < 1e-5 {
             // Snap to 0 to make default comparison more reliable
             self.zoom = 0.0
