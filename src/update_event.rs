@@ -235,7 +235,9 @@ impl From<KeyboardMessage> for UpdateEvent {
             KeyboardMessage::CropRotateRight => WorkspaceEvent::CropRotateRight.into(),
             KeyboardMessage::ToggleFavorite => WorkspaceEvent::ToggleFavorite.into(),
             KeyboardMessage::ToggleDisplayGrid => WorkspaceEvent::ToggleDisplayGrid.into(),
-            KeyboardMessage::ToggleCropMode => WorkspaceEvent::ToggleCropMode.into()
+            KeyboardMessage::ToggleCropMode => WorkspaceEvent::ToggleCropMode.into(),
+            KeyboardMessage::Undo => WorkspaceEvent::Undo.into(),
+            KeyboardMessage::Redo => WorkspaceEvent::Redo.into()
         }
     }
 }

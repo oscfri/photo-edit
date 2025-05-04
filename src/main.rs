@@ -53,32 +53,44 @@ fn init() -> (Main, iced::Task<Message>) {
 
 fn handle_keyboard_event(event: iced::keyboard::Event) -> Option<KeyboardMessage> {
     match event {
-        iced::keyboard::Event::KeyPressed { key, modified_key: _, physical_key: _, location: _, modifiers: _, text: _ } => {
-            handle_key_press(key)
+        iced::keyboard::Event::KeyPressed { key, modified_key: _, physical_key: _, location: _, modifiers, text: _ } => {
+            handle_key_press(key, modifiers)
         },
         _ => None
     }
 }
 
-fn handle_key_press(key: iced::keyboard::Key) -> Option<KeyboardMessage> {
+fn handle_key_press(key: iced::keyboard::Key, modifiers: iced::keyboard::Modifiers) -> Option<KeyboardMessage> {
     match key.as_ref() {
         iced::keyboard::Key::Character(character) => {
-            handle_key_press_character(character)
+            handle_key_press_character(character, modifiers)
         },
         _ => None
     }
 }
 
-fn handle_key_press_character(character: &str) -> Option<KeyboardMessage> {
-    match character {
-        "d" => Some(KeyboardMessage::NextImage),
-        "a" => Some(KeyboardMessage::PreviousImage),
-        "q" => Some(KeyboardMessage::CropRotateLeft),
-        "e" => Some(KeyboardMessage::CropRotateRight),
-        "f" => Some(KeyboardMessage::ToggleFavorite),
-        "g" => Some(KeyboardMessage::ToggleDisplayGrid),
-        "c" => Some(KeyboardMessage::ToggleCropMode),
-        _ => None
+fn handle_key_press_character(character: &str, modifiers: iced::keyboard::Modifiers) -> Option<KeyboardMessage> {
+    if modifiers.control() && modifiers.shift() {
+        match character {
+            "z" => Some(KeyboardMessage::Redo),
+            _ => None
+        }
+    } else if modifiers.control() {
+        match character {
+            "z" => Some(KeyboardMessage::Undo),
+            _ => None
+        }
+    } else {
+        match character {
+            "d" => Some(KeyboardMessage::NextImage),
+            "a" => Some(KeyboardMessage::PreviousImage),
+            "q" => Some(KeyboardMessage::CropRotateLeft),
+            "e" => Some(KeyboardMessage::CropRotateRight),
+            "f" => Some(KeyboardMessage::ToggleFavorite),
+            "g" => Some(KeyboardMessage::ToggleDisplayGrid),
+            "c" => Some(KeyboardMessage::ToggleCropMode),
+            _ => None
+        }
     }
 }
 

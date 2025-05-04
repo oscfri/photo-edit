@@ -108,7 +108,9 @@ pub enum KeyboardMessage {
     CropRotateRight,
     ToggleFavorite,
     ToggleDisplayGrid,
-    ToggleCropMode
+    ToggleCropMode,
+    Undo,
+    Redo
 }
 
 #[derive(Debug, Clone)]
