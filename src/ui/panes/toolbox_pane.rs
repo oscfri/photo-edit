@@ -29,7 +29,7 @@ impl <'a> ToolboxPane {
     fn view_contents(&self) -> iced::Element<'a, ToolboxMessage> {
         if self.enabled {
             let column = iced::widget::column![
-                    self.view_main_parameter_sliders().map(ToolboxMessage::MainParameterMessage),
+                    self.view_base_parameter_sliders().map(ToolboxMessage::MainParameterMessage),
                     iced::widget::horizontal_rule(2),
                     self.view_all_mask_parameter_sliders().map(ToolboxMessage::MaskMessage),
                     iced::widget::horizontal_rule(2),
@@ -52,20 +52,22 @@ impl <'a> ToolboxPane {
         }
     }
 
-    fn view_main_parameter_sliders(&self) -> iced::Element<'a, MainParameterMessage> {
+    fn view_base_parameter_sliders(&self) -> iced::Element<'a, MainParameterMessage> {
+        let base_parameters = &self.parameters.base_parameters;
+
         let main_group = iced::widget::column![
-                self.view_slider("Brightness", self.parameters.brightness, MainParameterMessage::BrightnessChanged),
-                self.view_slider("Contrast", self.parameters.contrast, MainParameterMessage::ContrastChanged),
+                self.view_slider("Exposure", base_parameters.exposure, MainParameterMessage::ExposureChanged),
+                self.view_slider("Contrast", base_parameters.contrast, MainParameterMessage::ContrastChanged),
             ];
         let tones_group = iced::widget::column![
-                self.view_slider("Shadows", self.parameters.shadows, MainParameterMessage::ShadowsChanged),
-                self.view_slider("Midtones", self.parameters.midtones, MainParameterMessage::MidtonesChanged),
-                self.view_slider("Highlights", self.parameters.highlights, MainParameterMessage::HighlightsChanged),
+                self.view_slider("Shadows", base_parameters.shadows, MainParameterMessage::ShadowsChanged),
+                self.view_slider("Midtones", base_parameters.midtones, MainParameterMessage::MidtonesChanged),
+                self.view_slider("Highlights", base_parameters.highlights, MainParameterMessage::HighlightsChanged),
             ];
         let colors_group = iced::widget::column![
-                self.view_slider("Tint", self.parameters.tint, MainParameterMessage::TintChanged),
-                self.view_slider("Temperature", self.parameters.temperature, MainParameterMessage::TemperatureChanged),
-                self.view_slider("Saturation", self.parameters.saturation, MainParameterMessage::SaturationChanged),
+                self.view_slider("Tint", base_parameters.tint, MainParameterMessage::TintChanged),
+                self.view_slider("Temperature", base_parameters.temperature, MainParameterMessage::TemperatureChanged),
+                self.view_slider("Saturation", base_parameters.saturation, MainParameterMessage::SaturationChanged),
             ];
 
         iced::widget::column![

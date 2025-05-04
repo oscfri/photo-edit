@@ -3,7 +3,7 @@ use super::viewport::ViewportParameters;
 #[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
 #[repr(C)]
 pub struct ParameterUniform {
-    brightness: f32,
+    exposure: f32,
     contrast: f32,
     shadows: f32,
     midtones: f32,
@@ -16,7 +16,7 @@ pub struct ParameterUniform {
 impl ParameterUniform {
     pub fn new(parameters: &ViewportParameters) -> Self {
         Self {
-            brightness: parameters.brightness,
+            exposure: parameters.exposure,
             contrast: (parameters.contrast * 0.5 + 100.0) / 100.0,
             shadows: parameters.shadows,
             midtones: parameters.midtones,

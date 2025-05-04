@@ -3,18 +3,22 @@ use std::time::SystemTime;
 use serde;
 
 #[derive(Debug, Default, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
-pub struct Parameters {
-    pub brightness: f32, // TODO: Rename to exposure
+pub struct BaseParameters {
+    pub exposure: f32,
     pub contrast: f32,
     pub tint: f32,
     pub temperature: f32,
     pub saturation: f32,
-    #[serde(default)]
     pub shadows: f32,
-    #[serde(default)]
     pub midtones: f32,
-    #[serde(default)]
     pub highlights: f32,
+}
+
+
+#[derive(Debug, Default, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
+pub struct Parameters {
+    #[serde(default)]
+    pub base_parameters: BaseParameters,
     pub radial_masks: Vec<RadialMask>,
     pub crop: Option<Crop>,
     pub is_favorite: bool,
@@ -28,7 +32,7 @@ pub struct RadialMask {
     pub height: i32,
     pub angle: f32,
     pub feather: f32,
-    pub brightness: f32,
+    pub brightness: f32, // TODO: Rename to exposure
     pub is_linear: bool
 }
 

@@ -21,6 +21,7 @@ use ui::welcome_window::WelcomeWindow;
 use view_mode::ViewMode;
 use workspace::album::Album;
 use workspace::image_manager::ImageManager;
+use workspace::parameters::Parameters;
 use workspace::workspace::Workspace;
 use repository::repository_factory;
 use ui::message::{KeyboardMessage, Message, MouseState};
@@ -45,6 +46,7 @@ struct Main {
     image_manager: ImageManager,
 
     viewport: Option<Viewport>,
+    clipboard_parameters: Option<Parameters>
 }
 
 fn init() -> (Main, iced::Task<Message>) {
@@ -78,6 +80,8 @@ fn handle_key_press_character(character: &str, modifiers: iced::keyboard::Modifi
     } else if modifiers.control() {
         match character {
             "z" => Some(KeyboardMessage::Undo),
+            "c" => Some(KeyboardMessage::Copy),
+            "v" => Some(KeyboardMessage::Paste),
             _ => None
         }
     } else {
@@ -107,6 +111,7 @@ impl Main {
             .map(Workspace::new);
         
         let viewport = workspace.as_ref().and_then(Viewport::try_new);
+        let clipboard_parameters = None;
     
         Self {
             album,
@@ -114,6 +119,7 @@ impl Main {
             repository,
             image_manager,
             viewport,
+            clipboard_parameters
         }
     }
 

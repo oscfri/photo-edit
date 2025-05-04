@@ -28,7 +28,7 @@ pub enum MouseMessage {
 
 #[derive(Debug, Clone)]
 pub enum MainParameterMessage {
-    BrightnessChanged(f32),
+    ExposureChanged(f32),
     ContrastChanged(f32),
     ShadowsChanged(f32),
     MidtonesChanged(f32),
@@ -110,7 +110,9 @@ pub enum KeyboardMessage {
     ToggleDisplayGrid,
     ToggleCropMode,
     Undo,
-    Redo
+    Redo,
+    Copy,
+    Paste
 }
 
 #[derive(Debug, Clone)]

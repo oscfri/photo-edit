@@ -9,7 +9,7 @@ pub struct RadialParameter {
     height: f32,
     angle: f32,
     feather: f32,
-    brightness: f32,
+    exposure: f32,
     _1: f32,
 }
 
@@ -34,7 +34,7 @@ impl RadialParameters {
             }
             entries[index].angle = radial_mask.angle / 180.0 * std::f32::consts::PI;
             entries[index].feather = (radial_mask.feather + 100.0) / 200.0;
-            entries[index].brightness = radial_mask.brightness;
+            entries[index].exposure = radial_mask.brightness;
         }
         RadialParameters {
             entries,

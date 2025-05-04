@@ -90,8 +90,8 @@ impl Main {
                 WorkspaceEvent::ToggleMaskMode(mask_index) => {
                     workspace.toggle_view_mode(ViewMode::Mask(mask_index));
                 },
-                WorkspaceEvent::BrightnessChanged(brightness) => {
-                    workspace.set_brightness(brightness);
+                WorkspaceEvent::ExposureChanged(exposure) => {
+                    workspace.set_exposure(exposure);
                 },
                 WorkspaceEvent::ContrastChanged(contrast) => {
                     workspace.set_contrast(contrast);
@@ -161,6 +161,14 @@ impl Main {
                 },
                 WorkspaceEvent::Redo => {
                     workspace.redo();
+                },
+                WorkspaceEvent::Copy => {
+                    self.clipboard_parameters = Some(workspace.copy_parameters());
+                },
+                WorkspaceEvent::Paste => {
+                    if let Some(parameters) = self.clipboard_parameters.as_ref() {
+                        workspace.paste_parameters(parameters);
+                    }
                 },
                 WorkspaceEvent::ResetView => {
                     workspace.reset_view();

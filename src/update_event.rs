@@ -27,7 +27,7 @@ impl From<MouseEvent> for UpdateEvent {
 pub enum WorkspaceEvent {
     ToggleCropMode,
     ToggleMaskMode(usize),
-    BrightnessChanged(f32),
+    ExposureChanged(f32),
     ContrastChanged(f32),
     ShadowsChanged(f32),
     MidtonesChanged(f32),
@@ -51,6 +51,8 @@ pub enum WorkspaceEvent {
     ExportImage,
     Undo,
     Redo,
+    Copy,
+    Paste,
     ResetView,
     ToggleDisplayGrid,
     ImageMouseEvent(MouseEvent),
@@ -115,7 +117,7 @@ impl From<BottomPaneMessage> for UpdateEvent {
 impl From<MainParameterMessage> for UpdateEvent {
     fn from(message: MainParameterMessage) -> Self {
         match message {
-            MainParameterMessage::BrightnessChanged(brightness) => WorkspaceEvent::BrightnessChanged(brightness).into(),
+            MainParameterMessage::ExposureChanged(exposure) => WorkspaceEvent::ExposureChanged(exposure).into(),
             MainParameterMessage::ContrastChanged(contrast) => WorkspaceEvent::ContrastChanged(contrast).into(),
             MainParameterMessage::ShadowsChanged(shadows) => WorkspaceEvent::ShadowsChanged(shadows).into(),
             MainParameterMessage::MidtonesChanged(midtones) => WorkspaceEvent::MidtonesChanged(midtones).into(),
@@ -237,7 +239,9 @@ impl From<KeyboardMessage> for UpdateEvent {
             KeyboardMessage::ToggleDisplayGrid => WorkspaceEvent::ToggleDisplayGrid.into(),
             KeyboardMessage::ToggleCropMode => WorkspaceEvent::ToggleCropMode.into(),
             KeyboardMessage::Undo => WorkspaceEvent::Undo.into(),
-            KeyboardMessage::Redo => WorkspaceEvent::Redo.into()
+            KeyboardMessage::Redo => WorkspaceEvent::Redo.into(),
+            KeyboardMessage::Copy => WorkspaceEvent::Copy.into(),
+            KeyboardMessage::Paste => WorkspaceEvent::Paste.into(),
         }
     }
 }

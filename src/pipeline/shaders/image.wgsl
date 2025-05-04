@@ -10,7 +10,7 @@ struct CameraUniform {
 var<uniform> camera: CameraUniform;
 
 struct ParameterUniform {
-    brightness: f32,
+    exposure: f32,
     contrast: f32,
     shadows: f32,
     midtones: f32,
@@ -38,7 +38,7 @@ struct RadialParameter {
     height: f32,
     angle: f32,
     feather: f32,
-    brightness: f32,
+    exposure: f32,
     _1: f32,
 }
 struct RadialParameters {
@@ -128,8 +128,8 @@ fn apply_global_parameters(lab: vec3<f32>) -> vec3<f32> {
     applied = to_lightness_adjustment_space(applied);
 
     // Lightness adjustment
-    var brightness_value = calculate_brightness_value(applied);
-    applied = apply_brightness(applied, brightness_value);
+    var exposure_value = calculate_exposure_value(applied);
+    applied = apply_exposure(applied, exposure_value);
     applied -= vec3<f32>(0.5, 0.0, 0.0);
     applied *= vec3<f32>(parameters.contrast, 1.0, 1.0);
     applied += vec3<f32>(0.5, 0.0, 0.0);
@@ -146,7 +146,7 @@ fn from_lightness_adjustment_space(lab: vec3<f32>) -> vec3<f32> {
     return lab * vec3<f32>(1.0, lab.x + 0.1, lab.x + 0.1);
 }
 
-fn calculate_brightness_value(lab: vec3<f32>) -> f32 {
+fn calculate_exposure_value(lab: vec3<f32>) -> f32 {
     // Shadows range: [0.0, 0.75]
     // Midtones range: [0.0, 1.0]
     // Highlights range: [0.25, 1.0]
@@ -157,11 +157,11 @@ fn calculate_brightness_value(lab: vec3<f32>) -> f32 {
     return shadows_modifier * parameters.shadows +
         midtones_modifier * parameters.midtones +
         highlights_modifier * parameters.highlights +
-        parameters.brightness;
+        parameters.exposure;
 }
 
-fn apply_brightness(lab: vec3<f32>, brightness: f32) -> vec3<f32> {
-    return lab * vec3<f32>((brightness * 0.01) + 1.0, 1.0, 1.0);
+fn apply_exposure(lab: vec3<f32>, exposure: f32) -> vec3<f32> {
+    return lab * vec3<f32>((exposure * 0.01) + 1.0, 1.0, 1.0);
 }
 
 fn apply_all_radial_parameters(lab: vec3<f32>, position: vec2<f32>) -> vec3<f32> {
@@ -182,7 +182,7 @@ fn apply_radial_parameters(index: u32, lab: vec3<f32>, position: vec2<f32>) -> v
     if (alpha > 0.0) {
         var applied: vec3<f32> = lab;
         applied = to_lightness_adjustment_space(applied);
-        applied = apply_brightness(applied, radial_parameter.brightness);
+        applied = apply_exposure(applied, radial_parameter.exposure);
         applied = from_lightness_adjustment_space(applied);
 
         return lab * (1.0 - alpha) + applied * alpha;

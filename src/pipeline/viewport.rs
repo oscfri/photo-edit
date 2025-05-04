@@ -104,7 +104,7 @@ impl From<Crop> for ViewportCrop {
 
 #[derive(Default, Debug, Clone)]
 pub struct ViewportParameters {
-    pub brightness: f32,
+    pub exposure: f32,
     pub contrast: f32,
     pub shadows: f32,
     pub midtones: f32,
@@ -122,15 +122,16 @@ impl From<Parameters> for ViewportParameters {
             Some(crop) => crop.into(),
             _ => ViewportCrop::default()
         };
+        let base_parameters = &parameters.base_parameters;
         ViewportParameters {
-            brightness: parameters.brightness,
-            contrast: parameters.contrast,
-            shadows: parameters.shadows,
-            midtones: parameters.midtones,
-            highlights: parameters.highlights,
-            tint: parameters.tint,
-            temperature: parameters.temperature,
-            saturation: parameters.saturation,
+            exposure: base_parameters.exposure,
+            contrast: base_parameters.contrast,
+            shadows: base_parameters.shadows,
+            midtones: base_parameters.midtones,
+            highlights: base_parameters.highlights,
+            tint: base_parameters.tint,
+            temperature: base_parameters.temperature,
+            saturation: base_parameters.saturation,
             radial_masks: parameters.radial_masks.clone(),
             crop: crop
         }

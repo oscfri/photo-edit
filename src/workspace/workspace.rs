@@ -156,7 +156,6 @@ impl Workspace {
         self.image.image.as_ref().map(|image| image.height)
     }
 
-    // TODO: Check all uses of this one
     pub fn current_parameters(&self) -> Parameters {
         self.image.parameter_history.lock().unwrap().current()
     }
@@ -225,48 +224,57 @@ impl Workspace {
         self.image.parameter_history.lock().unwrap().redo()
     }
 
+    pub fn copy_parameters(&mut self) -> Parameters {
+        self.current_parameters()
+    }
+
+    pub fn paste_parameters(&mut self, clipboard_parameters: &Parameters) {
+        self.image.parameter_history.lock().unwrap()
+            .update(|parameters| parameters.base_parameters = clipboard_parameters.base_parameters.clone());
+    }
+
     pub fn toggle_view_mode(&mut self, view_mode: ViewMode) {
         self.view_mode = self.view_mode.toggle_view_mode(view_mode);
     }
 
-    pub fn set_brightness(&mut self, brightness: f32) {
+    pub fn set_exposure(&mut self, exposure: f32) {
         self.image.parameter_history.lock().unwrap()
-            .update(|parameters| parameters.brightness = brightness)
+            .update(|parameters| parameters.base_parameters.exposure = exposure)
     }
 
     pub fn set_contrast(&mut self, contrast: f32) {
         self.image.parameter_history.lock().unwrap()
-            .update(|parameters| parameters.contrast = contrast)
+            .update(|parameters| parameters.base_parameters.contrast = contrast)
     }
 
     pub fn set_shadows(&mut self, shadows: f32) {
         self.image.parameter_history.lock().unwrap()
-            .update(|parameters| parameters.shadows = shadows)
+            .update(|parameters| parameters.base_parameters.shadows = shadows)
     }
 
     pub fn set_midtones(&mut self, midtones: f32) {
         self.image.parameter_history.lock().unwrap()
-            .update(|parameters| parameters.midtones = midtones)
+            .update(|parameters| parameters.base_parameters.midtones = midtones)
     }
 
     pub fn set_highlights(&mut self, highlights: f32) {
         self.image.parameter_history.lock().unwrap()
-            .update(|parameters| parameters.highlights = highlights)
+            .update(|parameters| parameters.base_parameters.highlights = highlights)
     }
 
     pub fn set_tint(&mut self, tint: f32) {
         self.image.parameter_history.lock().unwrap()
-            .update(|parameters| parameters.tint = tint)
+            .update(|parameters| parameters.base_parameters.tint = tint)
     }
     
     pub fn set_temperature(&mut self, temperature: f32) {
         self.image.parameter_history.lock().unwrap()
-            .update(|parameters| parameters.temperature = temperature)
+            .update(|parameters| parameters.base_parameters.temperature = temperature)
     }
     
     pub fn set_saturation(&mut self, saturation: f32) {
         self.image.parameter_history.lock().unwrap()
-            .update(|parameters| parameters.saturation = saturation)
+            .update(|parameters| parameters.base_parameters.saturation = saturation)
     }
 
     pub fn add_mask(&mut self) {
@@ -402,8 +410,8 @@ impl Workspace {
             Some(pixel) => {
                 self.image.parameter_history.lock().unwrap()
                     .update(|parameters| {
-                        parameters.tint = -pixel.tint * 1000.0;
-                        parameters.temperature = -pixel.temperature * 1000.0;
+                        parameters.base_parameters.tint = -pixel.tint * 1000.0;
+                        parameters.base_parameters.temperature = -pixel.temperature * 1000.0;
                     });
             },
             None => {}
