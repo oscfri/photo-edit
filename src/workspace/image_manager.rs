@@ -59,7 +59,7 @@ impl ImageManager {
     }
 
     pub fn get_paths_to_load(&self, photo_id_hint: i32) -> Vec<ImagePathToLoad> {
-        let photo_ids_to_load: Vec<i32> = self.get_photo_ids_to_keep_in_memory(photo_id_hint, LOAD_SIZE);
+        let photo_ids_to_load: Vec<i32> = self.get_photo_ids_to_have_in_memory(photo_id_hint, LOAD_SIZE);
         
         photo_ids_to_load.iter()
             .flat_map(|photo_id| self.source_images.get(&photo_id)
@@ -93,7 +93,7 @@ impl ImageManager {
     }
 
     pub fn flush_cache(&mut self, photo_id_hint: i32) {
-        let photo_ids_to_keep: Vec<i32> = self.get_photo_ids_to_keep_in_memory(photo_id_hint, CACHE_SIZE);
+        let photo_ids_to_keep: Vec<i32> = self.get_photo_ids_to_have_in_memory(photo_id_hint, CACHE_SIZE);
 
         let photo_ids_to_unload: Vec<i32> = self.source_images.iter()
             .map(|(photo_id, _)| *photo_id)
@@ -201,7 +201,7 @@ impl ImageManager {
         }
     }
 
-    fn get_photo_ids_to_keep_in_memory(&self, photo_id_hint: i32, cache_size: usize) -> Vec<i32> {
+    fn get_photo_ids_to_have_in_memory(&self, photo_id_hint: i32, cache_size: usize) -> Vec<i32> {
         let photo_ids_to_display: Vec<i32> = self.source_images.iter()
             .filter(|(_, source_image)| self.should_display_image(source_image))
             .map(|(photo_id, _)| *photo_id)

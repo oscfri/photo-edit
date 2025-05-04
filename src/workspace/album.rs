@@ -1,3 +1,5 @@
+use itertools::Itertools;
+
 use super::album_image::AlbumImage;
 
 pub struct Album {
@@ -11,10 +13,16 @@ impl Album {
     }
 
     pub fn set_images(&mut self, images: Vec<AlbumImage>) {
+        let current_photo_id = self.images.get(self.image_index)
+            .map(|image| image.photo_id)
+            .unwrap_or(0);
+
         self.images = images;
-        if self.images.len() > 0 && self.image_index >= self.images.len() {
-            self.image_index = self.images.len() - 1;
-        }
+        self.image_index = self.images.iter()
+            .enumerate()
+            .find_or_last(|(_, image)| image.photo_id >= current_photo_id)
+            .map(|(index, _)| index)
+            .unwrap_or(0);
     }
 
     pub fn get_images(&self) -> &Vec<AlbumImage> {
