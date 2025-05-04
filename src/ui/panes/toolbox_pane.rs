@@ -63,7 +63,7 @@ impl <'a> ToolboxPane {
             .into()
     }
 
-    fn view_slider(&self, label: &'a str, value: f32, message: impl Fn(f32) -> MainParameterMessage + 'a) -> iced::Element<'a, MainParameterMessage> {
+    fn view_slider<T: Clone + 'a>(&self, label: &'a str, value: f32, message: impl Fn(f32) -> T + 'a) -> iced::Element<'a, T> {
         let label_text = iced::widget::container(iced::widget::text(label))
             .align_left(iced::Fill);
         let value_text = iced::widget::container(iced::widget::text(format!("{:.1}", value)))
@@ -107,11 +107,7 @@ impl <'a> ToolboxPane {
                     .on_toggle(MaskChangeMessage::MaskToggleLinear),
             ];
         iced::widget::column![
-                iced::widget::text("Brightness"),
-                iced::widget::slider(
-                    -100.0..=100.0,
-                    radial_mask.brightness,
-                    MaskChangeMessage::BrightnessChanged),
+                self.view_slider("Brightness", radial_mask.brightness, MaskChangeMessage::BrightnessChanged),
                 iced::widget::text("Angle"),
                 iced::widget::slider(
                     -180.0..=180.0,
