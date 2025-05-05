@@ -141,6 +141,7 @@ impl ParameterHistory {
         if let Some(value) = maybe_value {
             function(value);
             self.last_updated_parameter = Some(parameter);
+            self.update_history();
         }
     }
 
@@ -153,19 +154,7 @@ impl ParameterHistory {
     pub fn update<F>(&mut self, function: F) where F: FnOnce(&mut Parameters) {
         function(&mut self.parameters);
 
-        if self.has_changed() {
-            if self.needs_new() {
-                while self.parameter_history_index + 1 < self.parameter_history.len() {
-                    self.parameter_history.pop();
-                }
-
-                self.parameter_history.push(self.parameters.clone());
-                self.parameter_history_index += 1;
-                self.last_updated = SystemTime::now();
-            } else {
-                self.parameter_history[self.parameter_history_index] = self.parameters.clone();
-            }
-        }
+        self.update_history();
     }
 
     pub fn current(&self) -> Parameters {
@@ -196,5 +185,21 @@ impl ParameterHistory {
 
     fn has_changed(&self) -> bool {
         !self.parameter_history[self.parameter_history_index].eq(&self.parameters)
+    }
+
+    fn update_history(&mut self) {
+        if self.has_changed() {
+            if self.needs_new() {
+                while self.parameter_history_index + 1 < self.parameter_history.len() {
+                    self.parameter_history.pop();
+                }
+
+                self.parameter_history.push(self.parameters.clone());
+                self.parameter_history_index += 1;
+                self.last_updated = SystemTime::now();
+            } else {
+                self.parameter_history[self.parameter_history_index] = self.parameters.clone();
+            }
+        }
     }
 }
