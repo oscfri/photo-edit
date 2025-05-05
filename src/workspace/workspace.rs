@@ -248,43 +248,35 @@ impl Workspace {
     }
 
     pub fn set_exposure(&mut self, exposure: f32) {
-        self.image.parameter_history.lock().unwrap()
-            .update_f32(Parameter::Exposure, |value| *value = exposure)
+        self.set_parameter_value(Parameter::Exposure, exposure);
     }
 
     pub fn set_contrast(&mut self, contrast: f32) {
-        self.image.parameter_history.lock().unwrap()
-            .update_f32(Parameter::Contrast, |value| *value = contrast)
+        self.set_parameter_value(Parameter::Contrast, contrast);
     }
 
     pub fn set_shadows(&mut self, shadows: f32) {
-        self.image.parameter_history.lock().unwrap()
-            .update_f32(Parameter::Shadows, |value| *value = shadows)
+        self.set_parameter_value(Parameter::Shadows, shadows);
     }
 
     pub fn set_midtones(&mut self, midtones: f32) {
-        self.image.parameter_history.lock().unwrap()
-            .update_f32(Parameter::Midtones, |value| *value = midtones)
+        self.set_parameter_value(Parameter::Midtones, midtones);
     }
 
     pub fn set_highlights(&mut self, highlights: f32) {
-        self.image.parameter_history.lock().unwrap()
-            .update_f32(Parameter::Highlights, |value| *value = highlights)
+        self.set_parameter_value(Parameter::Highlights, highlights);
     }
 
     pub fn set_tint(&mut self, tint: f32) {
-        self.image.parameter_history.lock().unwrap()
-            .update_f32(Parameter::Tint, |value| *value = tint)
+        self.set_parameter_value(Parameter::Tint, tint);
     }
     
     pub fn set_temperature(&mut self, temperature: f32) {
-        self.image.parameter_history.lock().unwrap()
-            .update_f32(Parameter::Temperature, |value| *value = temperature)
+        self.set_parameter_value(Parameter::Temperature, temperature);
     }
     
     pub fn set_saturation(&mut self, saturation: f32) {
-        self.image.parameter_history.lock().unwrap()
-            .update_f32(Parameter::Saturation, |value| *value = saturation)
+        self.set_parameter_value(Parameter::Saturation, saturation);
     }
 
     pub fn add_mask(&mut self) {
@@ -353,13 +345,11 @@ impl Workspace {
     }
 
     pub fn set_crop_angle(&mut self, angle_degrees: f32) {
-        self.image.parameter_history.lock().unwrap()
-            .update_f32(Parameter::CropAngle, |value| *value = angle_degrees);
+        self.set_parameter_value(Parameter::CropAngle, angle_degrees);
     }
 
     pub fn set_crop_scale(&mut self, scale: f32) {
-        self.image.parameter_history.lock().unwrap()
-            .update_f32(Parameter::CropScale, |value| *value = scale);
+        self.set_parameter_value(Parameter::CropScale, scale);
     }
 
     pub fn crop_rotate_left(&mut self) {
@@ -501,6 +491,11 @@ impl Workspace {
             },
             _ => self.make_view()
         }
+    }
+
+    fn set_parameter_value(&mut self, parameter: Parameter, new_value: f32) {
+        self.image.parameter_history.lock().unwrap()
+            .update_f32(parameter, |value| *value = new_value)
     }
 
     fn make_view(&self) -> ViewportCrop {
