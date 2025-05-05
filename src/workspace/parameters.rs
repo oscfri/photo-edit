@@ -12,6 +12,8 @@ pub enum Parameter {
     Tint,
     Temperature,
     Saturation,
+    CropAngle,
+    CropScale
 }
 
 #[derive(Debug, Default, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
@@ -131,7 +133,9 @@ impl ParameterHistory {
             Parameter::Highlights => Some(&mut self.parameters.base_parameters.highlights),
             Parameter::Tint => Some(&mut self.parameters.base_parameters.tint),
             Parameter::Temperature => Some(&mut self.parameters.base_parameters.temperature),
-            Parameter::Saturation => Some(&mut self.parameters.base_parameters.saturation)
+            Parameter::Saturation => Some(&mut self.parameters.base_parameters.saturation),
+            Parameter::CropAngle => self.parameters.crop.as_mut().map(|crop| &mut crop.angle_degrees),
+            Parameter::CropScale => self.parameters.crop.as_mut().map(|crop| &mut crop.scale),
         };
 
         if let Some(value) = maybe_value {

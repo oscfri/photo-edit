@@ -354,20 +354,12 @@ impl Workspace {
 
     pub fn set_crop_angle(&mut self, angle_degrees: f32) {
         self.image.parameter_history.lock().unwrap()
-            .update(|parameters| {
-                if let Some(crop) = &mut parameters.crop {
-                    crop.angle_degrees = angle_degrees;
-                }
-            });
+            .update_f32(Parameter::CropAngle, |value| *value = angle_degrees);
     }
 
     pub fn set_crop_scale(&mut self, scale: f32) {
         self.image.parameter_history.lock().unwrap()
-            .update(|parameters| {
-                if let Some(crop) = &mut parameters.crop {
-                    crop.scale = scale;
-                }
-            });
+            .update_f32(Parameter::CropScale, |value| *value = scale);
     }
 
     pub fn crop_rotate_left(&mut self) {
