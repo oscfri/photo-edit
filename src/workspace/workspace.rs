@@ -238,9 +238,19 @@ impl Workspace {
             .update_last_f32(|value| *value = *value - 0.1);
     }
 
+    pub fn decrease_last_parameter_large(&mut self) {
+        self.image.parameter_history.lock().unwrap()
+            .update_last_f32(|value| *value = *value - 1.0);
+    }
+
     pub fn increase_last_parameter(&mut self) {
         self.image.parameter_history.lock().unwrap()
             .update_last_f32(|value| *value = *value + 0.1);
+    }
+
+    pub fn increase_last_parameter_large(&mut self) {
+        self.image.parameter_history.lock().unwrap()
+            .update_last_f32(|value| *value = *value + 1.0);
     }
 
     pub fn toggle_view_mode(&mut self, view_mode: ViewMode) {

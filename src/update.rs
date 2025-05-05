@@ -176,6 +176,12 @@ impl Main {
                 WorkspaceEvent::IncreaseParameter => {
                     workspace.increase_last_parameter();
                 },
+                WorkspaceEvent::DecreaseParameterLarge => {
+                    workspace.decrease_last_parameter_large();
+                },
+                WorkspaceEvent::IncreaseParameterLarge => {
+                    workspace.increase_last_parameter_large();
+                },
                 WorkspaceEvent::ResetView => {
                     workspace.reset_view();
                 },

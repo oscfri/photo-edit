@@ -55,6 +55,8 @@ pub enum WorkspaceEvent {
     Paste,
     DecreaseParameter,
     IncreaseParameter,
+    DecreaseParameterLarge,
+    IncreaseParameterLarge,
     ResetView,
     ToggleDisplayGrid,
     ImageMouseEvent(MouseEvent),
@@ -246,6 +248,8 @@ impl From<KeyboardMessage> for UpdateEvent {
             KeyboardMessage::Paste => WorkspaceEvent::Paste.into(),
             KeyboardMessage::DecreaseParameter => WorkspaceEvent::DecreaseParameter.into(),
             KeyboardMessage::IncreaseParameter => WorkspaceEvent::IncreaseParameter.into(),
+            KeyboardMessage::DecreaseParameterLarge => WorkspaceEvent::DecreaseParameterLarge.into(),
+            KeyboardMessage::IncreaseParameterLarge => WorkspaceEvent::IncreaseParameterLarge.into(),
         }
     }
 }

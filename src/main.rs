@@ -102,11 +102,19 @@ fn handle_key_press_character(character: &str, modifiers: iced::keyboard::Modifi
     }
 }
 
-fn handle_key_press_named(named: Named, _: iced::keyboard::Modifiers) -> Option<KeyboardMessage> {
-    match named {
-        Named::ArrowLeft => Some(KeyboardMessage::DecreaseParameter),
-        Named::ArrowRight => Some(KeyboardMessage::IncreaseParameter),
-        _ => None
+fn handle_key_press_named(named: Named, modifiers: iced::keyboard::Modifiers) -> Option<KeyboardMessage> {
+    if modifiers.shift() {
+        match named {
+            Named::ArrowLeft => Some(KeyboardMessage::DecreaseParameterLarge),
+            Named::ArrowRight => Some(KeyboardMessage::IncreaseParameterLarge),
+            _ => None
+        }
+    } else {
+        match named {
+            Named::ArrowLeft => Some(KeyboardMessage::DecreaseParameter),
+            Named::ArrowRight => Some(KeyboardMessage::IncreaseParameter),
+            _ => None
+        }
     }
 }
 
