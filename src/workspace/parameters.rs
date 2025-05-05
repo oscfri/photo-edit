@@ -2,6 +2,18 @@ use std::time::SystemTime;
 
 use serde;
 
+#[derive(Clone, Copy)]
+pub enum Parameter {
+    Exposure,
+    Contrast,
+    Shadows,
+    Midtones,
+    Highlights,
+    Tint,
+    Temperature,
+    Saturation,
+}
+
 #[derive(Debug, Default, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct BaseParameters {
     pub exposure: f32,
@@ -13,7 +25,6 @@ pub struct BaseParameters {
     pub midtones: f32,
     pub highlights: f32,
 }
-
 
 #[derive(Debug, Default, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct Parameters {
@@ -89,6 +100,7 @@ pub struct ParameterHistory {
     parameter_history: Vec<Parameters>,
     parameter_history_index: usize,
     last_updated: SystemTime,
+    last_updated_parameter: Option<Parameter>
 }
 
 impl From<Parameters> for ParameterHistory {
@@ -96,16 +108,44 @@ impl From<Parameters> for ParameterHistory {
         let parameter_history = vec![parameters.clone()];
         let parameter_history_index = 0;
         let last_updated = SystemTime::now();
+        let last_updated_parameter = None;
+
         Self {
             parameters,
             parameter_history,
             parameter_history_index,
-            last_updated
+            last_updated,
+            last_updated_parameter
         }
     }
 }
 
 impl ParameterHistory {
+
+    pub fn update_f32<F>(&mut self, parameter: Parameter, function: F) where F: FnOnce(&mut f32) {
+        let maybe_value = match parameter {
+            Parameter::Exposure => Some(&mut self.parameters.base_parameters.exposure),
+            Parameter::Contrast => Some(&mut self.parameters.base_parameters.contrast),
+            Parameter::Shadows => Some(&mut self.parameters.base_parameters.shadows),
+            Parameter::Midtones => Some(&mut self.parameters.base_parameters.midtones),
+            Parameter::Highlights => Some(&mut self.parameters.base_parameters.highlights),
+            Parameter::Tint => Some(&mut self.parameters.base_parameters.tint),
+            Parameter::Temperature => Some(&mut self.parameters.base_parameters.temperature),
+            Parameter::Saturation => Some(&mut self.parameters.base_parameters.saturation)
+        };
+
+        if let Some(value) = maybe_value {
+            function(value);
+            self.last_updated_parameter = Some(parameter);
+        }
+    }
+
+    pub fn update_last_f32<F>(&mut self, function: F) where F: FnOnce(&mut f32) {
+        if let Some(last_updated_parameter) = self.last_updated_parameter {
+            self.update_f32(last_updated_parameter, function);
+        }
+    }
+
     pub fn update<F>(&mut self, function: F) where F: FnOnce(&mut Parameters) {
         function(&mut self.parameters);
 

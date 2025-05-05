@@ -112,7 +112,9 @@ pub enum KeyboardMessage {
     Undo,
     Redo,
     Copy,
-    Paste
+    Paste,
+    IncreaseParameter,
+    DecreaseParameter
 }
 
 #[derive(Debug, Clone)]

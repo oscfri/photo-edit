@@ -1,4 +1,4 @@
-#![windows_subsystem = "windows"]
+// #![windows_subsystem = "windows"]
 mod types;
 mod pipeline;
 mod repository;
@@ -14,6 +14,7 @@ use std::time::Duration;
 
 use directories::ProjectDirs;
 use iced;
+use iced::keyboard::key::Named;
 use pipeline::viewport;
 use repository::repository::Repository;
 use rusqlite::Connection;
@@ -67,6 +68,9 @@ fn handle_key_press(key: iced::keyboard::Key, modifiers: iced::keyboard::Modifie
         iced::keyboard::Key::Character(character) => {
             handle_key_press_character(character, modifiers)
         },
+        iced::keyboard::Key::Named(named) => {
+            handle_key_press_named(named, modifiers)
+        },
         _ => None
     }
 }
@@ -95,6 +99,14 @@ fn handle_key_press_character(character: &str, modifiers: iced::keyboard::Modifi
             "c" => Some(KeyboardMessage::ToggleCropMode),
             _ => None
         }
+    }
+}
+
+fn handle_key_press_named(named: Named, _: iced::keyboard::Modifiers) -> Option<KeyboardMessage> {
+    match named {
+        Named::ArrowLeft => Some(KeyboardMessage::DecreaseParameter),
+        Named::ArrowRight => Some(KeyboardMessage::IncreaseParameter),
+        _ => None
     }
 }
 

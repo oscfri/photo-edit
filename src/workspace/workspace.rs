@@ -8,7 +8,7 @@ use crate::ui::message::MouseState;
 use crate::view_mode::ViewMode;
 use crate::view_mode;
 
-use super::parameters::{CropPreset, ParameterHistory, Parameters, RadialMask};
+use super::parameters::{CropPreset, Parameter, ParameterHistory, Parameters, RadialMask};
 
 #[derive(Clone)]
 pub struct WorkspaceImage {
@@ -233,48 +233,58 @@ impl Workspace {
             .update(|parameters| parameters.base_parameters = clipboard_parameters.base_parameters.clone());
     }
 
+    pub fn decrease_last_parameter(&mut self) {
+        self.image.parameter_history.lock().unwrap()
+            .update_last_f32(|value| *value = *value - 0.1);
+    }
+
+    pub fn increase_last_parameter(&mut self) {
+        self.image.parameter_history.lock().unwrap()
+            .update_last_f32(|value| *value = *value + 0.1);
+    }
+
     pub fn toggle_view_mode(&mut self, view_mode: ViewMode) {
         self.view_mode = self.view_mode.toggle_view_mode(view_mode);
     }
 
     pub fn set_exposure(&mut self, exposure: f32) {
         self.image.parameter_history.lock().unwrap()
-            .update(|parameters| parameters.base_parameters.exposure = exposure)
+            .update_f32(Parameter::Exposure, |value| *value = exposure)
     }
 
     pub fn set_contrast(&mut self, contrast: f32) {
         self.image.parameter_history.lock().unwrap()
-            .update(|parameters| parameters.base_parameters.contrast = contrast)
+            .update_f32(Parameter::Contrast, |value| *value = contrast)
     }
 
     pub fn set_shadows(&mut self, shadows: f32) {
         self.image.parameter_history.lock().unwrap()
-            .update(|parameters| parameters.base_parameters.shadows = shadows)
+            .update_f32(Parameter::Shadows, |value| *value = shadows)
     }
 
     pub fn set_midtones(&mut self, midtones: f32) {
         self.image.parameter_history.lock().unwrap()
-            .update(|parameters| parameters.base_parameters.midtones = midtones)
+            .update_f32(Parameter::Midtones, |value| *value = midtones)
     }
 
     pub fn set_highlights(&mut self, highlights: f32) {
         self.image.parameter_history.lock().unwrap()
-            .update(|parameters| parameters.base_parameters.highlights = highlights)
+            .update_f32(Parameter::Highlights, |value| *value = highlights)
     }
 
     pub fn set_tint(&mut self, tint: f32) {
         self.image.parameter_history.lock().unwrap()
-            .update(|parameters| parameters.base_parameters.tint = tint)
+            .update_f32(Parameter::Tint, |value| *value = tint)
     }
     
     pub fn set_temperature(&mut self, temperature: f32) {
         self.image.parameter_history.lock().unwrap()
-            .update(|parameters| parameters.base_parameters.temperature = temperature)
+            .update_f32(Parameter::Temperature, |value| *value = temperature)
     }
     
     pub fn set_saturation(&mut self, saturation: f32) {
         self.image.parameter_history.lock().unwrap()
-            .update(|parameters| parameters.base_parameters.saturation = saturation)
+            .update_f32(Parameter::Saturation, |value| *value = saturation)
     }
 
     pub fn add_mask(&mut self) {

@@ -170,6 +170,12 @@ impl Main {
                         workspace.paste_parameters(parameters);
                     }
                 },
+                WorkspaceEvent::DecreaseParameter => {
+                    workspace.decrease_last_parameter();
+                },
+                WorkspaceEvent::IncreaseParameter => {
+                    workspace.increase_last_parameter();
+                },
                 WorkspaceEvent::ResetView => {
                     workspace.reset_view();
                 },
