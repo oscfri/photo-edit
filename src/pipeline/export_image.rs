@@ -12,14 +12,14 @@ use super::pipeline_factory::PipelineFactory;
 pub const EXPORT_SIZE: u32 = 8192;
 
 // TODO: This should be done in a separate thread...
-pub async fn export_image(workspace: &Workspace) {
+pub async fn export_image(workspace: &Workspace, export_directory: PathBuf) {
     if let Some(viewport_workspace) = ViewportWorkspace::try_new(&workspace) {
         let file_name = workspace.get_file_name();
-        export_image_from_viewport(viewport_workspace, file_name).await
+        export_image_from_viewport(viewport_workspace, export_directory, file_name).await
     }
 }
 
-async fn export_image_from_viewport(viewport_workspace: ViewportWorkspace, file_name: String) {
+async fn export_image_from_viewport(viewport_workspace: ViewportWorkspace, export_directory: PathBuf, file_name: String) {
     let (device, queue) = request_device().await.unwrap();
     
     // TODO: Figure out a way to bring image size...
@@ -80,7 +80,7 @@ async fn export_image_from_viewport(viewport_workspace: ViewportWorkspace, file_
                     .map(|b| u32::from_ne_bytes(b.try_into().unwrap()))
                     .collect();
 
-                let path = Path::new("./exports/image.jpg")
+                let path = Path::join(&export_directory, "image.jpg")
                     .with_file_name(file_name)
                     .with_extension("jpg");
                 write_image(&view, &path, width, height);

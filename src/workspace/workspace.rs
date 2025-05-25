@@ -1,4 +1,5 @@
 use core::f32;
+use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 
 use crate::pipeline::export_image::export_image;
@@ -193,8 +194,8 @@ impl Workspace {
         }
     }
 
-    pub fn export_image(&self) {
-        futures_executor::block_on(export_image(&self));
+    pub fn export_image(&self, export_directory: PathBuf) {
+        futures_executor::block_on(export_image(&self, export_directory));
     }
 
     pub fn undo(&mut self) {

@@ -154,7 +154,9 @@ impl Main {
                     workspace.toggle_favorite();
                 },
                 WorkspaceEvent::ExportImage => {
-                    workspace.export_image();
+                    if let Some(export_directory) = Self::export_image_dialog() {
+                        workspace.export_image(export_directory.clone());
+                    }
                 },
                 WorkspaceEvent::Undo => {
                     workspace.undo();
@@ -208,6 +210,15 @@ impl Main {
             }
             self.image_manager.refresh();
         }
+    }
+
+    fn export_image_dialog() -> Option<PathBuf> {
+        let path: PathBuf = std::env::current_dir().unwrap();
+
+        native_dialog::FileDialog::new()
+            .set_location(&path)
+            .show_open_single_dir()
+            .unwrap_or(None)
     }
 
     fn update_mouse_on_image(workspace: &mut Workspace, mouse_event: MouseEvent) {
