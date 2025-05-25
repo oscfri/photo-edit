@@ -148,14 +148,6 @@ impl Workspace {
         self.image.image.clone()
     }
 
-    pub fn current_source_image_width(&self) -> Option<usize> {
-        self.image.image.as_ref().map(|image| image.width)
-    }
-
-    pub fn current_source_image_height(&self) -> Option<usize> {
-        self.image.image.as_ref().map(|image| image.height)
-    }
-
     pub fn current_parameters(&self) -> Parameters {
         self.image.parameter_history.lock().unwrap().current()
     }
@@ -183,11 +175,6 @@ impl Workspace {
 
     pub fn current_image_view(&self) -> ImageView {
         self.image.image_view.lock().unwrap().clone()
-    }
-
-    pub fn current_crop_rotation(&self) -> i32 {
-        self.current_parameters().crop.as_ref()
-            .map_or(0, |crop| crop.rotation)
     }
 
     pub fn current_angle_degrees(&self) -> f32 {
@@ -430,8 +417,8 @@ impl Workspace {
     }
 
     pub fn update_crop_offset(&mut self, x: i32, y: i32) {
-        let delta_x: i32 = x - self.mouse_origin_x;
-        let delta_y: i32 = y - self.mouse_origin_y;
+        let delta_x: i32 = self.mouse_origin_x - x;
+        let delta_y: i32 = self.mouse_origin_y - y;
         let offset_x: i32 = self.offset_origin_x + delta_x;
         let offset_y: i32 = self.offset_origin_y + delta_y;
         self.update_crop(offset_x, offset_y);
@@ -471,36 +458,11 @@ impl Workspace {
     }
 
     pub fn current_view(&self) -> ViewportCrop {
-        match self.view_mode {
-            // Show full image in Crop mode
-            view_mode::ViewMode::Crop => {
-                let angle_degrees = self.image.parameter_history.lock().unwrap().current().crop
-                    .map(|crop| crop.get_full_angle())
-                    .unwrap_or(0.0);
-                let width = self.current_source_image_width().unwrap();
-                let height = self.current_source_image_height().unwrap();
-                let scale = 1.1;
-
-                if self.current_crop_rotation() % 2 == 0 {
-                    ViewportCrop {
-                        center_x: (width as i32) / 2,
-                        center_y: (height as i32) / 2,
-                        width: ((width as f32) * scale) as i32,
-                        height: ((height as f32) * scale) as i32,
-                        angle_degrees: angle_degrees,
-                    }
-                } else {
-                    ViewportCrop {
-                        center_x: (width as i32) / 2,
-                        center_y: (height as i32) / 2,
-                        width: ((height as f32) * scale) as i32,
-                        height: ((width as f32) * scale) as i32,
-                        angle_degrees: angle_degrees,
-                    }
-                }
-            },
-            _ => self.make_view()
-        }
+        let scale = match self.view_mode {
+            view_mode::ViewMode::Crop => 1.1,
+            _ => 1.0
+        };
+        self.make_view(scale)
     }
 
     fn set_parameter_value(&mut self, parameter: Parameter, new_value: f32) {
@@ -508,11 +470,11 @@ impl Workspace {
             .update_f32(parameter, |value| *value = new_value)
     }
 
-    fn make_view(&self) -> ViewportCrop {
+    fn make_view(&self, scale: f32) -> ViewportCrop {
         if let Some(current_crop) = self.image.parameter_history.lock().unwrap().current().crop {
             let view: ViewportCrop = current_crop.into();
             let current_image_view = self.image.image_view.lock().unwrap();
-            let scale: f32 = 1.0 / (f32::powf(2.0, current_image_view.get_zoom()));
+            let scale: f32 = scale / (f32::powf(2.0, current_image_view.get_zoom()));
             ViewportCrop {
                 center_x: view.center_x + (current_image_view.get_offset_x() as i32),
                 center_y: view.center_y + (current_image_view.get_offset_y() as i32),

@@ -45,7 +45,7 @@ This is what's left for a feature complete MVP.
 
 ## Bonus Refinement
 
-- [ ] Crop UX. It's not very intuitive right now.
+- [X] Crop UX. It's not very intuitive right now.
 - [ ] Ensure crop can't be outside image.
 - [ ] Batch export
 - [ ] Set exports directory
