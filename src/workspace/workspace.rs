@@ -444,11 +444,17 @@ impl Workspace {
     }
 
     pub fn update_view_offset(&mut self, x: i32, y: i32) {
-        let delta_x: i32 = self.mouse_origin_x - x;
-        let delta_y: i32 = self.mouse_origin_y - y;
-        let offset_x: f32 = (self.offset_origin_x + delta_x) as f32;
-        let offset_y: f32 = (self.offset_origin_y + delta_y) as f32;
-        self.image.image_view.lock().unwrap().update_offset(offset_x, offset_y);
+        if let Some(crop) = self.image.parameter_history.lock().unwrap().current().crop {
+            let view: ViewportCrop = crop.into();
+            let image_width: i32 = (view.width as i32) / 2;
+            let image_height: i32 = (view.height as i32) / 2;
+
+            let delta_x: i32 = self.mouse_origin_x - x;
+            let delta_y: i32 = self.mouse_origin_y - y;
+            let offset_x: f32 = (self.offset_origin_x + delta_x).clamp(-image_width, image_width) as f32;
+            let offset_y: f32 = (self.offset_origin_y + delta_y).clamp(-image_height, image_height) as f32;
+            self.image.image_view.lock().unwrap().update_offset(offset_x, offset_y);
+        }
     }
 
     pub fn current_view(&self) -> ViewportCrop {
@@ -458,11 +464,9 @@ impl Workspace {
                 view_mode::ViewMode::Crop => {
                     let scale = 1.1;
                     ViewportCrop {
-                        center_x: view.center_x,
-                        center_y: view.center_y,
                         width: ((view.width as f32) * scale) as i32,
                         height: ((view.height as f32) * scale) as i32,
-                        angle_degrees: view.angle_degrees
+                        ..view
                     }
                 },
                 _ => {
