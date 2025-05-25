@@ -264,17 +264,13 @@ fn in_crop_border(vertex: VertexOutput) -> bool {
 fn draw_grid(vertex: VertexOutput, lab: vec3<f32>) -> vec3<f32> {
     if (crop.display_grid == 0) {
         return lab;
-    } else if (in_big_grid(vertex)) {
-        if (lab.x > 0.8) {
-            return vec3<f32>(0.7, lab.yz * 0.5);
+    } else if (in_big_grid(vertex) || in_small_grid(vertex)) {
+        if (lab.x > 0.5 && lab.x < 0.6) {
+            return vec3<f32>(0.2, -lab.yz);
+        } else if (lab.x > 0.3 && lab.x <= 0.5) {
+            return vec3<f32>(0.7, -lab.yz);
         } else {
-            return vec3<f32>(0.9, lab.yz * 0.5);
-        }
-    } else if (in_small_grid(vertex)) {
-        if (lab.x > 0.7) {
-            return vec3<f32>(0.6, lab.yz * 0.5);
-        } else {
-            return vec3<f32>(0.8, lab.yz * 0.5);
+            return vec3<f32>(1.0 - lab.x, -lab.yz);
         }
     } else {
         return lab;
