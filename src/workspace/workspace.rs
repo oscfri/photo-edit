@@ -458,32 +458,40 @@ impl Workspace {
     }
 
     pub fn current_view(&self) -> ViewportCrop {
-        let scale = match self.view_mode {
-            view_mode::ViewMode::Crop => 1.1,
-            _ => 1.0
-        };
-        self.make_view(scale)
+        if let Some(current_crop) = self.image.parameter_history.lock().unwrap().current().crop {
+            let view: ViewportCrop = current_crop.into();
+            match self.view_mode {
+                view_mode::ViewMode::Crop => {
+                    let scale = 1.1;
+                    ViewportCrop {
+                        center_x: view.center_x,
+                        center_y: view.center_y,
+                        width: ((view.width as f32) * scale) as i32,
+                        height: ((view.height as f32) * scale) as i32,
+                        angle_degrees: view.angle_degrees
+                    }
+                },
+                _ => {
+                    let current_image_view = self.image.image_view.lock().unwrap();
+                    let offset_x: i32 = current_image_view.get_offset_x() as i32;
+                    let offset_y: i32 = current_image_view.get_offset_y() as i32;
+                    let scale: f32 = 1.0 / (f32::powf(2.0, current_image_view.get_zoom()));
+                    ViewportCrop {
+                        center_x: view.center_x + offset_x,
+                        center_y: view.center_y + offset_y,
+                        width: ((view.width as f32) * scale) as i32,
+                        height: ((view.height as f32) * scale) as i32,
+                        angle_degrees: view.angle_degrees
+                    }
+                }
+            }
+        } else {
+            ViewportCrop::default()
+        }
     }
 
     fn set_parameter_value(&mut self, parameter: Parameter, new_value: f32) {
         self.image.parameter_history.lock().unwrap()
             .update_f32(parameter, |value| *value = new_value)
-    }
-
-    fn make_view(&self, scale: f32) -> ViewportCrop {
-        if let Some(current_crop) = self.image.parameter_history.lock().unwrap().current().crop {
-            let view: ViewportCrop = current_crop.into();
-            let current_image_view = self.image.image_view.lock().unwrap();
-            let scale: f32 = scale / (f32::powf(2.0, current_image_view.get_zoom()));
-            ViewportCrop {
-                center_x: view.center_x + (current_image_view.get_offset_x() as i32),
-                center_y: view.center_y + (current_image_view.get_offset_y() as i32),
-                width: ((view.width as f32) * scale) as i32,
-                height: ((view.height as f32) * scale) as i32,
-                angle_degrees: view.angle_degrees
-            }
-        } else {
-            ViewportCrop::default()
-        }
     }
 }
