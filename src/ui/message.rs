@@ -13,7 +13,6 @@ pub enum BottomPaneMessage {
     ToggleFavorite,
     DeleteImage(i32),
     ResetView,
-    ToggleDisplayGrid,
     ToggleParametersVisibility
 }
 
@@ -107,7 +106,6 @@ pub enum KeyboardMessage {
     CropRotateLeft,
     CropRotateRight,
     ToggleFavorite,
-    ToggleDisplayGrid,
     ToggleCropMode,
     Undo,
     Redo,

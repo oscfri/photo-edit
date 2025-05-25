@@ -153,7 +153,7 @@ impl ViewportWorkspace {
             let photo_id = workspace.get_photo_id();
             let parameters = workspace.parameters_to_display();
             let view = workspace.current_view();
-            let display_grid = workspace.get_display_grid();
+            let display_grid = workspace.is_crop_mode();
             Some(Self {
                 image,
                 photo_id,

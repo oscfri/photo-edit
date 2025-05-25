@@ -58,7 +58,6 @@ pub enum WorkspaceEvent {
     DecreaseParameterLarge,
     IncreaseParameterLarge,
     ResetView,
-    ToggleDisplayGrid,
     ImageMouseEvent(MouseEvent),
 }
 
@@ -112,7 +111,6 @@ impl From<BottomPaneMessage> for UpdateEvent {
             BottomPaneMessage::ToggleFavorite => WorkspaceEvent::ToggleFavorite.into(),
             BottomPaneMessage::DeleteImage(photo_id) => ImageManagerEvent::DeleteImage(photo_id).into(),
             BottomPaneMessage::ResetView => WorkspaceEvent::ResetView.into(),
-            BottomPaneMessage::ToggleDisplayGrid => WorkspaceEvent::ToggleDisplayGrid.into(),
             BottomPaneMessage::ToggleParametersVisibility => WorkspaceEvent::ToggleParametersVisibility.into()
         }
     }
@@ -240,7 +238,6 @@ impl From<KeyboardMessage> for UpdateEvent {
             KeyboardMessage::CropRotateLeft => WorkspaceEvent::CropRotateLeft.into(),
             KeyboardMessage::CropRotateRight => WorkspaceEvent::CropRotateRight.into(),
             KeyboardMessage::ToggleFavorite => WorkspaceEvent::ToggleFavorite.into(),
-            KeyboardMessage::ToggleDisplayGrid => WorkspaceEvent::ToggleDisplayGrid.into(),
             KeyboardMessage::ToggleCropMode => WorkspaceEvent::ToggleCropMode.into(),
             KeyboardMessage::Undo => WorkspaceEvent::Undo.into(),
             KeyboardMessage::Redo => WorkspaceEvent::Redo.into(),
