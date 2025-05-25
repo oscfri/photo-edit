@@ -343,6 +343,13 @@ impl Workspace {
         self.set_parameter_value(Parameter::CropScale, scale);
     }
 
+    pub fn update_crop_scale(&mut self, scroll_delta: f32) {
+        let current_scale = self.current_crop_scale();
+        let new_scale = (current_scale - scroll_delta * 0.05).clamp(-5.0, 0.0);
+
+        self.set_parameter_value(Parameter::CropScale, new_scale);
+    }
+
     pub fn crop_rotate_left(&mut self) {
         self.image.parameter_history.lock().unwrap()
             .update(|parameters| {

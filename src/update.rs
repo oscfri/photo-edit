@@ -252,6 +252,9 @@ impl Main {
 
     fn update_mouse_crop_mode(workspace: &mut Workspace, mouse_event: MouseEvent) {
         match mouse_event {
+            MouseEvent::Scroll(scroll_delta) => {
+                workspace.update_crop_scale(scroll_delta);
+            },
             MouseEvent::Over(mouse_position) => {
                 if matches!(workspace.get_mouse_state(), MouseState::Down) {
                     workspace.update_crop_offset(mouse_position.relative_x, mouse_position.relative_y);
