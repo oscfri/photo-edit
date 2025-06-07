@@ -18,6 +18,7 @@ use iced::keyboard::key::Named;
 use pipeline::viewport;
 use repository::album_repository::AlbumRepository;
 use repository::album_repository_factory::AlbumRepositoryFactory;
+use repository::parameter_name::ParameterName;
 use repository::settings_repository::SettingsRepository;
 use repository::settings_repository_factory::SettingRepositoryFactory;
 use rusqlite::Connection;
@@ -50,7 +51,9 @@ struct Main {
     image_manager: ImageManager,
 
     viewport: Option<Viewport>,
-    clipboard_parameters: Option<Parameters>
+    clipboard_parameters: Option<Parameters>,
+
+    is_save_active: bool
 }
 
 fn init() -> (Main, iced::Task<Message>) {
@@ -136,6 +139,8 @@ impl Main {
         
         let viewport = workspace.as_ref().and_then(Viewport::try_new);
         let clipboard_parameters = None;
+
+        let is_save_active = settings_repository.get_parameter_value(ParameterName::ExportPath).unwrap().is_some();
     
         Self {
             album,
@@ -144,7 +149,8 @@ impl Main {
             settings_repository,
             image_manager,
             viewport,
-            clipboard_parameters
+            clipboard_parameters,
+            is_save_active
         }
     }
 
@@ -165,7 +171,8 @@ impl Main {
                 &self.image_manager,
                 &self.album,
                 &workspace,
-                &self.viewport);
+                &self.viewport,
+                self.is_save_active);
             window.view()
         } else {
             let window: WelcomeWindow = WelcomeWindow::new();

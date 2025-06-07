@@ -73,6 +73,7 @@ pub enum ToolboxMessage {
 #[derive(Debug, Clone)]
 pub enum TopPaneMessage {
     AddImages,
+    SetExportPath,
     Export,
     Undo,
     Redo,

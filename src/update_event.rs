@@ -98,6 +98,7 @@ impl From<ImageManagerEvent> for UpdateEvent {
 pub enum UpdateEvent {
     OnStart,
     OnExit(iced::window::Id),
+    SetExportPath,
     WorkspaceEvent(WorkspaceEvent),
     AlbumEvent(AlbumEvent),
     ImageManagerEvent(ImageManagerEvent)
@@ -176,6 +177,7 @@ impl From<TopPaneMessage> for UpdateEvent {
     fn from(message: TopPaneMessage) -> Self {
         match message {
             TopPaneMessage::AddImages => ImageManagerEvent::AddImages.into(),
+            TopPaneMessage::SetExportPath => UpdateEvent::SetExportPath.into(),
             TopPaneMessage::Export => WorkspaceEvent::ExportImage.into(),
             TopPaneMessage::Undo => WorkspaceEvent::Undo.into(),
             TopPaneMessage::Redo => WorkspaceEvent::Redo.into(),

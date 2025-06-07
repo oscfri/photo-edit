@@ -1,13 +1,15 @@
 use crate::ui::{message::TopPaneMessage, utils::icon_button};
 
 pub struct TopPane {
-    is_filter_active: bool
+    is_filter_active: bool,
+    is_save_active: bool,
 }
 
 impl<'a> TopPane {
-    pub fn new(is_filter_active: bool) -> Self {
+    pub fn new(is_filter_active: bool, is_save_active: bool) -> Self {
         Self {
-            is_filter_active
+            is_filter_active,
+            is_save_active
         }
     }
 
@@ -23,7 +25,8 @@ impl<'a> TopPane {
     fn view_left(&self) -> iced::Element<'a, TopPaneMessage> {
         let row = iced::widget::row![
                 icon_button(iced_fonts::Nerd::FileImagePlus).on_press(TopPaneMessage::AddImages),
-                icon_button(iced_fonts::Nerd::Download).on_press(TopPaneMessage::Export),
+                icon_button(iced_fonts::Nerd::ContentSaveSettings).on_press(TopPaneMessage::SetExportPath),
+                icon_button(iced_fonts::Nerd::ContentSaveOutline).on_press_maybe(self.is_save_active.then(|| TopPaneMessage::Export)),
             ];
         iced::widget::container(row)
             .align_left(iced::Fill)

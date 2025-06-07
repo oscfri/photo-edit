@@ -2,7 +2,7 @@ use core::fmt;
 
 #[derive(Debug)]
 pub enum ParameterName {
-    LatestExportDir
+    ExportPath
 }
 
 impl fmt::Display for ParameterName {

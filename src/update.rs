@@ -1,6 +1,6 @@
 use iced::Task;
 
-use crate::{pipeline::viewport::Viewport, repository::{parameter_name::ParameterName, settings_repository::SettingsRepository}, ui::message::TaskMessage, update_event::{AlbumEvent, ImageManagerEvent, MouseEvent, UpdateEvent, WorkspaceEvent}, workspace::{image_loader, workspace::Workspace}, Main, Message, MouseState, ViewMode};
+use crate::{pipeline::viewport::Viewport, repository::{parameter_name::ParameterName}, ui::message::TaskMessage, update_event::{AlbumEvent, ImageManagerEvent, MouseEvent, UpdateEvent, WorkspaceEvent}, workspace::{image_loader, workspace::Workspace}, Main, Message, MouseState, ViewMode};
 
 use std::{path::PathBuf, usize};
 
@@ -14,7 +14,11 @@ impl Main {
             UpdateEvent::OnExit(window_id) => {
                 self.image_manager.save();
                 iced::window::close(window_id)
-            }
+            },
+            UpdateEvent::SetExportPath => {
+                self.set_export_path_dialog();
+                iced::Task::none()
+            },
             UpdateEvent::ImageManagerEvent(image_manager_event) => {
                 self.update_image_manager(image_manager_event)
             },
@@ -154,8 +158,8 @@ impl Main {
                     workspace.toggle_favorite();
                 },
                 WorkspaceEvent::ExportImage => {
-                    if let Some(export_directory) = Self::export_image_dialog(&self.settings_repository) {
-                        workspace.export_image(export_directory.clone());
+                    if let Some(export_directory) = self.settings_repository.get_parameter_value(ParameterName::ExportPath).unwrap() {
+                        workspace.export_image(PathBuf::from(export_directory));
                     }
                 },
                 WorkspaceEvent::Undo => {
@@ -212,23 +216,21 @@ impl Main {
         }
     }
 
-    fn export_image_dialog(settings_repository: &SettingsRepository) -> Option<PathBuf> {
-        let latest_export_dir = settings_repository.get_parameter_value(ParameterName::LatestExportDir).unwrap()
+    fn set_export_path_dialog(&mut self) {
+        let current_export_path = self.settings_repository.get_parameter_value(ParameterName::ExportPath).unwrap()
             .map(|value| PathBuf::from(value))
             .unwrap_or_else(|| std::env::current_dir().unwrap());
 
-        let current_export_dir = native_dialog::FileDialog::new()
-            .set_location(&latest_export_dir)
+        let new_export_path = native_dialog::FileDialog::new()
+            .set_location(&current_export_path)
             .show_open_single_dir()
             .unwrap_or(None);
 
-        if let Some(current_export_dir) = current_export_dir.as_ref().and_then(|path| path.to_str()) {
-            settings_repository.set_parameter_value(ParameterName::LatestExportDir, &String::from(current_export_dir)).ok();
+        if let Some(export_path) = new_export_path.as_ref().and_then(|path| path.to_str()) {
+            self.is_save_active = self.settings_repository.set_parameter_value(ParameterName::ExportPath, &String::from(export_path)).is_ok();
         }
-
-        current_export_dir
     }
-
+    
     fn update_mouse_on_image(workspace: &mut Workspace, mouse_event: MouseEvent) {
         match mouse_event {
             MouseEvent::Press(_) => workspace.set_mouse_state(MouseState::Down),

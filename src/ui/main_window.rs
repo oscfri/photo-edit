@@ -23,7 +23,8 @@ impl<'a> MainWindow<'a> {
             image_manager: &'a ImageManager,
             album: &'a Album,
             workspace: &'a Workspace,
-            viewport: &'a Option<Viewport>) -> MainWindow<'a> {
+            viewport: &'a Option<Viewport>,
+            is_save_active: bool) -> MainWindow<'a> {
         let photo_id = album.get_photo_id();
         let album_images = &album.get_images();
         let image_index = album.get_image_index();
@@ -43,7 +44,7 @@ impl<'a> MainWindow<'a> {
         let image_selection_pane: ImageSelectionPane<'a> = ImageSelectionPane::new(album_images, image_index);
         let render_pane: RenderPane<'a> = RenderPane::new(&viewport);
         let toolbox_pane: ToolboxPane = ToolboxPane::new(parameters, angle_degrees, crop_scale, mask_index, toolbox_enabled);
-        let top_pane: TopPane = TopPane::new(is_filter_active);
+        let top_pane: TopPane = TopPane::new(is_filter_active, is_save_active);
 
         Self {
             bottom_pane,

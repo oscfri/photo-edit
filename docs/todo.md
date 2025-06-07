@@ -48,5 +48,5 @@ This is what's left for a feature complete MVP.
 - [X] Crop UX. It's not very intuitive right now.
 - [ ] Ensure crop can't be outside image.
 - [ ] Batch export
-- [ ] Set exports directory
+- [X] Set exports directory
 - [X] Highlights/shadows
