@@ -9,7 +9,7 @@ mod workspace;
 mod ui;
 
 use std::path::PathBuf;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
 use directories::ProjectDirs;
@@ -17,6 +17,9 @@ use iced;
 use iced::keyboard::key::Named;
 use pipeline::viewport;
 use repository::album_repository::AlbumRepository;
+use repository::album_repository_factory::AlbumRepositoryFactory;
+use repository::settings_repository::SettingsRepository;
+use repository::settings_repository_factory::SettingRepositoryFactory;
 use rusqlite::Connection;
 use ui::welcome_window::WelcomeWindow;
 use view_mode::ViewMode;
@@ -24,7 +27,6 @@ use workspace::album::Album;
 use workspace::image_manager::ImageManager;
 use workspace::parameters::Parameters;
 use workspace::workspace::Workspace;
-use repository::album_repository_factory;
 use ui::message::{KeyboardMessage, Message, MouseState};
 use ui::main_window::MainWindow;
 use viewport::Viewport;
@@ -44,6 +46,7 @@ struct Main {
     workspace: Option<Workspace>,
 
     album_repository: Arc<AlbumRepository>,
+    settings_repository: Arc<SettingsRepository>,
     image_manager: ImageManager,
 
     viewport: Option<Viewport>,
@@ -121,8 +124,10 @@ impl Main {
     fn new() -> Self {
         let db_path: PathBuf = Self::create_db_path();
 
-        let connection = Arc::new(Connection::open(db_path).unwrap());
-        let album_repository = Arc::new(album_repository_factory::AlbumRepositoryFactory::new(connection).create());
+        let connection = Arc::new(Mutex::new(Connection::open(db_path).unwrap()));
+        let album_repository = Arc::new(AlbumRepositoryFactory::new(connection.clone()).create());
+        let settings_repository = Arc::new(SettingRepositoryFactory::new(connection.clone()).create());
+
         let image_manager = ImageManager::create_from(album_repository.clone());
         let album = Album::new(image_manager.get_all_album_images());
         let workspace = album.get_photo_id()
@@ -136,6 +141,7 @@ impl Main {
             album,
             workspace,
             album_repository,
+            settings_repository,
             image_manager,
             viewport,
             clipboard_parameters

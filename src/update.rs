@@ -1,6 +1,6 @@
 use iced::Task;
 
-use crate::{pipeline::viewport::Viewport, ui::message::TaskMessage, update_event::{AlbumEvent, ImageManagerEvent, MouseEvent, UpdateEvent, WorkspaceEvent}, workspace::{image_loader, workspace::Workspace}, Main, Message, MouseState, ViewMode};
+use crate::{pipeline::viewport::Viewport, repository::{parameter_name::ParameterName, settings_repository::SettingsRepository}, ui::message::TaskMessage, update_event::{AlbumEvent, ImageManagerEvent, MouseEvent, UpdateEvent, WorkspaceEvent}, workspace::{image_loader, workspace::Workspace}, Main, Message, MouseState, ViewMode};
 
 use std::{path::PathBuf, usize};
 
@@ -154,7 +154,7 @@ impl Main {
                     workspace.toggle_favorite();
                 },
                 WorkspaceEvent::ExportImage => {
-                    if let Some(export_directory) = Self::export_image_dialog() {
+                    if let Some(export_directory) = Self::export_image_dialog(&self.settings_repository) {
                         workspace.export_image(export_directory.clone());
                     }
                 },
@@ -212,13 +212,21 @@ impl Main {
         }
     }
 
-    fn export_image_dialog() -> Option<PathBuf> {
-        let path: PathBuf = std::env::current_dir().unwrap();
+    fn export_image_dialog(settings_repository: &SettingsRepository) -> Option<PathBuf> {
+        let latest_export_dir = settings_repository.get_parameter_value(ParameterName::LatestExportDir).unwrap()
+            .map(|value| PathBuf::from(value))
+            .unwrap_or_else(|| std::env::current_dir().unwrap());
 
-        native_dialog::FileDialog::new()
-            .set_location(&path)
+        let current_export_dir = native_dialog::FileDialog::new()
+            .set_location(&latest_export_dir)
             .show_open_single_dir()
-            .unwrap_or(None)
+            .unwrap_or(None);
+
+        if let Some(current_export_dir) = current_export_dir.as_ref().and_then(|path| path.to_str()) {
+            settings_repository.set_parameter_value(ParameterName::LatestExportDir, &String::from(current_export_dir)).ok();
+        }
+
+        current_export_dir
     }
 
     fn update_mouse_on_image(workspace: &mut Workspace, mouse_event: MouseEvent) {

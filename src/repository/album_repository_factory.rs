@@ -1,15 +1,15 @@
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 
 use rusqlite::{Connection, Result};
 
 use super::album_repository::AlbumRepository;
 
 pub struct AlbumRepositoryFactory {
-    connection: Arc<Connection>
+    connection: Arc<Mutex<Connection>>
 }
 
-impl<'a> AlbumRepositoryFactory {
-    pub fn new(connection: Arc<Connection>) -> Self {
+impl AlbumRepositoryFactory {
+    pub fn new(connection: Arc<Mutex<Connection>>) -> Self {
         Self { connection }
     }
 
@@ -20,7 +20,8 @@ impl<'a> AlbumRepositoryFactory {
     }
 
     fn create_photo_table(&self) -> Result<()> {
-        self.connection.execute(
+        let connection = self.connection.lock().unwrap();
+        connection.execute(
             "CREATE TABLE IF NOT EXISTS photo (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 file_name TEXT NOT NULL,
@@ -33,7 +34,8 @@ impl<'a> AlbumRepositoryFactory {
     }
 
     fn create_thumbnail_table(&self) -> Result<()> {
-        self.connection.execute(
+        let connection = self.connection.lock().unwrap();
+        connection.execute(
             "CREATE TABLE IF NOT EXISTS thumbnail (
                 photo_id INTEGER UNIQUE REFERENCES photo(id),
                 data BLOB,
