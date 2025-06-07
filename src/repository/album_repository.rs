@@ -1,11 +1,11 @@
-use std::{io::Write, path::PathBuf};
+use std::{io::Write, path::PathBuf, sync::Arc};
 
 use rusqlite::{Connection, Result};
 
 use crate::types::RawImage;
 
-pub struct Repository {
-    connection: Connection
+pub struct AlbumRepository {
+    connection: Arc<Connection>
 }
 
 // TODO: Need to come up with a good naming convention for this...
@@ -16,8 +16,8 @@ pub struct AlbumPhotoDto {
     pub thumbnail: Option<RawImage>
 }
 
-impl Repository {
-    pub fn new(connection: Connection) -> Self {
+impl AlbumRepository {
+    pub fn new(connection: Arc<Connection>) -> Self {
         Self { connection }
     }
 

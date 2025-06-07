@@ -2,7 +2,7 @@ use std::{collections::BTreeMap, path::PathBuf, sync::{Arc, Mutex}};
 
 use itertools::Itertools;
 
-use crate::{repository::repository::{AlbumPhotoDto, Repository}, types::RawImage};
+use crate::{repository::album_repository::{AlbumPhotoDto, AlbumRepository}, types::RawImage};
 
 use super::{album_image::AlbumImage, parameters::{Crop, CropPreset, ParameterHistory, Parameters}, workspace::{ImageView, WorkspaceImage}};
 
@@ -26,14 +26,14 @@ pub struct ImagePathToLoad {
 }
 
 pub struct ImageManager {
-    repository: Arc<Repository>,
+    repository: Arc<AlbumRepository>,
     source_images: BTreeMap<i32, SourceImage>,
     is_filter_active: bool
 }
 
 impl ImageManager {
     fn new(
-            repository: Arc<Repository>,
+            repository: Arc<AlbumRepository>,
             source_images: BTreeMap<i32, SourceImage>) -> Self {
         Self {
             repository,
@@ -42,7 +42,7 @@ impl ImageManager {
         }
     }
 
-    pub fn create_from(repository: Arc<Repository>) -> Self {
+    pub fn create_from(repository: Arc<AlbumRepository>) -> Self {
         let source_images = Self::load_images(&repository);
         ImageManager::new(repository, source_images)
     }
@@ -200,7 +200,7 @@ impl ImageManager {
         }
     }
 
-    fn load_images(repository: &Arc<Repository>) -> BTreeMap<i32, SourceImage> {
+    fn load_images(repository: &Arc<AlbumRepository>) -> BTreeMap<i32, SourceImage> {
         repository.get_album_photos().unwrap().iter()
             .map(|album_photo_dto| (album_photo_dto.id, Self::create_image(album_photo_dto)))
             .collect()

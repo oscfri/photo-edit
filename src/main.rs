@@ -16,7 +16,7 @@ use directories::ProjectDirs;
 use iced;
 use iced::keyboard::key::Named;
 use pipeline::viewport;
-use repository::repository::Repository;
+use repository::album_repository::AlbumRepository;
 use rusqlite::Connection;
 use ui::welcome_window::WelcomeWindow;
 use view_mode::ViewMode;
@@ -24,7 +24,7 @@ use workspace::album::Album;
 use workspace::image_manager::ImageManager;
 use workspace::parameters::Parameters;
 use workspace::workspace::Workspace;
-use repository::repository_factory;
+use repository::album_repository_factory;
 use ui::message::{KeyboardMessage, Message, MouseState};
 use ui::main_window::MainWindow;
 use viewport::Viewport;
@@ -43,7 +43,7 @@ struct Main {
     album: Album,
     workspace: Option<Workspace>,
 
-    repository: Arc<Repository>,
+    album_repository: Arc<AlbumRepository>,
     image_manager: ImageManager,
 
     viewport: Option<Viewport>,
@@ -121,9 +121,9 @@ impl Main {
     fn new() -> Self {
         let db_path: PathBuf = Self::create_db_path();
 
-        let connection: Connection = Connection::open(db_path).unwrap();
-        let repository = Arc::new(repository_factory::RepositoryFactory::new(connection).create());
-        let image_manager = ImageManager::create_from(repository.clone());
+        let connection = Arc::new(Connection::open(db_path).unwrap());
+        let album_repository = Arc::new(album_repository_factory::AlbumRepositoryFactory::new(connection).create());
+        let image_manager = ImageManager::create_from(album_repository.clone());
         let album = Album::new(image_manager.get_all_album_images());
         let workspace = album.get_photo_id()
             .and_then(|photo_id| image_manager.get_workspace_image(photo_id))
@@ -135,7 +135,7 @@ impl Main {
         Self {
             album,
             workspace,
-            repository,
+            album_repository,
             image_manager,
             viewport,
             clipboard_parameters

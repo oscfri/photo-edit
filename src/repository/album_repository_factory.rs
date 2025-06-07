@@ -1,20 +1,22 @@
+use std::sync::Arc;
+
 use rusqlite::{Connection, Result};
 
-use super::repository::Repository;
+use super::album_repository::AlbumRepository;
 
-pub struct RepositoryFactory {
-    connection: Connection
+pub struct AlbumRepositoryFactory {
+    connection: Arc<Connection>
 }
 
-impl<'a> RepositoryFactory {
-    pub fn new(connection: Connection) -> Self {
+impl<'a> AlbumRepositoryFactory {
+    pub fn new(connection: Arc<Connection>) -> Self {
         Self { connection }
     }
 
-    pub fn create(self) -> Repository {
+    pub fn create(self) -> AlbumRepository {
         self.create_photo_table().unwrap();
         self.create_thumbnail_table().unwrap();
-        Repository::new(self.connection)
+        AlbumRepository::new(self.connection)
     }
 
     fn create_photo_table(&self) -> Result<()> {

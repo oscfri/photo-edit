@@ -1,2 +1,2 @@
-pub mod repository_factory;
-pub mod repository;
+pub mod album_repository_factory;
+pub mod album_repository;

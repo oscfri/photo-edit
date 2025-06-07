@@ -206,7 +206,7 @@ impl Main {
 
         if let Ok(file_paths) = result {
             for file_path in file_paths {
-                self.repository.add_photo(&file_path).ok();
+                self.album_repository.add_photo(&file_path).ok();
             }
             self.image_manager.refresh();
         }
