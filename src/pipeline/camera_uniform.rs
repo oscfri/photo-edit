@@ -46,8 +46,8 @@ fn create_render_area() -> Rectangle {
 fn create_viewport_area(bounds: &Rectangle, crop: &ViewportCrop) -> Rectangle {
     let crop_aspect_ratio: f32 = (crop.width as f32) / (crop.height as f32);
     let bounds_aspect_ratio: f32 = bounds.width / bounds.height;
-    let width: f32 = bounds.width * (crop_aspect_ratio / bounds_aspect_ratio).min(1.0);
-    let height: f32 = bounds.height * (bounds_aspect_ratio / crop_aspect_ratio).min(1.0);
+    let width: f32 = bounds.width * (crop_aspect_ratio / bounds_aspect_ratio).min(1.0) / crop.scale;
+    let height: f32 = bounds.height * (bounds_aspect_ratio / crop_aspect_ratio).min(1.0) / crop.scale;
     Rectangle {
         center_x: bounds.center_x,
         center_y: bounds.center_y,

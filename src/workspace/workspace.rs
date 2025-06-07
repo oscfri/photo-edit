@@ -470,10 +470,9 @@ impl Workspace {
             let view: ViewportCrop = current_crop.into();
             match self.view_mode {
                 view_mode::ViewMode::Crop => {
-                    let scale = 1.1;
+                    let scale = 1.0;
                     ViewportCrop {
-                        width: ((view.width as f32) * scale) as i32,
-                        height: ((view.height as f32) * scale) as i32,
+                        scale,
                         ..view
                     }
                 },
@@ -485,9 +484,10 @@ impl Workspace {
                     ViewportCrop {
                         center_x: view.center_x + offset_x,
                         center_y: view.center_y + offset_y,
-                        width: ((view.width as f32) * scale) as i32,
-                        height: ((view.height as f32) * scale) as i32,
-                        angle_degrees: view.angle_degrees
+                        width: view.width,
+                        height: view.height,
+                        angle_degrees: view.angle_degrees,
+                        scale
                     }
                 }
             }

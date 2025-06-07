@@ -67,7 +67,8 @@ pub struct ViewportCrop {
     pub center_y: i32,
     pub width: i32,
     pub height: i32,
-    pub angle_degrees: f32
+    pub angle_degrees: f32,
+    pub scale: f32,
 }
 
 fn width_height_from_crop(crop: &Crop) -> (f32, f32) {
@@ -97,7 +98,8 @@ impl From<Crop> for ViewportCrop {
             center_y: crop.center_y,
             width: (width * scale) as i32,
             height: (height * scale) as i32,
-            angle_degrees: crop.get_full_angle()
+            angle_degrees: crop.get_full_angle(),
+            scale
         }
     }
 }
