@@ -1,3 +1,5 @@
+use crate::view_mode::ViewMode;
+
 use super::viewport::ViewportParameters;
 
 #[derive(Default, Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
@@ -10,7 +12,7 @@ pub struct RadialParameter {
     angle: f32,
     feather: f32,
     exposure: f32,
-    _1: f32,
+    draw_boundary: u32,
 }
 
 #[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
@@ -21,7 +23,7 @@ pub struct RadialParameters {
 }
 
 impl RadialParameters {
-    pub fn new(parameters: &ViewportParameters) -> RadialParameters {
+    pub fn new(parameters: &ViewportParameters, view_mode: ViewMode) -> RadialParameters {
         let mut entries = [RadialParameter::default(); 128];
         for (index, radial_mask) in parameters.radial_masks.iter().take(entries.len()).enumerate() {
             entries[index].center_x = radial_mask.center_x as f32;
@@ -35,10 +37,24 @@ impl RadialParameters {
             entries[index].angle = radial_mask.angle / 180.0 * std::f32::consts::PI;
             entries[index].feather = (radial_mask.feather + 100.0) / 200.0;
             entries[index].exposure = radial_mask.brightness;
+            entries[index].draw_boundary = Self::should_draw_boundary(index, view_mode);
         }
         RadialParameters {
             entries,
             count: parameters.radial_masks.len() as u32
+        }
+    }
+
+    fn should_draw_boundary(index: usize, view_mode: ViewMode) -> u32 {
+        match view_mode {
+            ViewMode::Mask(mask_index) => {
+                if index == mask_index {
+                    1
+                } else {
+                    0
+                }
+            },
+            _ => 0
         }
     }
 }

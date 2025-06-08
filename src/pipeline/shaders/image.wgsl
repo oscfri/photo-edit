@@ -39,7 +39,7 @@ struct RadialParameter {
     angle: f32,
     feather: f32,
     exposure: f32,
-    _1: f32,
+    display_boundary: u32,
 }
 struct RadialParameters {
     entries: array<RadialParameter, 128>,
@@ -88,9 +88,10 @@ var t_output: texture_storage_2d<rgba8unorm, write>;
 @fragment
 fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
     if (all(in.view_coords >= vec2(0.0) && in.view_coords <= vec2(1.0))) {
-        let lab_actual: vec3<f32> = get_pixel_color(in.view_coords, in.image_coords);
+        let lab_actual: vec3<f32> = get_pixel_color(in);
         let lab_crop: vec3<f32> = draw_crop_area(in, lab_actual);
-        let lab_final: vec3<f32> = draw_grid(in, lab_crop);
+        let lab_mask: vec3<f32> = draw_mask_boundaries(in, lab_crop);
+        let lab_final: vec3<f32> = draw_grid(in, lab_mask);
 
         let rgb_actual: vec3<f32> = lab_to_rgb(lab_actual);
         let rgb_final: vec3<f32> = lab_to_rgb(lab_final);
@@ -105,16 +106,16 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
     }
 }
 
-fn get_pixel_color(view_coords: vec2<f32>, image_coords: vec2<f32>) -> vec3<f32> {
-    let texture_sample: vec4<f32> = textureSample(t_diffuse, s_diffuse, view_coords);
+fn get_pixel_color(vertex: VertexOutput) -> vec3<f32> {
+    let texture_sample: vec4<f32> = textureSample(t_diffuse, s_diffuse, vertex.view_coords);
     let rgb: vec3<f32> = texture_sample.xyz;
     let lab: vec3<f32> = rgb_to_lab(rgb);
-    return apply_parameters(lab, image_coords);
+    return apply_parameters(lab, vertex);
 }
 
-fn apply_parameters(lab: vec3<f32>, position: vec2<f32>) -> vec3<f32> {
+fn apply_parameters(lab: vec3<f32>, vertex: VertexOutput) -> vec3<f32> {
     let globally_applied: vec3<f32> = apply_global_parameters(lab);
-    let masked: vec3<f32> = apply_all_radial_parameters(globally_applied, position);
+    let masked: vec3<f32> = apply_all_radial_parameters(globally_applied, vertex);
     return masked;
 }
 
@@ -164,20 +165,20 @@ fn apply_exposure(lab: vec3<f32>, exposure: f32) -> vec3<f32> {
     return lab * vec3<f32>((exposure * 0.01) + 1.0, 1.0, 1.0);
 }
 
-fn apply_all_radial_parameters(lab: vec3<f32>, position: vec2<f32>) -> vec3<f32> {
+fn apply_all_radial_parameters(lab: vec3<f32>, vertex: VertexOutput) -> vec3<f32> {
     var applied: vec3<f32> = lab;
 
-    for (var i = 0u; i < radial_parameters.count; i++) {
-        applied = apply_radial_parameters(i, applied, position);
+    for (var index = 0u; index < radial_parameters.count; index++) {
+        applied = apply_radial_parameters(index, applied, vertex);
     }
 
     return applied;
 }
 
-fn apply_radial_parameters(index: u32, lab: vec3<f32>, position: vec2<f32>) -> vec3<f32> {
+fn apply_radial_parameters(index: u32, lab: vec3<f32>, vertex: VertexOutput) -> vec3<f32> {
     let radial_parameter = radial_parameters.entries[index];
 
-    let alpha = calculate_alpha(position, radial_parameter);
+    let alpha = calculate_alpha(vertex, radial_parameter);
 
     if (alpha > 0.0) {
         var applied: vec3<f32> = lab;
@@ -191,7 +192,7 @@ fn apply_radial_parameters(index: u32, lab: vec3<f32>, position: vec2<f32>) -> v
     }
 }
 
-fn calculate_alpha(position: vec2<f32>, radial_parameter: RadialParameter) -> f32 {
+fn calculate_alpha(vertex: VertexOutput, radial_parameter: RadialParameter) -> f32 {
     let angle_matrix = mat2x2<f32>(
         cos(radial_parameter.angle), -sin(radial_parameter.angle),
         sin(radial_parameter.angle), cos(radial_parameter.angle)
@@ -201,6 +202,7 @@ fn calculate_alpha(position: vec2<f32>, radial_parameter: RadialParameter) -> f3
         0.0, 1.0 / (radial_parameter.height * radial_parameter.height)
     );
 
+    let position = vertex.image_coords;
     let difference = (vec2<f32>(radial_parameter.center_x, radial_parameter.center_y) - position) * angle_matrix;
 
     if (difference.x < 0.0 && 1.0 / radial_parameter.height == 0.0) {
@@ -235,7 +237,7 @@ fn draw_crop_area(vertex: VertexOutput, lab: vec3<f32>) -> vec3<f32> {
     if (in_crop_area(vertex)) {
         return lab;
     } else if (in_crop_border(vertex)) {
-        return vec3<f32>(1.0 - lab.x, lab.yz);
+        return draw_line_at_pixel(lab);
     } else {
         return lab * vec3<f32>(0.5, 0.25, 0.25);
     }
@@ -261,17 +263,49 @@ fn in_crop_border(vertex: VertexOutput) -> bool {
     }
 }
 
+fn draw_mask_boundaries(vertex: VertexOutput, lab: vec3<f32>) -> vec3<f32> {
+    var applied: vec3<f32> = lab;
+
+    for (var index = 0u; index < radial_parameters.count; index++) {
+        applied = draw_mask_boundary(index, vertex, applied);
+    }
+
+    return applied;
+}
+
+fn draw_mask_boundary(index: u32, vertex: VertexOutput, lab: vec3<f32>) -> vec3<f32> {
+    let radial_parameter: RadialParameter = radial_parameters.entries[index];
+
+    if (radial_parameter.display_boundary == 0) {
+        return lab;
+    }
+
+    let angle_matrix = mat2x2<f32>(
+        cos(radial_parameter.angle), -sin(radial_parameter.angle),
+        sin(radial_parameter.angle), cos(radial_parameter.angle)
+    );
+
+    let position = vertex.image_coords;
+    let relative_position = position - vec2<f32>(radial_parameter.center_x, radial_parameter.center_y);
+    let angled_position = relative_position * angle_matrix;
+    
+    let outside_box = abs(angled_position.x) >= radial_parameter.width ||
+        abs(angled_position.y) >= radial_parameter.height;
+    let within_border = abs(angled_position.x) <= radial_parameter.width + 2.0 &&
+        abs(angled_position.y) <= radial_parameter.height + 2.0;
+    
+    if (outside_box && within_border) {
+        return draw_line_at_pixel(lab);
+    } else {
+        return lab;
+    }
+}
+
 fn draw_grid(vertex: VertexOutput, lab: vec3<f32>) -> vec3<f32> {
     if (crop.display_grid == 0) {
         return lab;
     } else if (in_big_grid(vertex) || in_small_grid(vertex)) {
-        if (lab.x > 0.5 && lab.x < 0.6) {
-            return vec3<f32>(0.2, -lab.yz);
-        } else if (lab.x > 0.3 && lab.x <= 0.5) {
-            return vec3<f32>(0.7, -lab.yz);
-        } else {
-            return vec3<f32>(1.0 - lab.x, -lab.yz);
-        }
+        return draw_line_at_pixel(lab);
     } else {
         return lab;
     }
@@ -323,6 +357,16 @@ fn in_small_grid(vertex: VertexOutput) -> bool {
 
 fn in_pixel(x1: f32, x2: f32) -> bool {
     return x1 >= x2 - 0.75 && x1 <= x2 + 0.75;
+}
+
+fn draw_line_at_pixel(lab: vec3<f32>) -> vec3<f32> {
+    if (lab.x > 0.5 && lab.x < 0.6) {
+        return vec3<f32>(0.2, -lab.yz);
+    } else if (lab.x > 0.3 && lab.x <= 0.5) {
+        return vec3<f32>(0.7, -lab.yz);
+    } else {
+        return vec3<f32>(1.0 - lab.x, -lab.yz);
+    }
 }
 
 /**

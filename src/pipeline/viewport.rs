@@ -3,6 +3,7 @@ use std::sync::Arc;
 use crate::types::RawImage;
 use crate::pipeline::pipeline;
 use crate::pipeline::camera_uniform;
+use crate::view_mode::ViewMode;
 use crate::workspace::parameters::Crop;
 use crate::workspace::parameters::CropPreset;
 use crate::workspace::parameters::{Parameters, RadialMask};
@@ -146,7 +147,8 @@ pub struct ViewportWorkspace {
     pub photo_id: i32,
     pub parameters: ViewportParameters,
     pub view: ViewportCrop,
-    pub display_grid: bool
+    pub display_grid: bool,
+    pub view_mode: ViewMode
 }
 
 impl ViewportWorkspace {
@@ -156,12 +158,14 @@ impl ViewportWorkspace {
             let parameters = workspace.parameters_to_display();
             let view = workspace.current_view();
             let display_grid = workspace.is_crop_mode();
+            let view_mode = workspace.get_view_mode();
             Some(Self {
                 image,
                 photo_id,
                 parameters,
                 view,
-                display_grid
+                display_grid,
+                view_mode
             })
         } else {
             None

@@ -60,7 +60,7 @@ impl Pipeline {
                 &workspace);
         let parameter_uniform = parameter_uniform::ParameterUniform::new(&workspace.parameters);
         let crop_uniform = crop_uniform::CropUniform::new(&workspace, &viewport, scale_factor);
-        let radial_parameters = radial_parameter::RadialParameters::new(&workspace.parameters);
+        let radial_parameters = radial_parameter::RadialParameters::new(&workspace.parameters, workspace.view_mode);
 
         queue.write_buffer(&self.camera_buffer, 0, bytemuck::bytes_of(&camera_uniform));
         queue.write_buffer(&self.parameter_buffer, 0, bytemuck::bytes_of(&parameter_uniform));
