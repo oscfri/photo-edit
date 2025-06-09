@@ -131,7 +131,7 @@ impl Main {
                     workspace.set_mask_brightness(index, brightness);
                 },
                 WorkspaceEvent::MaskAngleChanged(index, angle) => {
-                    workspace.set_mask_angle(index, angle);
+                    workspace.set_mask_angle_degrees(index, angle);
                 },
                 WorkspaceEvent::MaskFeatherChanged(index, angle) => {
                     workspace.set_mask_feather(index, angle);
@@ -292,7 +292,7 @@ impl Main {
         match mouse_event {
             MouseEvent::Over(mouse_position) => {
                 if matches!(workspace.get_mouse_state(), MouseState::Down) {
-                    workspace.update_mask_radius(mask_index, mouse_position.image_x, mouse_position.image_y);
+                    workspace.update_mask_size(mask_index, mouse_position.image_x, mouse_position.image_y);
                 }
             },
             MouseEvent::Press(mouse_position) => {

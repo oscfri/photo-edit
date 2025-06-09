@@ -299,14 +299,17 @@ impl Workspace {
             });
     }
 
-    pub fn update_mask_radius(&mut self, mask_index: usize, x: i32, y: i32) {
+    pub fn update_mask_size(&mut self, mask_index: usize, x: i32, y: i32) {
         self.image.parameter_history.lock().unwrap()
             .update(|parameters| {
                 let radial_mask = &mut parameters.radial_masks[mask_index];
                 let center_x = radial_mask.center_x;
                 let center_y = radial_mask.center_y;
-                radial_mask.width = (center_x - x).abs();
-                radial_mask.height = (center_y - y).abs();
+                let delta_x = (center_x - x) as f32;
+                let delta_y = (center_y - y) as f32;
+                let angle = radial_mask.angle_degrees / 180.0 * std::f32::consts::PI;
+                radial_mask.width = (angle.cos() * delta_x - angle.sin() * delta_y).abs() as i32;
+                radial_mask.height = (angle.sin() * delta_x + angle.cos() * delta_y).abs() as i32;
             });
     }
 
@@ -320,11 +323,11 @@ impl Workspace {
             .update(|parameters| parameters.radial_masks[mask_index].brightness = brightness);
     }
 
-    pub fn set_mask_angle(&mut self, mask_index: usize, angle: f32) {
+    pub fn set_mask_angle_degrees(&mut self, mask_index: usize, angle_degrees: f32) {
         self.image.parameter_history.lock().unwrap()
             .update(|parameters| {
                 let radial_mask = &mut parameters.radial_masks[mask_index];
-                radial_mask.angle = angle;
+                radial_mask.angle_degrees = angle_degrees;
             });
     }
 

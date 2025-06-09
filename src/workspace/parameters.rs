@@ -43,7 +43,7 @@ pub struct RadialMask {
     pub center_y: i32,
     pub width: i32,
     pub height: i32,
-    pub angle: f32,
+    pub angle_degrees: f32,
     pub feather: f32,
     pub brightness: f32, // TODO: Rename to exposure
     pub is_linear: bool

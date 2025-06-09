@@ -127,7 +127,7 @@ impl <'a> ToolboxPane {
                 iced::widget::text("Angle"),
                 iced::widget::slider(
                     -180.0..=180.0,
-                    radial_mask.angle,
+                    radial_mask.angle_degrees,
                     MaskChangeMessage::MaskAngleChanged),
                 iced::widget::text("Feather"),
                     iced::widget::slider(

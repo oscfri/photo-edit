@@ -34,7 +34,7 @@ impl RadialParameters {
             } else {
                 entries[index].height = radial_mask.height as f32;
             }
-            entries[index].angle = radial_mask.angle / 180.0 * std::f32::consts::PI;
+            entries[index].angle = radial_mask.angle_degrees / 180.0 * std::f32::consts::PI;
             entries[index].feather = (radial_mask.feather + 100.0) / 200.0;
             entries[index].exposure = radial_mask.brightness;
             entries[index].draw_boundary = Self::should_draw_boundary(index, view_mode);
